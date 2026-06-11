@@ -1,0 +1,24 @@
+{#include layout}
+{#title}Access tokens – git-shark{/title}
+<h1>Access tokens</h1>
+<table>
+    <tr><th>Label</th><th>Created</th><th>Last used</th><th></th></tr>
+    {#for token in tokens}
+    <tr>
+        <td>{token.label}</td>
+        <td>{token.createdAt}</td>
+        <td>{token.lastUsed ?: 'never'}</td>
+        <td>
+            <form class="inline" method="post" action="/settings/tokens/{token.id}/revoke">
+                <button>Revoke</button>
+            </form>
+        </td>
+    </tr>
+    {/for}
+</table>
+<h2>Create token</h2>
+<form method="post" action="/settings/tokens">
+    <p><label>Label <input name="label" required></label></p>
+    <button>Create token</button>
+</form>
+{/include}

@@ -1,0 +1,70 @@
+[
+  {
+    "name": "java.security.KeyPairGenerator",
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {"name": "getInstance", "parameterTypes": ["java.lang.String", "java.lang.String"]},
+      {"name": "getInstance", "parameterTypes": ["java.lang.String", "java.security.Provider"]},
+      {"name": "getInstance", "parameterTypes": ["java.lang.String"]}
+    ]
+  },
+  {
+    "name": "java.security.KeyFactory",
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {"name": "getInstance", "parameterTypes": ["java.lang.String", "java.lang.String"]},
+      {"name": "getInstance", "parameterTypes": ["java.lang.String", "java.security.Provider"]},
+      {"name": "getInstance", "parameterTypes": ["java.lang.String"]}
+    ]
+  },
+  {
+    "name": "javax.crypto.KeyAgreement",
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {"name": "getInstance", "parameterTypes": ["java.lang.String", "java.lang.String"]},
+      {"name": "getInstance", "parameterTypes": ["java.lang.String", "java.security.Provider"]},
+      {"name": "getInstance", "parameterTypes": ["java.lang.String"]}
+    ]
+  },
+  {
+    "name": "java.security.Signature",
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {"name": "getInstance", "parameterTypes": ["java.lang.String", "java.lang.String"]},
+      {"name": "getInstance", "parameterTypes": ["java.lang.String", "java.security.Provider"]},
+      {"name": "getInstance", "parameterTypes": ["java.lang.String"]}
+    ]
+  },
+  {
+    "name": "javax.crypto.Cipher",
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {"name": "getInstance", "parameterTypes": ["java.lang.String", "java.lang.String"]},
+      {"name": "getInstance", "parameterTypes": ["java.lang.String", "java.security.Provider"]},
+      {"name": "getInstance", "parameterTypes": ["java.lang.String"]}
+    ]
+  },
+  {
+    "name": "java.security.MessageDigest",
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {"name": "getInstance", "parameterTypes": ["java.lang.String", "java.lang.String"]},
+      {"name": "getInstance", "parameterTypes": ["java.lang.String", "java.security.Provider"]},
+      {"name": "getInstance", "parameterTypes": ["java.lang.String"]}
+    ]
+  },
+  {
+    "name": "javax.crypto.Mac",
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {"name": "getInstance", "parameterTypes": ["java.lang.String", "java.lang.String"]},
+      {"name": "getInstance", "parameterTypes": ["java.lang.String", "java.security.Provider"]},
+      {"name": "getInstance", "parameterTypes": ["java.lang.String"]}
+    ]
+  },
+  {
+    "name": "org.apache.sshd.common.io.nio2.Nio2ServiceFactoryFactory",
+    "allDeclaredConstructors": true,
+    "queryAllDeclaredConstructors": true
+  }
+]

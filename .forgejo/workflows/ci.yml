@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  jvm-tests:
+    runs-on: docker
+    container:
+      image: eclipse-temurin:21-jdk
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache Maven repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ hashFiles('pom.xml') }}
+      - name: Run JVM tests
+        run: ./mvnw -B test
+
+  native-build-and-smoke:
+    # Native build + native integration tests gate every main-branch build
+    # so native-image regressions surface at merge time, not release time.
+    if: github.ref == 'refs/heads/main'
+    runs-on: docker
+    container:
+      image: eclipse-temurin:21-jdk
+    needs: jvm-tests
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache Maven repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ hashFiles('pom.xml') }}
+      - name: Native build + integration smoke tests
+        run: ./mvnw -B verify -Dnative -Dquarkus.native.container-build=true

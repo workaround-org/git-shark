@@ -1,0 +1,24 @@
+{#include layout}
+{#title}Commits at {ref} – {repo.name}{/title}
+<h1><a href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></h1>
+<h2>Commits on <code>{ref}</code></h2>
+<table>
+    <tr><th>Commit</th><th>Message</th><th>Author</th><th>Date</th></tr>
+    {#for commit in commits}
+    <tr>
+        <td><code>{commit.shortId}</code></td>
+        <td>{commit.message}</td>
+        <td>{commit.author}</td>
+        <td>{commit.date}</td>
+    </tr>
+    {/for}
+</table>
+<p>
+    {#if page > 0}
+    <a href="/repos/{repo.owner.username}/{repo.name}/commits/{ref}?page={prevPage}&size={size}">Newer</a>
+    {/if}
+    {#if hasNext}
+    <a href="/repos/{repo.owner.username}/{repo.name}/commits/{ref}?page={nextPage}&size={size}">Older</a>
+    {/if}
+</p>
+{/include}

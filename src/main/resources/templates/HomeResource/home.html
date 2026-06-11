@@ -1,0 +1,17 @@
+{#include layout}
+{#title}git-shark{/title}
+<h1>Repositories</h1>
+{#if user}
+<p><a href="/repos/new">New repository</a></p>
+{/if}
+<table>
+    <tr><th>Repository</th><th>Visibility</th><th>Description</th></tr>
+    {#for repo in repositories}
+    <tr>
+        <td><a href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></td>
+        <td>{repo.visibility}</td>
+        <td>{repo.description ?: ''}</td>
+    </tr>
+    {/for}
+</table>
+{/include}

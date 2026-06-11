@@ -1,0 +1,27 @@
+{#include layout}
+{#title}SSH keys – git-shark{/title}
+<h1>SSH keys</h1>
+{#if error}
+<p class="error">{error}</p>
+{/if}
+<table>
+    <tr><th>Title</th><th>Fingerprint</th><th></th></tr>
+    {#for key in keys}
+    <tr>
+        <td>{key.title}</td>
+        <td><code>{key.fingerprint}</code></td>
+        <td>
+            <form class="inline" method="post" action="/settings/keys/{key.id}/delete">
+                <button>Remove</button>
+            </form>
+        </td>
+    </tr>
+    {/for}
+</table>
+<h2>Add key</h2>
+<form method="post" action="/settings/keys">
+    <p><label>Title <input name="title" required></label></p>
+    <p><label>Public key (OpenSSH format)<br><textarea name="key" required></textarea></label></p>
+    <button>Add key</button>
+</form>
+{/include}

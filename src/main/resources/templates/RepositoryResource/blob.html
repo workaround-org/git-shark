@@ -1,0 +1,10 @@
+{#include layout}
+{#title}{path} at {ref} – {repo.name}{/title}
+<h1><a href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></h1>
+<p><code>{ref}</code> &middot; /{path}</p>
+{#if binary}
+<p>Binary file. <a href="/repos/{repo.owner.username}/{repo.name}/raw/{ref}/{path}">Download</a></p>
+{#else}
+<pre>{content}</pre>
+{/if}
+{/include}

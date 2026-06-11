@@ -1,0 +1,25 @@
+{#include layout}
+{#title}Branches – {repo.name}{/title}
+<h1><a href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></h1>
+<h2>Branches</h2>
+<table>
+    <tr><th>Branch</th><th></th></tr>
+    {#for branch in branches}
+    <tr>
+        <td><a href="/repos/{repo.owner.username}/{repo.name}/tree/{branch.name}/">{branch.name}</a></td>
+        <td>{#if branch.defaultBranch}default{/if}</td>
+    </tr>
+    {/for}
+</table>
+<h2>Tags</h2>
+{#if tags.isEmpty()}
+<p>No tags.</p>
+{#else}
+<table>
+    <tr><th>Tag</th></tr>
+    {#for tag in tags}
+    <tr><td><a href="/repos/{repo.owner.username}/{repo.name}/tree/{tag}/">{tag}</a></td></tr>
+    {/for}
+</table>
+{/if}
+{/include}

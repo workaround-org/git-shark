@@ -1,0 +1,18 @@
+{#include layout}
+{#title}New repository – git-shark{/title}
+<h1>New repository</h1>
+{#if error}
+<p class="error">{error}</p>
+{/if}
+<form method="post" action="/repos">
+    <p><label>Name <input name="name" required pattern="[a-zA-Z0-9._-]+"></label></p>
+    <p><label>Visibility
+        <select name="visibility">
+            <option value="PUBLIC">Public</option>
+            <option value="PRIVATE">Private</option>
+        </select>
+    </label></p>
+    <p><label>Description <input name="description"></label></p>
+    <button>Create repository</button>
+</form>
+{/include}
