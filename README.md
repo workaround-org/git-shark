@@ -62,5 +62,5 @@ Native build uses a container build automatically when no local GraalVM is prese
 
 ## CI
 
-`.forgejo/workflows/ci.yml`: JVM tests on every push/PR; native build + native smoke tests
+`.github/workflows/ci.yml`: JVM tests on every push/PR; native build + native smoke tests
 gate main-branch builds.
