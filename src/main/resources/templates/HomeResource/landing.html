@@ -4,22 +4,28 @@
 <a href="/explore">Browse public repositories</a>
 <a class="btn btn-primary" href="/login">Log in</a>
 {/nav}
-<section class="hero">
-    <img src="/img/shark-logo.png" alt="git-shark logo">
-    <div>
-        <h1>git-shark</h1>
-        <p class="tagline">self-hosted git hosting for people who still write the code</p>
-    </div>
+<div class="ascii-bg" aria-hidden="true">
+<pre class="ascii-row">&lt;/&gt; git commit -m "ship it" ~ &lt;shark&gt; { main } /push fetch\ &gt;&gt;= 0xC0DE ;; &lt;/&gt; merge --no-ff ~~~ &gt;_</pre>
+<pre class="ascii-row">~ &gt;_ HEAD~1 ::= clone &lt;origin&gt; { } /\/\ rebase -i ~ 0101 &lt;shark/&gt; pull --ff-only ;; &gt;&gt;= &lt;/&gt;</pre>
+<pre class="ascii-row">{ } &lt;branch&gt; /\ tag -s v1.0 ~ &gt;_ stash@{0} 0xFEED &lt;/&gt; cherry-pick ;; ~~~ push --tags &gt;&gt;=</pre>
+<pre class="ascii-row">&gt;&gt;= /push &lt;shark&gt; ~ blame -L { HEAD } 0x5HARK reflog ;; &lt;/&gt; bisect ~~~ &gt;_ fsck --full /\</pre>
+<pre class="ascii-row">~ &lt;/&gt; reset --hard ;; { } /\/\ 1100 &gt;_ remote -v &lt;origin/&gt; ~ diff --stat 0xBEEF push &gt;&gt;=</pre>
+<pre class="ascii-row">{ main } ~ &gt;_ log --oneline /\ &lt;shark&gt; ;; switch -c ~~~ 0x1337 &lt;/&gt; worktree add &gt;&gt;= /push</pre>
+</div>
+<section class="landing">
+    <img class="landing-logo" src="/img/shark-logo.png" alt="git-shark logo">
+    <h1>git-shark</h1>
+    <p class="tagline">self-hosted git hosting for people who still write the code</p>
+
+    <ul class="values">
+        <li><strong>Use AI as a tool, not as a feature.</strong> It assists when you ask; it never takes the wheel.</li>
+        <li><strong>Focus on co-working, not lazy feeds.</strong> Built for collaborating on code, not doomscrolling activity streams.</li>
+        <li><strong>Easy and painless to self-host.</strong> One natively-compiled binary plus Postgres &mdash; fast startup, tiny footprint.</li>
+    </ul>
+
+    <p class="landing-cta">
+        <a class="btn btn-primary" href="/login">Log in</a>
+        <a class="btn btn-secondary" href="https://github.com/workaround/git-shark">Self-host it</a>
+    </p>
 </section>
-
-<ul class="values">
-    <li><strong>Use AI as a tool, not as a feature.</strong> It assists when you ask; it never takes the wheel.</li>
-    <li><strong>Focus on co-working, not lazy feeds.</strong> Built for collaborating on code, not doomscrolling activity streams.</li>
-    <li><strong>Easy and painless to self-host.</strong> One natively-compiled binary plus Postgres &mdash; fast startup, tiny footprint.</li>
-</ul>
-
-<p>
-    <a class="btn btn-primary" href="/login">Log in</a>
-    <a class="btn btn-secondary" href="https://github.com/workaround/git-shark">Self-host it</a>
-</p>
 {/include}
