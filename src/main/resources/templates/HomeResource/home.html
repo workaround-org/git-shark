@@ -1,16 +1,23 @@
 {#include layout}
 {#title}git-shark{/title}
-<h1>Repositories</h1>
+<section class="hero">
+    <img src="/img/shark-logo.png" alt="git-shark logo">
+    <div>
+        <h1>git-shark</h1>
+        <p class="tagline">self-hosted git hosting — natively compiled, bite-sized</p>
+    </div>
+</section>
+<h2>Repositories</h2>
 {#if user}
-<p><a href="/repos/new">New repository</a></p>
+<p><a class="btn btn-primary" href="/repos/new">New repository</a></p>
 {/if}
 <table>
     <tr><th>Repository</th><th>Visibility</th><th>Description</th></tr>
     {#for repo in repositories}
     <tr>
-        <td><a href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></td>
-        <td>{repo.visibility}</td>
-        <td>{repo.description ?: ''}</td>
+        <td><a class="mono" href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></td>
+        <td><span class="badge badge-{repo.visibility.name().toLowerCase()}">{repo.visibility.name().toLowerCase()}</span></td>
+        <td class="muted">{repo.description ?: ''}</td>
     </tr>
     {/for}
 </table>

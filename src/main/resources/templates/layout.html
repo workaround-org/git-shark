@@ -4,24 +4,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{#insert title}git-shark{/}</title>
-    <style>
-        body { font-family: system-ui, sans-serif; margin: 0; color: #1f2328; }
-        header { display: flex; gap: 1.5rem; align-items: center; padding: 0.75rem 1.5rem; background: #24292f; }
-        header a { color: #fff; text-decoration: none; font-weight: 600; }
-        header nav { display: flex; gap: 1rem; margin-left: auto; }
-        header nav a { font-weight: 400; }
-        main { max-width: 960px; margin: 2rem auto; padding: 0 1.5rem; }
-        table { border-collapse: collapse; width: 100%; }
-        td, th { border: 1px solid #d0d7de; padding: 0.4rem 0.6rem; text-align: left; }
-        code { background: #f6f8fa; padding: 0.1rem 0.3rem; border-radius: 4px; }
-        .error { color: #cf222e; }
-        form.inline { display: inline; }
-        textarea { width: 100%; min-height: 6rem; }
-    </style>
+    <link rel="icon" type="image/png" href="/img/shark-logo.png">
+    <link rel="stylesheet" href="/shark.css">
+    <script defer src="/shark-hotkeys.js"></script>
 </head>
 <body>
-<header>
-    <a href="/">&#x1F988; git-shark</a>
+<header class="site">
+    <a class="brand" href="/"><img src="/img/shark-logo.png" alt="git-shark logo">git-shark</a>
     <nav>
         <a href="/settings/keys">SSH keys</a>
         <a href="/settings/tokens">Access tokens</a>
@@ -31,5 +20,13 @@
 <main>
     {#insert /}
 </main>
+<dialog id="hotkey-help">
+    <h2>Keyboard shortcuts</h2>
+    <table>
+        <tr><td><kbd>?</kbd></td><td>Show this help</td></tr>
+        <tr><td><kbd>g</kbd> <kbd>h</kbd></td><td>Go home</td></tr>
+        <tr><td><kbd>Esc</kbd></td><td>Close dialog</td></tr>
+    </table>
+</dialog>
 </body>
 </html>

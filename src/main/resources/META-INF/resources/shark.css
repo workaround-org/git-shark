@@ -1,0 +1,373 @@
+/* git-shark design system — light theme, shark blue & white */
+
+:root {
+    /* palette */
+    --shark-blue: #1565c0;
+    --shark-deep: #0d3b66;
+    --shark-fin: #4f9fe0;
+    --shark-belly: #f4f8fb;
+    --surface: #ffffff;
+    --ink: #16242f;
+    --ink-muted: #5b7282;
+    --border: #d3e0ea;
+    --danger: #c62828;
+
+    /* typography */
+    --font-body: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
+
+    /* shape & rhythm */
+    --radius: 6px;
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 1rem;
+    --space-4: 1.5rem;
+    --space-5: 2.5rem;
+}
+
+/* base */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--shark-belly);
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height: 1.5;
+}
+
+h1, h2, h3 {
+    color: var(--shark-deep);
+    line-height: 1.2;
+}
+
+h1 {
+    font-size: 1.5rem;
+}
+
+a {
+    color: var(--shark-blue);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.mono {
+    font-family: var(--font-mono);
+}
+
+.muted {
+    color: var(--ink-muted);
+}
+
+.error {
+    color: var(--danger);
+}
+
+/* header */
+
+header.site {
+    display: flex;
+    gap: var(--space-4);
+    align-items: center;
+    padding: var(--space-2) var(--space-4);
+    background: var(--shark-deep);
+}
+
+header.site .brand {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    color: #fff;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+
+header.site .brand:hover {
+    text-decoration: none;
+    color: var(--shark-fin);
+}
+
+header.site .brand img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--shark-fin);
+}
+
+header.site nav {
+    display: flex;
+    gap: var(--space-3);
+    margin-left: auto;
+}
+
+header.site nav a {
+    color: #d9e8f5;
+    font-size: 0.9rem;
+}
+
+header.site nav a:hover {
+    color: #fff;
+}
+
+main {
+    max-width: 960px;
+    margin: var(--space-5) auto;
+    padding: 0 var(--space-4);
+}
+
+/* hero (landing page) */
+
+.hero {
+    display: flex;
+    gap: var(--space-4);
+    align-items: center;
+    margin-bottom: var(--space-5);
+}
+
+.hero img {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+}
+
+.hero h1 {
+    font-family: var(--font-mono);
+    margin: 0 0 var(--space-1);
+}
+
+.hero .tagline {
+    font-family: var(--font-mono);
+    color: var(--ink-muted);
+    margin: 0;
+}
+
+.hero .tagline::before {
+    content: "$ ";
+    color: var(--shark-fin);
+}
+
+/* buttons */
+
+.btn {
+    display: inline-block;
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    font: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.btn:hover {
+    text-decoration: none;
+}
+
+.btn-primary {
+    background: var(--shark-blue);
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background: var(--shark-deep);
+}
+
+.btn-secondary {
+    background: var(--surface);
+    color: var(--shark-blue);
+    border-color: var(--border);
+}
+
+.btn-secondary:hover {
+    border-color: var(--shark-blue);
+}
+
+.btn-danger {
+    background: var(--surface);
+    color: var(--danger);
+    border-color: var(--border);
+}
+
+.btn-danger:hover {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
+}
+
+/* tabs */
+
+.tabs {
+    display: flex;
+    gap: var(--space-2);
+    border-bottom: 2px solid var(--border);
+    margin-bottom: var(--space-3);
+}
+
+.tab {
+    padding: var(--space-1) var(--space-3);
+    color: var(--ink-muted);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+}
+
+.tab:hover {
+    color: var(--shark-blue);
+    text-decoration: none;
+}
+
+.tab.active {
+    color: var(--shark-deep);
+    border-bottom-color: var(--shark-blue);
+    font-weight: 600;
+}
+
+/* tables */
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+td, th {
+    border-bottom: 1px solid var(--border);
+    padding: var(--space-2) var(--space-3);
+    text-align: left;
+}
+
+th {
+    background: var(--shark-belly);
+    color: var(--shark-deep);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+tbody tr:hover, table tr:hover td {
+    background: var(--shark-belly);
+}
+
+/* forms */
+
+label {
+    display: block;
+    color: var(--shark-deep);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+input, textarea, select {
+    font: inherit;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: var(--space-1) var(--space-2);
+    margin-top: var(--space-1);
+}
+
+input:focus, textarea:focus, select:focus {
+    outline: 2px solid var(--shark-fin);
+    outline-offset: 0;
+    border-color: var(--shark-blue);
+}
+
+textarea {
+    width: 100%;
+    min-height: 6rem;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+}
+
+form.inline {
+    display: inline;
+}
+
+/* code */
+
+code, pre {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    background: var(--shark-belly);
+    border-radius: 4px;
+}
+
+code {
+    padding: 0.1rem 0.3rem;
+}
+
+pre {
+    border: 1px solid var(--border);
+    padding: var(--space-3);
+    overflow-x: auto;
+}
+
+pre code {
+    padding: 0;
+    background: none;
+}
+
+/* badges */
+
+.badge {
+    display: inline-block;
+    padding: 0 var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ink-muted);
+}
+
+.badge-public {
+    color: var(--shark-blue);
+    border-color: var(--shark-fin);
+}
+
+.badge-private {
+    color: var(--shark-deep);
+    background: var(--shark-belly);
+}
+
+.badge-default {
+    color: #fff;
+    background: var(--shark-blue);
+    border-color: var(--shark-blue);
+}
+
+/* hotkey help dialog */
+
+dialog#hotkey-help {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: var(--space-4);
+    min-width: 20rem;
+}
+
+dialog#hotkey-help::backdrop {
+    background: rgba(13, 59, 102, 0.4);
+}
+
+dialog#hotkey-help kbd {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    background: var(--shark-belly);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0 var(--space-1);
+}
