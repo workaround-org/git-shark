@@ -57,6 +57,24 @@ class WebUiTest
 	}
 
 	@Test
+	void landingPageHasAnimatedAsciiBackground() throws Exception
+	{
+		// background symbol layer is present in the markup...
+		given()
+			.when().get("/")
+			.then()
+			.statusCode(200)
+			.body(containsString("class=\"ascii-bg\""));
+
+		// ...and the animation is defined in the shared stylesheet (no inline <style> on /)
+		given()
+			.when().get("/shark.css")
+			.then()
+			.statusCode(200)
+			.body(containsString("@keyframes ascii-glow"));
+	}
+
+	@Test
 	@TestSecurity(user = "ui-alice")
 	void ownerSeesOwnPrivateRepositoryOnHome() throws Exception
 	{
