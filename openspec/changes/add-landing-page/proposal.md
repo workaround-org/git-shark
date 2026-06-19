@@ -12,8 +12,8 @@ product's stance and invites them to log in or self-host — not a raw table of 
   - "Use AI as a tool, not as a feature"
   - "Focus on co-working, not lazy feeds"
   - "Easy and painless to self-host"
-- Visual treatment: dark hero background with glowing ASCII-art branding (the shark), rendered with
-  server-side markup + CSS only (no JS, native-image friendly).
+- Visual treatment: hero section with the git-shark logo and tagline, styled via the shared
+  `shark.css` design system (no JS, native-image friendly).
 - Primary call to action: **Log in** (existing OIDC flow). Secondary: link to self-hosting docs/repo.
 - Anonymous browsing of public repositories stays reachable via an explicit link (e.g. `/explore` or
   a "Browse public repositories" link), so no functionality is removed.

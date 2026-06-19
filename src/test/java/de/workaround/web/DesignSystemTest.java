@@ -58,12 +58,12 @@ class DesignSystemTest
 	}
 
 	@Test
-	void landingPageShowsVisibilityBadges()
+	void explorePageShowsVisibilityBadges()
 	{
 		User owner = persistUser("ds-owner-" + unique());
 		service.create(owner, "ds-badged", Repository.Visibility.PUBLIC, "demo");
 
-		given().when().get("/")
+		given().when().get("/explore")
 			.then().statusCode(200)
 			.body(containsString("class=\"badge"));
 	}

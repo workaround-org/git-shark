@@ -27,16 +27,16 @@ The landing page SHALL display the three value propositions as visible text:
 - **WHEN** an unauthenticated client requests `GET /`
 - **THEN** the response body contains all three value-proposition statements
 
-### Requirement: Landing page hero with glowing ASCII-art background
+### Requirement: Landing page hero with branding
 
-The landing page SHALL render a dark hero section containing glowing ASCII-art branding, using
-only server-rendered markup and CSS (no client-side JavaScript), so it remains native-image
-compatible and degrades gracefully without scripting.
+The landing page SHALL render a hero section with the git-shark logo and tagline, using the shared
+`shark.css` design system (no page-level inline `<style>` block), so branding stays consistent with
+the rest of the UI.
 
-#### Scenario: Hero renders without JavaScript
+#### Scenario: Hero renders logo and shared stylesheet
 
-- **WHEN** an unauthenticated client requests `GET /` with scripting disabled
-- **THEN** the ASCII-art hero and its styling are present in the served HTML/CSS
+- **WHEN** an unauthenticated client requests `GET /`
+- **THEN** the response links `/shark.css`, contains the `/img/shark-logo.png` logo, and carries no inline `<style>` block
 
 ### Requirement: Landing page calls to action
 
