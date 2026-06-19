@@ -14,8 +14,8 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
   - push and private read authenticate with **personal access tokens** (HTTP Basic password)
 - Clone/fetch/push over `ssh://git@<host>:2222/<owner>/<repo>.git`
   - public-key authentication only; keys managed per user in the UI
-- Web UI: repository list, file/tree browser, commit log (paginated), branches & tags
-- OIDC login (authorization code flow); users provisioned on first login
+- Web UI: landing page with login CTA for visitors (`/`), repository list for authenticated users (`/`), public repository browse at `/explore`, file/tree browser, commit log (paginated), branches & tags
+- OIDC login (authorization code flow) via `GET /login`; users provisioned on first login
 - Single access policy on all paths: owner read/write, public world-readable, private owner-only
 
 ## Architecture notes

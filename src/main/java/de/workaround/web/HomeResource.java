@@ -30,6 +30,8 @@ public class HomeResource
 	{
 		static native TemplateInstance home(List<Repository> repositories, User user);
 
+		static native TemplateInstance landing();
+
 		static native TemplateInstance newRepo(String error);
 	}
 
@@ -43,7 +45,29 @@ public class HomeResource
 	public TemplateInstance home()
 	{
 		User user = currentUser.get();
+		if (user == null)
+		{
+			return Templates.landing();
+		}
 		return Templates.home(service.listVisibleTo(user), user);
+	}
+
+	@GET
+	@Path("explore")
+	public TemplateInstance explore()
+	{
+		User user = currentUser.get();
+		return Templates.home(service.listVisibleTo(user), user);
+	}
+
+	@GET
+	@Path("login")
+	public Response login()
+	{
+		// Path is protected (authenticated); OIDC intercepts anonymous access and
+		// redirects here after login, then we send the user to their repository list.
+		currentUser.require();
+		return Response.seeOther(URI.create("/")).build();
 	}
 
 	@GET

@@ -26,18 +26,34 @@ class WebUiTest
 	GitRepositoryService service;
 
 	@Test
-	void anonymousSeesOnlyPublicRepositoriesOnHome() throws Exception
+	void anonymousSeesOnlyPublicRepositoriesOnExplore() throws Exception
 	{
 		User owner = persistUser("ui-bob-" + unique());
 		service.create(owner, "ui-pub", Repository.Visibility.PUBLIC, "public demo");
 		service.create(owner, "ui-priv", Repository.Visibility.PRIVATE, null);
 
 		given()
-			.when().get("/")
+			.when().get("/explore")
 			.then()
 			.statusCode(200)
 			.body(containsString("ui-pub"))
 			.body(not(containsString("ui-priv")));
+	}
+
+	@Test
+	void anonymousSeesLandingPageOnHome() throws Exception
+	{
+		User owner = persistUser("ui-zoe-" + unique());
+		service.create(owner, "landing-pub", Repository.Visibility.PUBLIC, null);
+
+		given()
+			.when().get("/")
+			.then()
+			.statusCode(200)
+			.body(containsString("Use AI as a tool, not as a feature"))
+			.body(containsString("Focus on co-working, not lazy feeds"))
+			.body(containsString("Easy and painless to self-host"))
+			.body(not(containsString("landing-pub")));
 	}
 
 	@Test
