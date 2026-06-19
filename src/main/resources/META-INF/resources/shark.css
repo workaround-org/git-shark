@@ -116,6 +116,20 @@ header.site nav a:hover {
     color: #fff;
 }
 
+/* buttons in the header nav must keep their own readable text colour,
+   not the light nav-link colour */
+header.site nav a.btn-primary {
+    color: #fff;
+}
+
+header.site nav a.btn-secondary {
+    color: var(--shark-blue);
+}
+
+header.site nav a.btn-secondary:hover {
+    color: var(--shark-blue);
+}
+
 main {
     max-width: 960px;
     margin: var(--space-5) auto;
