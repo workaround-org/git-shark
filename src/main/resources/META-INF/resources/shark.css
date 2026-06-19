@@ -154,6 +154,28 @@ main {
     color: var(--shark-fin);
 }
 
+/* value list (landing page) */
+
+ul.values {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 var(--space-5);
+    max-width: 44rem;
+}
+
+ul.values li {
+    padding: var(--space-3);
+    margin-bottom: var(--space-2);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--shark-blue);
+    border-radius: var(--radius);
+}
+
+ul.values li strong {
+    color: var(--shark-deep);
+}
+
 /* buttons */
 
 .btn {

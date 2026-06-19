@@ -1,99 +1,25 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>git-shark &mdash; self-hosted Git, AI as a tool</title>
-    <style>
-        :root { --glow: #38d9c8; --glow2: #1f8f86; --ink: #e6edf3; --muted: #9fb0bd; }
-        * { box-sizing: border-box; }
-        body {
-            margin: 0; min-height: 100vh; color: var(--ink);
-            font-family: system-ui, sans-serif;
-            background: radial-gradient(1200px 600px at 50% -10%, #0c2b2a 0%, #07110f 55%, #04070a 100%);
-            display: flex; flex-direction: column;
-        }
-        a { color: var(--glow); }
-        header {
-            display: flex; align-items: center; gap: 1rem;
-            padding: 1rem 1.5rem;
-        }
-        header .brand { font-weight: 700; color: var(--ink); text-decoration: none; font-size: 1.1rem; }
-        header nav { margin-left: auto; display: flex; gap: 1rem; align-items: center; }
-        .btn {
-            display: inline-block; padding: 0.55rem 1.1rem; border-radius: 8px;
-            font-weight: 600; text-decoration: none;
-            color: #04070a; background: var(--glow);
-            box-shadow: 0 0 18px rgba(56, 217, 200, 0.55);
-        }
-        .btn.ghost { color: var(--glow); background: transparent; border: 1px solid var(--glow2); box-shadow: none; }
-        main { flex: 1; max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; text-align: center; }
-        .ascii-wrap { overflow-x: auto; margin: 1rem 0 2.5rem; }
-        pre.ascii {
-            display: inline-block; margin: 0; text-align: left;
-            font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-            font-size: clamp(0.5rem, 1.6vw, 0.95rem); line-height: 1.05;
-            color: var(--glow);
-            text-shadow:
-                0 0 4px var(--glow),
-                0 0 10px var(--glow),
-                0 0 22px var(--glow2),
-                0 0 40px var(--glow2);
-        }
-        h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); margin: 0 0 0.5rem; }
-        .tagline { color: var(--muted); font-size: 1.1rem; margin: 0 auto 2.5rem; max-width: 36rem; }
-        ul.values { list-style: none; padding: 0; margin: 0 auto 2.5rem; max-width: 40rem; text-align: left; }
-        ul.values li {
-            padding: 0.9rem 1.1rem; margin: 0.6rem 0; border-radius: 10px;
-            background: rgba(56, 217, 200, 0.06); border: 1px solid rgba(56, 217, 200, 0.18);
-            font-size: 1.05rem;
-        }
-        ul.values li strong { color: var(--glow); }
-        .cta { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
-        footer { padding: 1.5rem; text-align: center; color: var(--muted); font-size: 0.9rem; }
-    </style>
-</head>
-<body>
-<header>
-    <a class="brand" href="/">&#x1F988; git-shark</a>
-    <nav>
-        <a href="/explore">Browse public repositories</a>
-        <a class="btn" href="/login">Log in</a>
-    </nav>
-</header>
-<main>
-    <div class="ascii-wrap">
-<pre class="ascii">
-                                   ,-
-                              _.-'' |
-                         _.-''      |        git-shark
-                    _.-''   .-.     |
-            ,______.-''     \ o`.   |
-           /                 \  `.`-._
-          |   .              |    `-. `-._
-          |   |`.            |       `-. `.
-          |   |  `.           \         `-.`.
-           \   \   `.          `.          `.`.
-            `.  `.   `-.         `.           `|
-              `._ `-._  `-.________`.__________/
-                 `-._ `-._______________.--''
-                     `-.________.--''
-</pre>
+{#include layout}
+{#title}git-shark &mdash; self-hosted Git, AI as a tool{/title}
+{#nav}
+<a href="/explore">Browse public repositories</a>
+<a class="btn btn-primary" href="/login">Log in</a>
+{/nav}
+<section class="hero">
+    <img src="/img/shark-logo.png" alt="git-shark logo">
+    <div>
+        <h1>git-shark</h1>
+        <p class="tagline">self-hosted git hosting for people who still write the code</p>
     </div>
-    <h1>Self-hosted Git, for people who still write the code</h1>
-    <p class="tagline">A single natively-compiled binary. Your repositories, your server, no feed.</p>
+</section>
 
-    <ul class="values">
-        <li><strong>Use AI as a tool, not as a feature.</strong> It assists when you ask; it never takes the wheel.</li>
-        <li><strong>Focus on co-working, not lazy feeds.</strong> Built for collaborating on code, not doomscrolling activity streams.</li>
-        <li><strong>Easy and painless to self-host.</strong> One binary, Postgres, done &mdash; fast startup, tiny footprint.</li>
-    </ul>
+<ul class="values">
+    <li><strong>Use AI as a tool, not as a feature.</strong> It assists when you ask; it never takes the wheel.</li>
+    <li><strong>Focus on co-working, not lazy feeds.</strong> Built for collaborating on code, not doomscrolling activity streams.</li>
+    <li><strong>Easy and painless to self-host.</strong> One natively-compiled binary plus Postgres &mdash; fast startup, tiny footprint.</li>
+</ul>
 
-    <div class="cta">
-        <a class="btn" href="/login">Log in</a>
-        <a class="btn ghost" href="https://github.com/workaround/git-shark">Self-host it</a>
-    </div>
-</main>
-<footer>&#x1F988; git-shark &mdash; bare Git over HTTP &amp; SSH, Qute UI, OIDC login.</footer>
-</body>
-</html>
+<p>
+    <a class="btn btn-primary" href="/login">Log in</a>
+    <a class="btn btn-secondary" href="https://github.com/workaround/git-shark">Self-host it</a>
+</p>
+{/include}
