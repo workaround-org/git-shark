@@ -44,6 +44,9 @@ public class ActivityPubClient
 
 	private final HttpClient http = HttpClient.newBuilder()
 		.connectTimeout(Duration.ofSeconds(10))
+		// HTTP/1.1: over HTTP/2 the signed `Host` header becomes the `:authority` pseudo-header and
+		// peers can't reconstruct it for signature verification. HTTP/1.1 is the ActivityPub norm.
+		.version(HttpClient.Version.HTTP_1_1)
 		.followRedirects(HttpClient.Redirect.NORMAL)
 		.build();
 

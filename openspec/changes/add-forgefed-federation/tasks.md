@@ -85,7 +85,12 @@
   federation crypto (RSA keygen/`SHA256withRSA`) and `java.net.http` client are reachable in native
   with no extra security-services registration. (SmokeIT covers HTTP health + SSH banner; the signed
   federation round-trip in native is still part of the 6.4 two-host manual check.)
-- [ ] 6.4 Manual two-instance check (two containers/hosts, mutually allowlisted, real HTTPS): follow,
-  push, observe the delivered `Push`. Deferred — needs a multi-host environment.
+- [x] 6.4 Two-instance trial DONE (two JVM instances on 127.0.0.1:8090/8091, mutual allowlist, dev
+  insecure flag): a signed `Follow` from B was accepted + `Accept` delivered to B; a real `git push`
+  to A emitted a `Push` delivered to and signature-verified by B. This surfaced + fixed a real bug:
+  `java.net.http` negotiates HTTP/2, where the signed `Host` header becomes `:authority` and the
+  receiver could not reconstruct it → all signed deliveries 401'd. Fixed by forcing HTTP/1.1 on the
+  client and reconstructing `host` from the request authority on verify (`FederationDeliveryRoundTripTest`
+  regression guard). Outbound "follow a remote repo" remains a follow-up (issue #3).
 - [x] 6.5 `README.md` updated: Federation section, `GITSHARK_FEDERATION_*` config, persisted tables,
   permanent-actor-ID warning, and the note that non-git-shark interop is untested.

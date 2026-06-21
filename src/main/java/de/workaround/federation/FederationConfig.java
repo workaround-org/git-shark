@@ -54,7 +54,7 @@ public class FederationConfig
 		return baseUrl
 			.map(String::trim)
 			.filter(value -> !value.isEmpty())
-			.filter(FederationConfig::isUsableOrigin)
+			.filter(value -> isUsableOrigin(value, devAllowInsecure))
 			.map(FederationConfig::stripTrailingSlash);
 	}
 
@@ -96,7 +96,7 @@ public class FederationConfig
 		return peers().stream().map(p -> p.trim().toLowerCase(Locale.ROOT)).anyMatch(normalized::equals);
 	}
 
-	private static boolean isUsableOrigin(String value)
+	private static boolean isUsableOrigin(String value, boolean allowLoopback)
 	{
 		try
 		{
@@ -109,6 +109,10 @@ public class FederationConfig
 			if (!scheme.equals("http") && !scheme.equals("https"))
 			{
 				return false;
+			}
+			if (allowLoopback)
+			{
+				return true; // dev-only: permit localhost/loopback base URLs for local two-host trials
 			}
 			String host = uri.getHost().toLowerCase(Locale.ROOT);
 			return !host.equals("localhost") && !host.startsWith("127.") && !host.equals("::1")

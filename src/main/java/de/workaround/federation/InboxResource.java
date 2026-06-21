@@ -60,7 +60,12 @@ public class InboxResource
 		{
 			throw new NotFoundException();
 		}
-		Function<String, String> lookup = name -> headers.getHeaderString(name);
+		// Reconstruct `host` from the request authority: over HTTP/2 there is no classic Host header
+		// (it is the :authority pseudo-header), so getHeaderString("host") would be empty.
+		String authority = uriInfo.getRequestUri().getAuthority();
+		Function<String, String> lookup = name -> "host".equalsIgnoreCase(name) && authority != null
+			? authority
+			: headers.getHeaderString(name);
 		int status = inboxService.receive(body == null ? new byte[0] : body, lookup, "POST",
 			uriInfo.getRequestUri().getRawPath());
 		return Response.status(status).build();

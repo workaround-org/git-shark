@@ -12,6 +12,7 @@ import de.workaround.model.InboxActivity;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import org.jboss.logging.Logger;
 
 /**
  * Inbound activity receipt: verifies the HTTP Signature (allowlisted peer, fetched key, valid
@@ -26,6 +27,8 @@ public class InboxService
 	public static final int UNAUTHORIZED = 401;
 
 	public static final int BAD_REQUEST = 400;
+
+	private static final Logger LOG = Logger.getLogger(InboxService.class);
 
 	@Inject
 	FederationConfig config;
@@ -51,15 +54,22 @@ public class InboxService
 		HttpSignatures.SignatureHeader signature = HttpSignatures.parse(headerLookup.apply("signature"));
 		if (signature == null)
 		{
+			LOG.warn("Inbox 401: missing or unparseable Signature header");
 			return UNAUTHORIZED;
 		}
 		String signerHost = hostOf(signature.keyId());
 		if (signerHost == null || !config.peerAllowed(signerHost))
 		{
+			LOG.warnf("Inbox 401: signer host not allowlisted (keyId=%s)", signature.keyId());
 			return UNAUTHORIZED;
 		}
 		Optional<PublicKey> key = client.fetchPublicKey(signature.keyId());
-		if (key.isEmpty() || !HttpSignatures.verify(signature, method, path, headerLookup, body, key.get()))
+		if (key.isEmpty())
+		{
+			LOG.warnf("Inbox 401: could not resolve public key for keyId=%s", signature.keyId());
+			return UNAUTHORIZED;
+		}
+		if (!HttpSignatures.verify(signature, method, path, headerLookup, body, key.get()))
 		{
 			return UNAUTHORIZED;
 		}

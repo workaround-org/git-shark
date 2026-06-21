@@ -34,6 +34,8 @@ public final class HttpSignatures
 
 	private static final List<String> SIGNED_HEADERS = List.of("(request-target)", "host", "date", "digest");
 
+	private static final org.jboss.logging.Logger LOG = org.jboss.logging.Logger.getLogger(HttpSignatures.class);
+
 	private HttpSignatures()
 	{
 	}
@@ -117,8 +119,14 @@ public final class HttpSignatures
 		{
 			return false;
 		}
-		if (!checkDigest(headerLookup.apply("digest"), body) || !checkDate(headerLookup.apply("date")))
+		if (!checkDigest(headerLookup.apply("digest"), body))
 		{
+			LOG.warnf("Signature rejected: digest mismatch (header=%s)", headerLookup.apply("digest"));
+			return false;
+		}
+		if (!checkDate(headerLookup.apply("date")))
+		{
+			LOG.warnf("Signature rejected: bad/stale date (header=%s)", headerLookup.apply("date"));
 			return false;
 		}
 		String requestTarget = method.toLowerCase(Locale.ROOT) + " " + path;
@@ -129,10 +137,16 @@ public final class HttpSignatures
 			Signature verifier = Signature.getInstance("SHA256withRSA");
 			verifier.initVerify(key);
 			verifier.update(signingString.getBytes(StandardCharsets.UTF_8));
-			return verifier.verify(header.signature());
+			boolean ok = verifier.verify(header.signature());
+			if (!ok)
+			{
+				LOG.warnf("Signature rejected: RSA verification failed for keyId=%s", header.keyId());
+			}
+			return ok;
 		}
 		catch (GeneralSecurityException e)
 		{
+			LOG.warnf("Signature rejected: %s", e.getMessage());
 			return false;
 		}
 	}
