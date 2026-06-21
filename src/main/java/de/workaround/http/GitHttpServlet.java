@@ -9,6 +9,7 @@ import org.eclipse.jgit.transport.ReceivePack;
 import org.eclipse.jgit.transport.resolver.ServiceNotAuthorizedException;
 import org.eclipse.jgit.transport.resolver.ServiceNotEnabledException;
 
+import de.workaround.federation.FederationPushService;
 import de.workaround.git.AccessPolicy;
 import de.workaround.git.GitRepositoryService;
 import de.workaround.model.Repository;
@@ -37,6 +38,9 @@ public class GitHttpServlet extends GitServlet
 
 	@Inject
 	AccessPolicy accessPolicy;
+
+	@Inject
+	FederationPushService pushService;
 
 	@Override
 	public void init(ServletConfig config) throws ServletException
@@ -97,6 +101,12 @@ public class GitHttpServlet extends GitServlet
 		}
 		ReceivePack receivePack = new ReceivePack(db);
 		receivePack.setRefLogIdent(new org.eclipse.jgit.lib.PersonIdent(user.username, user.email != null ? user.email : user.username + "@git-shark"));
+		// Capture identifiers while the request session is open; the hook fires after receive-pack.
+		String ownerName = repository.owner.username;
+		String repoName = repository.name;
+		java.util.UUID pusherId = user.id;
+		receivePack.setPostReceiveHook((rp, commands) ->
+			pushService.onPush(ownerName, repoName, pusherId, rp.getRepository(), commands));
 		return receivePack;
 	}
 

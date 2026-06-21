@@ -30,6 +30,9 @@ public class GitSshCommandFactory implements CommandFactory
 	@Inject
 	SshGitBridge bridge;
 
+	@Inject
+	de.workaround.federation.FederationPushService pushService;
+
 	@Override
 	public Command createCommand(ChannelSession channel, String command)
 	{
@@ -133,7 +136,16 @@ public class GitSshCommandFactory implements CommandFactory
 				{
 					if (receive)
 					{
-						new ReceivePack(db).receive(in, out, err);
+						ReceivePack receivePack = new ReceivePack(db);
+						String[] parts = rawPath.split("/");
+						if (parts.length == 2)
+						{
+							String ownerName = parts[0];
+							String repoName = parts[1];
+							receivePack.setPostReceiveHook((rp, commands) ->
+								pushService.onPush(ownerName, repoName, userId, rp.getRepository(), commands));
+						}
+						receivePack.receive(in, out, err);
 					}
 					else
 					{

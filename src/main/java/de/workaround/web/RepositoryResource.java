@@ -85,6 +85,16 @@ public class RepositoryResource
 	}
 
 	@GET
+	@Produces({ "application/activity+json", "application/ld+json" })
+	public Response overviewActivity(@PathParam("owner") String owner, @PathParam("name") String name)
+	{
+		// Content negotiation: federation clients asking for activity+json get the actor document.
+		// Existence/visibility is enforced at /ap; redirect keeps the JSON-LD surface in one place.
+		requireReadable(owner, name);
+		return Response.seeOther(URI.create("/ap/repos/" + owner + "/" + name)).build();
+	}
+
+	@GET
 	@jakarta.ws.rs.Path("tree/{ref}{path:(/.*)?}")
 	public TemplateInstance tree(@PathParam("owner") String owner, @PathParam("name") String name,
 		@PathParam("ref") String ref, @PathParam("path") String rawPath)
