@@ -70,6 +70,7 @@ and pull/merge requests are **not** federated (git-shark has no such features ye
 | `GITSHARK_FEDERATION_BASE_URL` | — | Public HTTPS origin (e.g. `https://shark.example`); actor IDs derive from it and are permanent |
 | `GITSHARK_FEDERATION_PEER_ALLOWLIST` | — (empty = deny all) | Comma-separated peer hosts allowed to send/receive federation traffic |
 | `GITSHARK_FEDERATION_MAX_ATTEMPTS` | `8` | Max delivery attempts before a queued activity is dead-lettered |
+| `GITSHARK_FEDERATION_DEV_ALLOW_INSECURE` | `false` | **Dev/local only.** Lets the SSRF guard accept `http` + loopback/private targets so two instances can federate on one machine (peer allowlist still enforced). Never enable in production. |
 
 > **TLS required in production:** personal access tokens travel as HTTP Basic credentials.
 > Terminate TLS in front of the service; never expose plain HTTP publicly.

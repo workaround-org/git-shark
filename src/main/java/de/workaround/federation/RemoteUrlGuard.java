@@ -38,7 +38,11 @@ public class RemoteUrlGuard
 		{
 			throw new UnsafeUrlException("Malformed URL: " + url);
 		}
-		if (uri.getScheme() == null || !uri.getScheme().equalsIgnoreCase("https"))
+		boolean insecure = config.devAllowInsecure();
+		String scheme = uri.getScheme();
+		boolean schemeOk = scheme != null
+			&& (scheme.equalsIgnoreCase("https") || (insecure && scheme.equalsIgnoreCase("http")));
+		if (!schemeOk)
 		{
 			throw new UnsafeUrlException("Only https is allowed: " + url);
 		}
@@ -47,15 +51,19 @@ public class RemoteUrlGuard
 		{
 			throw new UnsafeUrlException("Missing host: " + url);
 		}
+		// The peer allowlist is always enforced, even in dev-insecure mode.
 		if (!config.peerAllowed(host))
 		{
 			throw new UnsafeUrlException("Host not on peer allowlist: " + host);
 		}
-		for (InetAddress address : resolve(host))
+		if (!insecure)
 		{
-			if (isNonPublic(address))
+			for (InetAddress address : resolve(host))
 			{
-				throw new UnsafeUrlException("Host resolves to a non-public address: " + host);
+				if (isNonPublic(address))
+				{
+					throw new UnsafeUrlException("Host resolves to a non-public address: " + host);
+				}
 			}
 		}
 		return uri;

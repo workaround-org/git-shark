@@ -31,6 +31,9 @@ public class FederationConfig
 	@ConfigProperty(name = "gitshark.federation.delivery.max-attempts", defaultValue = "8")
 	int maxDeliveryAttempts;
 
+	@ConfigProperty(name = "gitshark.federation.dev-allow-insecure", defaultValue = "false")
+	boolean devAllowInsecure;
+
 	public boolean enabled()
 	{
 		return enabled;
@@ -70,6 +73,16 @@ public class FederationConfig
 	public int maxDeliveryAttempts()
 	{
 		return maxDeliveryAttempts;
+	}
+
+	/**
+	 * Dev/local-only escape hatch: when true, the SSRF guard permits {@code http} and
+	 * loopback/private targets (the peer allowlist is still enforced). Never enable in production —
+	 * it exists so two instances can federate on one machine for testing.
+	 */
+	public boolean devAllowInsecure()
+	{
+		return devAllowInsecure;
 	}
 
 	/** Whether the given host is on the peer allowlist (case-insensitive). */
