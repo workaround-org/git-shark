@@ -2,13 +2,19 @@ package de.workaround.web;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 import de.workaround.account.CurrentUser;
 import de.workaround.git.GitRepositoryService;
 import de.workaround.git.InvalidRepositoryNameException;
 import de.workaround.git.RepositoryAlreadyExistsException;
+import de.workaround.git.RepositoryPinService;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
+import de.workaround.notify.NotificationItem;
+import de.workaround.notify.NotificationService;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateInstance;
 import jakarta.inject.Inject;
@@ -30,9 +36,17 @@ public class HomeResource
 	{
 		static native TemplateInstance home(List<Repository> repositories, User user);
 
+		static native TemplateInstance dashboard(List<Repository> pinned, List<NotificationItem> notifications,
+			List<DashboardRepo> repositories, User user);
+
 		static native TemplateInstance landing();
 
 		static native TemplateInstance newRepo(String error);
+	}
+
+	/** A repository row in the dashboard's full list, carrying whether the current user has pinned it. */
+	public record DashboardRepo(Repository repo, boolean pinned)
+	{
 	}
 
 	@Inject
@@ -40,6 +54,12 @@ public class HomeResource
 
 	@Inject
 	GitRepositoryService service;
+
+	@Inject
+	RepositoryPinService pinService;
+
+	@Inject
+	NotificationService notifications;
 
 	@GET
 	public TemplateInstance home()
@@ -49,7 +69,12 @@ public class HomeResource
 		{
 			return Templates.landing();
 		}
-		return Templates.home(service.listVisibleTo(user), user);
+		List<Repository> pinned = pinService.listPinned(user);
+		Set<UUID> pinnedIds = pinned.stream().map(repo -> repo.id).collect(Collectors.toSet());
+		List<DashboardRepo> rows = service.listVisibleTo(user).stream()
+			.map(repo -> new DashboardRepo(repo, pinnedIds.contains(repo.id)))
+			.toList();
+		return Templates.dashboard(pinned, notifications.notificationsFor(user), rows, user);
 	}
 
 	@GET

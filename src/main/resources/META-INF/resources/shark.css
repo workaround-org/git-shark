@@ -478,6 +478,62 @@ pre code {
     border-color: var(--shark-blue);
 }
 
+/* dashboard */
+
+.dashboard-section {
+    margin-bottom: var(--space-5);
+}
+
+.dashboard-section h2 {
+    margin-bottom: var(--space-2);
+}
+
+.empty-state {
+    padding: var(--space-3);
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+}
+
+td.actions {
+    width: 1%;
+    white-space: nowrap;
+    text-align: right;
+}
+
+td.actions .btn {
+    font-size: 0.8rem;
+}
+
+/* icon-only action button (e.g. pin/unpin) */
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-1);
+    border: none;
+    background: none;
+    color: var(--ink-muted);
+    cursor: pointer;
+    border-radius: var(--radius);
+    line-height: 0;
+}
+
+.btn-icon:hover {
+    color: var(--shark-blue);
+    background: var(--shark-belly);
+}
+
+.btn-icon.pinned {
+    color: var(--shark-blue);
+}
+
+.btn-icon svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+}
+
 /* hotkey help dialog */
 
 dialog#hotkey-help {

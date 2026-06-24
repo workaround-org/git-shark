@@ -9,6 +9,7 @@ import de.workaround.account.CurrentUser;
 import de.workaround.git.AccessPolicy;
 import de.workaround.git.GitBrowseService;
 import de.workaround.git.GitRepositoryService;
+import de.workaround.git.RepositoryPinService;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
 import io.quarkus.qute.CheckedTemplate;
@@ -37,7 +38,8 @@ public class RepositoryResource
 	static class Templates
 	{
 		static native TemplateInstance overview(Repository repo, boolean owner, boolean empty, String defaultBranch,
-			List<GitBrowseService.TreeEntry> entries, String httpUrl, String sshUrl);
+			List<GitBrowseService.TreeEntry> entries, String httpUrl, String sshUrl, boolean loggedIn,
+			boolean pinned);
 
 		static native TemplateInstance tree(Repository repo, String ref, String path,
 			List<GitBrowseService.TreeEntry> entries);
@@ -63,6 +65,9 @@ public class RepositoryResource
 	@Inject
 	AccessPolicy accessPolicy;
 
+	@Inject
+	RepositoryPinService pinService;
+
 	@ConfigProperty(name = "gitshark.ssh.port")
 	int sshPort;
 
@@ -81,7 +86,10 @@ public class RepositoryResource
 			: browse.listTree(path, defaultBranch, "").orElse(List.of());
 		User user = currentUser.get();
 		boolean isOwner = user != null && user.id.equals(repo.owner.id);
-		return Templates.overview(repo, isOwner, empty, defaultBranch, entries, httpUrl(repo), sshUrl(repo));
+		boolean loggedIn = user != null;
+		boolean pinned = loggedIn && pinService.isPinned(user, repo);
+		return Templates.overview(repo, isOwner, empty, defaultBranch, entries, httpUrl(repo), sshUrl(repo),
+			loggedIn, pinned);
 	}
 
 	@GET
@@ -158,6 +166,38 @@ public class RepositoryResource
 		}
 		service.delete(currentUser.require(), repo);
 		return Response.seeOther(URI.create("/")).build();
+	}
+
+	@POST
+	@jakarta.ws.rs.Path("pin")
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	public Response pin(@PathParam("owner") String owner, @PathParam("name") String name,
+		@FormParam("redirect") @DefaultValue("/") String redirect)
+	{
+		Repository repo = requireReadable(owner, name);
+		pinService.pin(currentUser.require(), repo);
+		return Response.seeOther(safeRedirect(redirect)).build();
+	}
+
+	@POST
+	@jakarta.ws.rs.Path("unpin")
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	public Response unpin(@PathParam("owner") String owner, @PathParam("name") String name,
+		@FormParam("redirect") @DefaultValue("/") String redirect)
+	{
+		Repository repo = requireReadable(owner, name);
+		pinService.unpin(currentUser.require(), repo);
+		return Response.seeOther(safeRedirect(redirect)).build();
+	}
+
+	private static URI safeRedirect(String redirect)
+	{
+		// only allow same-site relative paths to avoid open-redirect
+		if (redirect != null && redirect.startsWith("/") && !redirect.startsWith("//"))
+		{
+			return URI.create(redirect);
+		}
+		return URI.create("/");
 	}
 
 	private TemplateInstance blobView(Repository repo, Path repoPath, String ref, String path)

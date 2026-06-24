@@ -1,0 +1,77 @@
+{#include layout}
+{#title}git-shark{/title}
+<p><a class="btn btn-primary" href="/repos/new">New repository</a></p>
+
+<section class="dashboard-section">
+    <h2>Pinned</h2>
+    {#if pinned.isEmpty()}
+    <p class="muted empty-state">No pinned repositories yet — pin the repositories you work in regularly for quick access.</p>
+    {#else}
+    <table>
+        <tr><th>Repository</th><th>Visibility</th><th></th></tr>
+        {#for repo in pinned}
+        <tr>
+            <td><a class="mono" href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></td>
+            <td><span class="badge badge-{repo.visibility.name().toLowerCase()}">{repo.visibility.name().toLowerCase()}</span></td>
+            <td class="actions">
+                <form class="inline" method="post" action="/repos/{repo.owner.username}/{repo.name}/unpin">
+                    <input type="hidden" name="redirect" value="/">
+                    <button class="btn-icon pinned" type="submit" title="Unpin repository" aria-label="Unpin repository">
+                        <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
+                    </button>
+                </form>
+            </td>
+        </tr>
+        {/for}
+    </table>
+    {/if}
+</section>
+
+<section class="dashboard-section">
+    <h2>Notifications</h2>
+    {#if notifications.isEmpty()}
+    <p class="muted empty-state">No notifications — assigned issues and merge requests will appear here once those features land.</p>
+    {#else}
+    <table>
+        <tr><th>Type</th><th>What</th></tr>
+        {#for item in notifications}
+        <tr>
+            <td><span class="badge">{item.category}</span></td>
+            <td><a href="{item.targetUrl}">{item.title}</a></td>
+        </tr>
+        {/for}
+    </table>
+    {/if}
+</section>
+
+<section class="dashboard-section">
+    <h2>All repositories</h2>
+    <table>
+        <tr><th>Repository</th><th>Visibility</th><th>Description</th><th></th></tr>
+        {#for row in repositories}
+        <tr>
+            <td><a class="mono" href="/repos/{row.repo.owner.username}/{row.repo.name}">{row.repo.owner.username}/{row.repo.name}</a></td>
+            <td><span class="badge badge-{row.repo.visibility.name().toLowerCase()}">{row.repo.visibility.name().toLowerCase()}</span></td>
+            <td class="muted">{row.repo.description ?: ''}</td>
+            <td class="actions">
+                {#if row.pinned}
+                <form class="inline" method="post" action="/repos/{row.repo.owner.username}/{row.repo.name}/unpin">
+                    <input type="hidden" name="redirect" value="/">
+                    <button class="btn-icon pinned" type="submit" title="Unpin repository" aria-label="Unpin repository">
+                        <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
+                    </button>
+                </form>
+                {#else}
+                <form class="inline" method="post" action="/repos/{row.repo.owner.username}/{row.repo.name}/pin">
+                    <input type="hidden" name="redirect" value="/">
+                    <button class="btn-icon" type="submit" title="Pin repository" aria-label="Pin repository">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
+                    </button>
+                </form>
+                {/if}
+            </td>
+        </tr>
+        {/for}
+    </table>
+</section>
+{/include}
