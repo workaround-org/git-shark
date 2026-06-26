@@ -10,7 +10,7 @@
         <td>{token.lastUsed ?: 'never'}</td>
         <td>
             <form class="inline" method="post" action="/settings/tokens/{token.id}/revoke">
-                <button>Revoke</button>
+                <button class="btn btn-danger btn-sm">Revoke</button>
             </form>
         </td>
     </tr>
@@ -19,6 +19,6 @@
 <h2>Create token</h2>
 <form method="post" action="/settings/tokens">
     <p><label>Label <input name="label" required></label></p>
-    <button>Create token</button>
+    <button class="btn btn-primary">Create token</button>
 </form>
 {/include}

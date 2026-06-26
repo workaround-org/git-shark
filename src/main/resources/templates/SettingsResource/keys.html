@@ -12,7 +12,7 @@
         <td><code>{key.fingerprint}</code></td>
         <td>
             <form class="inline" method="post" action="/settings/keys/{key.id}/delete">
-                <button>Remove</button>
+                <button class="btn btn-danger btn-sm">Remove</button>
             </form>
         </td>
     </tr>
@@ -22,6 +22,6 @@
 <form method="post" action="/settings/keys">
     <p><label>Title <input name="title" required></label></p>
     <p><label>Public key (OpenSSH format)<br><textarea name="key" required></textarea></label></p>
-    <button>Add key</button>
+    <button class="btn btn-primary">Add key</button>
 </form>
 {/include}

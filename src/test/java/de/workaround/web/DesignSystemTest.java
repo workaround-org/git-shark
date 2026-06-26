@@ -36,8 +36,9 @@ class DesignSystemTest
 		given().when().get("/shark.css")
 			.then().statusCode(200)
 			.body(containsString(":root"))
-			.body(containsString("--shark-blue"))
-			.body(containsString("--shark-deep"));
+			.body(containsString("--accent"))
+			.body(containsString("--ink"))
+			.body(containsString("--canvas"));
 	}
 
 	@Test
@@ -45,16 +46,16 @@ class DesignSystemTest
 	{
 		given().when().get("/")
 			.then().statusCode(200)
-			.body(containsString("/img/shark-logo.png"))
+			.body(containsString("landing-mark"))
 			.body(containsString("git-shark"));
 	}
 
 	@Test
-	void logoIsServedAsStaticResource()
+	void faviconIsServedAsSvgResource()
 	{
-		given().when().get("/img/shark-logo.png")
+		given().when().get("/favicon.svg")
 			.then().statusCode(200)
-			.header("Content-Type", containsString("image/png"));
+			.header("Content-Type", containsString("image/svg+xml"));
 	}
 
 	@Test

@@ -90,7 +90,7 @@ Native build uses a container build automatically when no local GraalVM is prese
 
 | Store | What |
 |---|---|
-| PostgreSQL | `users`, `repositories` (metadata), `ssh_keys` (public keys + fingerprints), `access_tokens` (SHA-256 hashes, labels, last-used), federation tables (`federation_keys`, `remote_actors`, `repository_followers`, `federation_outbox`, `federation_inbox`, `federation_delivery`) |
+| PostgreSQL | `users`, `repositories` (metadata), `repository_pins` (per-user pinned repositories), `ssh_keys` (public keys + fingerprints), `access_tokens` (SHA-256 hashes, labels, last-used), federation tables (`federation_keys`, `remote_actors`, `repository_followers`, `federation_outbox`, `federation_inbox`, `federation_delivery`) |
 | Filesystem (`GITSHARK_STORAGE_ROOT`) | Bare Git repositories |
 | Filesystem (`GITSHARK_SSH_HOST_KEY`) | SSH host key |
 
