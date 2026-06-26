@@ -86,6 +86,13 @@ and pull/merge requests are **not** federated (git-shark has no such features ye
 Native build uses a container build automatically when no local GraalVM is present
 (`-Dquarkus.native.container-build=true` to force). Binary: `target/git-shark-1.0-SNAPSHOT-runner`.
 
+### Dev mode seed data
+
+Two `%dev`-only flags are set in `application.properties` (both default `false` in all other profiles):
+
+- `gitshark.dev.seed-data=true` — on startup, `DevDataSeeder` idempotently creates user `alice` owning a public repository `demo` with one commit (`README.md`, "Initial commit"). A fresh dev instance is never empty.
+- `gitshark.dev.adopt-username=true` — Keycloak Dev Services mint a fresh OIDC subject on every run, so the seeded `alice` row would otherwise collide on login. With this flag, an unknown subject whose username matches an existing account re-keys that account to the new subject instead of rejecting the login. **Never enabled in production** (re-keying from a username claim is an account-takeover vector).
+
 ## Persisted data
 
 | Store | What |
