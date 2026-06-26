@@ -66,6 +66,8 @@ and pull/merge requests are **not** federated (git-shark has no such features ye
 | `GITSHARK_SSH_HOST_KEY` | `data/ssh/host-key` | Persisted SSH host key file |
 | `QUARKUS_DATASOURCE_JDBC_URL` / `_USERNAME` / `_PASSWORD` | — (Dev Services in dev/test) | PostgreSQL connection |
 | `QUARKUS_OIDC_AUTH_SERVER_URL` / `_CLIENT_ID` / `_CREDENTIALS_SECRET` | — (Keycloak Dev Services in dev/test) | OIDC provider |
+| `QUARKUS_OIDC_AUTHENTICATION_STATE_SECRET` | — (dev/test use a fixed dev secret) | Encrypts the OIDC state cookie carrying the PKCE `code_verifier`; ≥ 32 chars, stable across pods |
+| `QUARKUS_OIDC_TOKEN_STATE_ENCRYPTION_SECRET` | — (falls back to credentials secret) | Encrypts the post-login session cookie holding the tokens; ≥ 32 chars, set explicitly for multi-pod |
 | `GITSHARK_FEDERATION_ENABLED` | `false` | Master switch for ForgeFed federation |
 | `GITSHARK_FEDERATION_BASE_URL` | — | Public HTTPS origin (e.g. `https://shark.example`); actor IDs derive from it and are permanent |
 | `GITSHARK_FEDERATION_PEER_ALLOWLIST` | — (empty = deny all) | Comma-separated peer hosts allowed to send/receive federation traffic |
