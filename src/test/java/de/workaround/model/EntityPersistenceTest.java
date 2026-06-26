@@ -27,15 +27,15 @@ class EntityPersistenceTest
 	@TestTransaction
 	void persistsUserWithGeneratedUuid()
 	{
-		User user = newUser("alice");
+		User user = newUser("anna");
 
 		user.persist();
 
 		assertNotNull(user.id);
-		User found = users.findByOidcSub("oidc-sub-alice");
-		assertEquals("alice", found.username);
-		assertEquals("Alice", found.displayName);
-		assertEquals("alice@example.com", found.email);
+		User found = users.findByOidcSub("oidc-sub-anna");
+		assertEquals("anna", found.username);
+		assertEquals("Anna", found.displayName);
+		assertEquals("anna@example.com", found.email);
 	}
 
 	@Test
