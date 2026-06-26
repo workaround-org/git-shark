@@ -2,10 +2,10 @@
 
 ### Requirement: A successful push to a federated repository emits a Push activity
 
-When commits are received on a `PUBLIC` repository over either Git transport (smart HTTP or SSH) and
-federation is enabled, the system SHALL build a ForgeFed `Push` activity describing the updated ref,
-the previous and new commit ids, and the newly received commits, attributed to the pusher's Person
-actor.
+The system SHALL build a ForgeFed `Push` activity when commits are received on a `PUBLIC` repository
+over either Git transport (smart HTTP or SSH) and federation is enabled. The activity SHALL describe
+the updated ref, the previous and new commit ids, and the newly received commits, attributed to the
+pusher's Person actor.
 
 #### Scenario: Push over HTTP emits a Push activity
 
