@@ -188,6 +188,45 @@ class WebUiTest
 	}
 
 	@Test
+	void repositoryOverviewShowsSidebarLatestCommitAndCounts() throws Exception
+	{
+		User owner = persistUser("ui-iris-" + unique());
+		Repository repo = service.create(owner, "overview", Repository.Visibility.PUBLIC, "demo repo");
+		GitTestSeeder.seed(service.repositoryPath(repo),
+			Map.of("a.txt", "a\n".getBytes(StandardCharsets.UTF_8)), 3);
+
+		given().when().get("/repos/" + owner.username + "/overview")
+			.then().statusCode(200)
+			.body(containsString("class=\"repo-side\""))
+			.body(containsString("class=\"repo-nav\""))
+			.body(containsString("class=\"commitrow\""))
+			.body(containsString("commit 3"))
+			.body(containsString("<b>3</b> commits"));
+	}
+
+	@Test
+	void repositoryOverviewClonesViaDialogNotHeaderPill() throws Exception
+	{
+		User owner = persistUser("ui-jane-" + unique());
+		Repository repo = service.create(owner, "clonedialog", Repository.Visibility.PUBLIC, "demo repo");
+		GitTestSeeder.seed(service.repositoryPath(repo),
+			Map.of("a.txt", "a\n".getBytes(StandardCharsets.UTF_8)));
+
+		given().when().get("/repos/" + owner.username + "/clonedialog")
+			.then().statusCode(200)
+			// clone moved into a dialog opened by a button...
+			.body(containsString("data-open-dialog=\"clone-dialog\""))
+			.body(containsString("id=\"clone-dialog\""))
+			// ...with both protocols selectable...
+			.body(containsString("git clone "))
+			.body(containsString("/git/" + owner.username + "/clonedialog.git"))
+			.body(containsString("ssh://git@"))
+			// ...and no longer pinned in the header topbar or sidebar
+			.body(not(containsString("class=\"clonecmd\"")))
+			.body(not(containsString("class=\"clone-urls\"")));
+	}
+
+	@Test
 	@TestSecurity(user = "ui-mallory")
 	void privateRepositoryHiddenFromStranger() throws Exception
 	{

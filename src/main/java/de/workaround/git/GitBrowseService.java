@@ -199,6 +199,29 @@ public class GitBrowseService
 		}
 	}
 
+	public int commitCount(Path barePath, String ref)
+	{
+		try (Repository repo = open(barePath); RevWalk revWalk = new RevWalk(repo))
+		{
+			RevCommit start = resolveCommit(repo, revWalk, ref);
+			if (start == null)
+			{
+				return 0;
+			}
+			revWalk.markStart(start);
+			int count = 0;
+			for (RevCommit ignored : revWalk)
+			{
+				count++;
+			}
+			return count;
+		}
+		catch (IOException e)
+		{
+			throw new UncheckedIOException(e);
+		}
+	}
+
 	public List<BranchInfo> branches(Path barePath)
 	{
 		String defaultBranch = defaultBranch(barePath);

@@ -3,6 +3,8 @@ package de.workaround.web;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 
 import de.workaround.account.CurrentUser;
@@ -39,7 +41,8 @@ public class RepositoryResource
 	{
 		static native TemplateInstance overview(Repository repo, boolean owner, boolean empty, String defaultBranch,
 			List<GitBrowseService.TreeEntry> entries, String httpUrl, String sshUrl, boolean loggedIn,
-			boolean pinned);
+			boolean pinned, GitBrowseService.CommitInfo latestCommit, String latestCommitAge, int commitCount,
+			int branchCount, int tagCount);
 
 		static native TemplateInstance tree(Repository repo, String ref, String path,
 			List<GitBrowseService.TreeEntry> entries);
@@ -88,8 +91,55 @@ public class RepositoryResource
 		boolean isOwner = user != null && user.id.equals(repo.owner.id);
 		boolean loggedIn = user != null;
 		boolean pinned = loggedIn && pinService.isPinned(user, repo);
+		GitBrowseService.CommitInfo latestCommit = empty ? null
+			: browse.commits(path, defaultBranch, 0, 1)
+				.filter(commitPage -> !commitPage.commits().isEmpty())
+				.map(commitPage -> commitPage.commits().get(0))
+				.orElse(null);
+		String latestCommitAge = latestCommit == null ? null : relativeAge(latestCommit.date());
+		int commitCount = empty ? 0 : browse.commitCount(path, defaultBranch);
+		int branchCount = browse.branches(path).size();
+		int tagCount = browse.tags(path).size();
 		return Templates.overview(repo, isOwner, empty, defaultBranch, entries, httpUrl(repo), sshUrl(repo),
-			loggedIn, pinned);
+			loggedIn, pinned, latestCommit, latestCommitAge, commitCount, branchCount, tagCount);
+	}
+
+	private static String relativeAge(Instant when)
+	{
+		Duration elapsed = Duration.between(when, Instant.now());
+		if (elapsed.isNegative())
+		{
+			elapsed = Duration.ZERO;
+		}
+		long days = elapsed.toDays();
+		if (days >= 365)
+		{
+			return plural(days / 365, "year");
+		}
+		if (days >= 30)
+		{
+			return plural(days / 30, "month");
+		}
+		if (days >= 1)
+		{
+			return plural(days, "day");
+		}
+		long hours = elapsed.toHours();
+		if (hours >= 1)
+		{
+			return plural(hours, "hour");
+		}
+		long minutes = elapsed.toMinutes();
+		if (minutes >= 1)
+		{
+			return plural(minutes, "minute");
+		}
+		return "just now";
+	}
+
+	private static String plural(long count, String unit)
+	{
+		return count + " " + unit + (count == 1 ? "" : "s") + " ago";
 	}
 
 	@GET

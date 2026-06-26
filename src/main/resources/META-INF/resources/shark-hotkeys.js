@@ -62,4 +62,17 @@
             dialog.showModal();
         }
     });
+
+    // Generic dialog opener: [data-open-dialog="id"] shows the matching <dialog> as a modal.
+    document.addEventListener("click", function (event) {
+        var trigger = event.target.closest("[data-open-dialog]");
+        if (!trigger) {
+            return;
+        }
+        var target = document.getElementById(trigger.getAttribute("data-open-dialog"));
+        if (target && typeof target.showModal === "function") {
+            event.preventDefault();
+            target.showModal();
+        }
+    });
 })();

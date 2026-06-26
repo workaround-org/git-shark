@@ -613,20 +613,6 @@ pre code {
     border-color: var(--accent);
 }
 
-/* clone command pill */
-
-.clonecmd {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    font: 500 12.5px/1 var(--mono);
-    color: var(--muted);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 8px 14px;
-}
-
 /* dashboard */
 
 .dashboard-section {
@@ -704,4 +690,387 @@ dialog#hotkey-help kbd {
     border: 1px solid var(--border);
     border-radius: 5px;
     padding: 2px 6px;
+}
+
+/* repo overview — two-column sidebar + main */
+
+.repo-layout {
+    display: grid;
+    grid-template-columns: 256px 1fr;
+    gap: 40px;
+}
+
+.repo-side .owner {
+    font: 500 13px/1 var(--mono);
+    color: var(--muted);
+}
+
+.repo-side .repo-name {
+    margin: 6px 0 12px;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: var(--ink);
+}
+
+.repo-side .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font: 500 11px/1 var(--mono);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--accent-deep);
+    background: var(--accent-soft);
+    border-radius: 999px;
+    padding: 5px 10px;
+}
+
+.repo-side .tag .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+}
+
+.repo-side .tag.tag-private {
+    color: var(--attention);
+    background: var(--attention-bg);
+}
+
+.repo-side .tag.tag-private .dot {
+    background: var(--attention);
+}
+
+.repo-side .desc {
+    margin: 16px 0 14px;
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.repo-side .rule {
+    height: 1px;
+    background: var(--border-soft);
+    margin: 18px 0;
+}
+
+.repo-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.repo-nav a {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 14px;
+    position: relative;
+    transition: background .12s, color .12s;
+}
+
+.repo-nav a:hover {
+    background: var(--surface);
+    color: var(--ink);
+    text-decoration: none;
+}
+
+.repo-nav a .g {
+    width: 18px;
+    text-align: center;
+    color: var(--faint);
+    font-size: 15px;
+}
+
+.repo-nav a .ct {
+    margin-left: auto;
+    font: 500 12px/1 var(--mono);
+    color: var(--faint);
+}
+
+.repo-nav a.active {
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 600;
+    box-shadow: 0 0 0 1px var(--border);
+}
+
+.repo-nav a.active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 9px;
+    bottom: 9px;
+    width: 3px;
+    border-radius: 3px;
+    background: var(--accent);
+}
+
+.repo-nav a.active .g {
+    color: var(--accent);
+}
+
+.repo-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.repo-actions .btn {
+    flex: 1;
+    justify-content: center;
+}
+
+.btn-clone {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font: 600 13px/1 var(--font);
+    color: #fff;
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 9px 14px;
+    cursor: pointer;
+}
+
+.btn-clone:hover {
+    background: var(--accent-deep);
+    border-color: var(--accent-deep);
+}
+
+.btn-clone .g {
+    font: 500 14px/1 var(--mono);
+}
+
+/* clone dialog */
+
+.clone-dialog {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--ink);
+    padding: var(--s4);
+    width: min(440px, 92vw);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .25);
+}
+
+.clone-dialog::backdrop {
+    background: rgba(0, 0, 0, .45);
+}
+
+.clone-dialog h2 {
+    margin: 0 0 var(--s3);
+    font-size: 18px;
+}
+
+.clone-close {
+    float: right;
+    margin: -4px -4px 0 0;
+}
+
+.clone-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: var(--s2);
+}
+
+.clone-dialog > input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.clone-tabs label {
+    font: 600 12px/1 var(--mono);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 7px 16px;
+    cursor: pointer;
+}
+
+#clone-https:checked ~ .clone-tabs label[for="clone-https"],
+#clone-ssh:checked ~ .clone-tabs label[for="clone-ssh"] {
+    color: #fff;
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.clone-url {
+    display: none;
+    overflow-x: auto;
+    white-space: nowrap;
+    font: 500 12.5px/1.4 var(--mono);
+    background: var(--canvas);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+}
+
+#clone-https:checked ~ .url-https,
+#clone-ssh:checked ~ .url-ssh {
+    display: block;
+}
+
+/* main column */
+
+.branchbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.branchsel {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font: 600 14px/1 var(--font);
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 9px 14px;
+}
+
+.branchsel:hover {
+    text-decoration: none;
+    border-color: var(--border-strong);
+}
+
+.branchsel .g {
+    color: var(--accent);
+}
+
+.branchsel .car {
+    color: var(--faint);
+    font-size: 11px;
+}
+
+.branchbar .meta {
+    font: 500 13px/1 var(--mono);
+    color: var(--muted);
+}
+
+.branchbar .meta b {
+    color: var(--ink);
+    font-weight: 600;
+}
+
+.commitrow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: var(--accent-soft);
+    border-bottom: 1px solid var(--border);
+    color: var(--ink);
+}
+
+.commitrow:hover {
+    text-decoration: none;
+}
+
+.commitrow .av {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font: 700 12px/1 var(--font);
+    text-transform: uppercase;
+    flex: none;
+}
+
+.commitrow .who {
+    font-weight: 600;
+}
+
+.commitrow .msg {
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.commitrow .hash {
+    margin-left: auto;
+    font: 500 12.5px/1 var(--mono);
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.files {
+    display: flex;
+    flex-direction: column;
+}
+
+.frow {
+    display: flex;
+    align-items: center;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border-soft);
+    color: inherit;
+    transition: background .1s;
+}
+
+.frow:last-child {
+    border-bottom: none;
+}
+
+.frow:hover {
+    background: var(--accent-soft);
+    text-decoration: none;
+}
+
+.frow .fname {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-width: 0;
+}
+
+.frow .fname .g {
+    width: 18px;
+    text-align: center;
+    font-size: 15px;
+    color: var(--faint);
+    flex: none;
+}
+
+.frow .fname .g.dir {
+    color: var(--accent);
+}
+
+.frow .fname .n {
+    font: 500 14px/1 var(--mono);
+    color: var(--ink);
+    white-space: nowrap;
+}
+
+.frow:hover .fname .n {
+    color: var(--accent-deep);
+}
+
+.danger-zone {
+    margin-top: var(--s6);
+}
+
+@media (max-width: 760px) {
+    .repo-layout {
+        grid-template-columns: 1fr;
+        gap: 28px;
+    }
 }

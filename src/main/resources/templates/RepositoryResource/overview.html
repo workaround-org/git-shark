@@ -1,47 +1,98 @@
 {#include layout}
 {#title}{repo.owner.username}/{repo.name} – git-shark{/title}
-<h1>{repo.owner.username}/{repo.name} <small>({repo.visibility})</small></h1>
-{#if repo.description}
-<p>{repo.description}</p>
-{/if}
-<p>
-    Clone: <code>{httpUrl}</code> &middot; <code>{sshUrl}</code>
-</p>
-{#if loggedIn}
-<form class="inline" method="post" action="/repos/{repo.owner.username}/{repo.name}/{#if pinned}unpin{#else}pin{/if}">
-    <input type="hidden" name="redirect" value="/repos/{repo.owner.username}/{repo.name}">
-    <button class="btn-icon{#if pinned} pinned{/if}" type="submit" title="{#if pinned}Unpin{#else}Pin{/if} repository" aria-label="{#if pinned}Unpin{#else}Pin{/if} repository">
-        <svg viewBox="0 0 24 24" fill="{#if pinned}currentColor{#else}none{/if}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
-    </button>
-</form>
-{/if}
-{#if empty}
-<h2>Quick start</h2>
-<p>This repository is empty. Push an existing repository:</p>
-<pre>git remote add origin {httpUrl}
+
+<div class="repo-layout">
+
+    <aside class="repo-side">
+        <div class="owner">{repo.owner.username} /</div>
+        <div class="repo-name">{repo.name}</div>
+        <span class="tag{#if repo.visibility.name() == 'PRIVATE'} tag-private{/if}"><span class="dot"></span> {repo.visibility.name()}</span>
+        {#if repo.description}
+        <p class="desc">{repo.description}</p>
+        {/if}
+        <div class="repo-actions">
+            <button type="button" class="btn-clone" data-open-dialog="clone-dialog">
+                <span class="g">⤓</span> Clone
+            </button>
+            {#if loggedIn}
+            <form class="inline" method="post" action="/repos/{repo.owner.username}/{repo.name}/{#if pinned}unpin{#else}pin{/if}">
+                <input type="hidden" name="redirect" value="/repos/{repo.owner.username}/{repo.name}">
+                <button class="btn-icon{#if pinned} pinned{/if}" type="submit" title="{#if pinned}Unpin{#else}Pin{/if} repository" aria-label="{#if pinned}Unpin{#else}Pin{/if} repository">
+                    <svg viewBox="0 0 24 24" fill="{#if pinned}currentColor{#else}none{/if}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
+                </button>
+            </form>
+            {/if}
+        </div>
+        <div class="rule"></div>
+        <nav class="repo-nav">
+            <a class="active" href="/repos/{repo.owner.username}/{repo.name}"><span class="g">⌗</span> Code</a>
+            {#if !empty}
+            <a href="/repos/{repo.owner.username}/{repo.name}/commits/{defaultBranch}"><span class="g">◴</span> Commits <span class="ct">{commitCount}</span></a>
+            {/if}
+            <a href="/repos/{repo.owner.username}/{repo.name}/branches"><span class="g">⑂</span> Branches <span class="ct">{branchCount}</span></a>
+            <a href="/repos/{repo.owner.username}/{repo.name}/branches"><span class="g">⬡</span> Tags <span class="ct">{tagCount}</span></a>
+        </nav>
+    </aside>
+
+    <section class="repo-main">
+        {#if empty}
+        <h2>Quick start</h2>
+        <p>This repository is empty. Push an existing repository:</p>
+        <pre>git remote add origin {httpUrl}
 git push -u origin main</pre>
-{#else}
-<p>
-    <a href="/repos/{repo.owner.username}/{repo.name}/commits/{defaultBranch}">Commits</a> &middot;
-    <a href="/repos/{repo.owner.username}/{repo.name}/branches">Branches &amp; tags</a>
-</p>
-<table>
-    <tr><th>Name</th></tr>
-    {#for entry in entries}
-    <tr>
-        <td>
-            {#if entry.directory}&#x1F4C1;{/if}
-            <a href="/repos/{repo.owner.username}/{repo.name}/tree/{defaultBranch}/{entry.path}">{entry.name}</a>
-        </td>
-    </tr>
-    {/for}
-</table>
-{/if}
-{#if owner}
-<h2>Danger zone</h2>
-<form method="post" action="/repos/{repo.owner.username}/{repo.name}/delete">
-    <p><label>Type the repository name to confirm deletion <input name="confirm"></label></p>
-    <button class="btn btn-danger">Delete repository</button>
-</form>
-{/if}
+        {#else}
+        <div class="branchbar">
+            <a class="branchsel" href="/repos/{repo.owner.username}/{repo.name}/branches"><span class="g">⑂</span> {defaultBranch} <span class="car">▾</span></a>
+            <span class="meta"><b>{commitCount}</b> commits · <b>{entries.size()}</b> entries</span>
+        </div>
+
+        <div class="panel">
+            {#if latestCommit}
+            <a class="commitrow" href="/repos/{repo.owner.username}/{repo.name}/commits/{defaultBranch}">
+                <span class="av">{latestCommit.author.charAt(0)}</span>
+                <span class="who">{latestCommit.author}</span>
+                <span class="msg">{latestCommit.message}</span>
+                <span class="hash">{latestCommit.shortId} · {latestCommitAge}</span>
+            </a>
+            {/if}
+            <div class="files">
+                {#for entry in entries}
+                <a class="frow" href="/repos/{repo.owner.username}/{repo.name}/tree/{defaultBranch}/{entry.path}">
+                    <span class="fname">
+                        <span class="g{#if entry.directory} dir{/if}">{#if entry.directory}▸{#else}≡{/if}</span>
+                        <span class="n">{entry.name}</span>
+                    </span>
+                </a>
+                {/for}
+            </div>
+        </div>
+        {/if}
+
+        {#if owner}
+        <div class="danger-zone">
+            <h2>Danger zone</h2>
+            <form method="post" action="/repos/{repo.owner.username}/{repo.name}/delete">
+                <p><label>Type the repository name to confirm deletion <input name="confirm"></label></p>
+                <button class="btn btn-danger">Delete repository</button>
+            </form>
+        </div>
+        {/if}
+    </section>
+
+</div>
+
+<dialog id="clone-dialog" class="clone-dialog">
+    <form method="dialog" class="clone-close">
+        <button class="btn-icon" aria-label="Close">✕</button>
+    </form>
+    <h2>Clone repository</h2>
+    <input type="radio" name="clone-proto" id="clone-https" checked>
+    <input type="radio" name="clone-proto" id="clone-ssh">
+    <div class="clone-tabs">
+        <label for="clone-https">HTTPS</label>
+        <label for="clone-ssh">SSH</label>
+    </div>
+    <code class="clone-url url-https">git clone {httpUrl}</code>
+    <code class="clone-url url-ssh">git clone {sshUrl}</code>
+</dialog>
 {/include}
