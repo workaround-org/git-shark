@@ -29,4 +29,18 @@ class OidcPkceConfigTest {
 				.orElse("");
 		assertTrue(secret.length() >= 32, "state-secret must be >= 32 chars; was " + secret.length());
 	}
+
+	/**
+	 * RP-Initiated Logout must NOT be configured: kanidm does not advertise an end_session_endpoint, and
+	 * when quarkus.oidc.logout.path is set Quarkus validates that endpoint at startup and aborts boot if
+	 * it is missing. Leaving logout.path unset keeps the app booting (local session logout only).
+	 */
+	@Test
+	void rpInitiatedLogoutIsNotConfigured() {
+		String logoutPath = ConfigProvider.getConfig()
+				.getOptionalValue("quarkus.oidc.logout.path", String.class)
+				.orElse("");
+		assertTrue(logoutPath.isEmpty(),
+				"quarkus.oidc.logout.path must be unset (kanidm has no end_session_endpoint); was " + logoutPath);
+	}
 }

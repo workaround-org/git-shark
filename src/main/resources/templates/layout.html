@@ -18,7 +18,7 @@
         {#insert nav}
         <a href="/settings/keys">SSH keys</a>
         <a href="/settings/tokens">Access tokens</a>
-        <a href="/logout">Logout</a>
+        <form class="logout" method="post" action="/logout"><button type="submit">Logout</button></form>
         {/}
     </nav>
 </header>

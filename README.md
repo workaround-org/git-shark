@@ -15,7 +15,7 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
 - Clone/fetch/push over `ssh://git@<host>:2222/<owner>/<repo>.git`
   - public-key authentication only; keys managed per user in the UI
 - Web UI: landing page with login CTA for visitors (`/`), repository list for authenticated users (`/`), public repository browse at `/explore`, file/tree browser, commit log (paginated), branches & tags
-- OIDC login (authorization code flow) via `GET /login`; users provisioned on first login
+- OIDC login (authorization code flow) via `GET /login`; users provisioned on first login. Logout is local-session only via `POST /logout` (the kanidm provider advertises no `end_session_endpoint`, so RP-Initiated Logout is disabled)
 - Single access policy on all paths: owner read/write, public world-readable, private owner-only
 - **Federation (ForgeFed / ActivityPub)** — *opt-in, off by default.* Public repositories are
   exposed as ForgeFed `Repository` actors that remote instances can follow and receive `Push`
