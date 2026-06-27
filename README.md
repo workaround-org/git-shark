@@ -14,8 +14,8 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
   - push and private read authenticate with **personal access tokens** (HTTP Basic password)
 - Clone/fetch/push over `ssh://git@<host>:2222/<owner>/<repo>.git`
   - public-key authentication only; keys managed per user in the UI
-- Web UI: landing page with login CTA for visitors (`/`), repository list for authenticated users (`/`), public repository browse at `/explore`, file/tree browser, commit log (paginated), branches & tags
-- OIDC login (authorization code flow) via `GET /login`; users provisioned on first login. Logout is local-session only via `POST /logout` (the kanidm provider advertises no `end_session_endpoint`, so RP-Initiated Logout is disabled)
+- Web UI: landing page with login CTA for visitors (`/`), repository list for authenticated users (`/`), public repository browse at `/explore`, file/tree browser, commit log (paginated), branches & tags, one-time handle selection (`/onboarding`), profile settings (`/settings/profile`)
+- OIDC login (authorization code flow) via `GET /login`; on first login the user account is created without a username and the browser is redirected to `/onboarding`, where the user picks a URL-safe handle (`^[a-z0-9][a-z0-9-]{0,38}$`, unique). The chosen handle — not the OIDC `preferred_username` claim (which is an SPN form in kanidm and not URL-safe) — is used in all repo, SSH, ActivityPub, and webfinger URLs. The `name` claim becomes an editable display name; both can be changed later at `/settings/profile`. A request filter blocks all app pages until a handle is chosen. Logout is local-session only via `POST /logout` (the kanidm provider advertises no `end_session_endpoint`, so RP-Initiated Logout is disabled)
 - Single access policy on all paths: owner read/write, public world-readable, private owner-only
 - **Federation (ForgeFed / ActivityPub)** — *opt-in, off by default.* Public repositories are
   exposed as ForgeFed `Repository` actors that remote instances can follow and receive `Push`

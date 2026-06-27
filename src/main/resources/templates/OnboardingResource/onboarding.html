@@ -1,0 +1,17 @@
+{#include layout}
+{#title}Choose your username – git-shark{/title}
+{#nav}{/nav}
+<h1>Welcome to git-shark</h1>
+<p>Pick a username. It is used in your repository, clone and federation URLs, so it must be URL-safe:
+    lowercase letters, digits and hyphens, starting with a letter or digit.</p>
+{#if error}
+<p class="error">{error}</p>
+{/if}
+<form method="post" action="/onboarding">
+    <p><label>Username
+        <input class="mono" name="username" required pattern="[a-z0-9][a-z0-9-]*" maxlength="39"
+               value="{suggestedHandle}" autofocus></label></p>
+    <p><label>Display name <input name="displayName" value="{displayName ?: ''}"></label></p>
+    <button class="btn btn-primary">Continue</button>
+</form>
+{/include}

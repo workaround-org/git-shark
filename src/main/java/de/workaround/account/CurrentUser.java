@@ -50,22 +50,12 @@ public class CurrentUser
 		if (identity.getPrincipal() instanceof JsonWebToken jwt)
 		{
 			String sub = jwt.getSubject() != null ? jwt.getSubject() : name;
-			String username = firstNonNull(jwt.getClaim("preferred_username"), name, sub);
-			return provisioning.provision(sub, username, jwt.getClaim("name"), jwt.getClaim("email"));
+			// The handle is no longer taken from preferred_username: a new user picks a URL-safe one
+			// on the onboarding page. The claim is passed only for the dev adopt-username path.
+			return provisioning.provisionFromOidc(sub, jwt.getClaim("preferred_username"), jwt.getClaim("name"),
+				jwt.getClaim("email"));
 		}
 		return provisioning.provision(name, name, null, null);
-	}
-
-	private static String firstNonNull(String... values)
-	{
-		for (String value : values)
-		{
-			if (value != null && !value.isBlank())
-			{
-				return value;
-			}
-		}
-		return null;
 	}
 
 }

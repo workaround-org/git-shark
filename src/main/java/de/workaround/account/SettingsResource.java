@@ -32,6 +32,8 @@ public class SettingsResource
 		static native TemplateInstance tokens(List<AccessToken> tokens);
 
 		static native TemplateInstance tokenCreated(String plaintext);
+
+		static native TemplateInstance profile(String username, String displayName, String error);
 	}
 
 	@Inject
@@ -42,6 +44,37 @@ public class SettingsResource
 
 	@Inject
 	AccessTokenService tokenService;
+
+	@Inject
+	UsernameService usernames;
+
+	@GET
+	@Path("/profile")
+	public TemplateInstance profile()
+	{
+		de.workaround.model.User user = currentUser.require();
+		return Templates.profile(user.username, user.displayName, null);
+	}
+
+	@POST
+	@Path("/profile")
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	public Response updateProfile(@FormParam("username") String username, @FormParam("displayName") String displayName)
+	{
+		de.workaround.model.User user = currentUser.require();
+		try
+		{
+			usernames.choose(user, username);
+			usernames.setDisplayName(user, displayName);
+			return Response.seeOther(URI.create("/settings/profile")).build();
+		}
+		catch (InvalidUsernameException | UsernameTakenException e)
+		{
+			return Response.status(Response.Status.BAD_REQUEST)
+				.entity(Templates.profile(username, displayName, e.getMessage()))
+				.build();
+		}
+	}
 
 	@GET
 	@Path("/keys")

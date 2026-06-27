@@ -26,6 +26,8 @@ public class User implements PanacheEntity.Managed
 
 	public String oidcSub;
 
+	// URL-safe handle chosen by the user during onboarding. Null/blank means onboarding is still
+	// pending: the user has logged in but not yet picked a handle (see OnboardingFilter).
 	public String username;
 
 	public String displayName;
