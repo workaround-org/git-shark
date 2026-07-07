@@ -1,0 +1,7 @@
+{#if tabRef}
+<nav class="tabs">
+    <a class="tab{#if activeTab == 'files'} active{/if}" href="/repos/{repo.owner.username}/{repo.name}/tree/{tabRef}/">Files</a>
+    <a class="tab{#if activeTab == 'commits'} active{/if}" href="/repos/{repo.owner.username}/{repo.name}/commits/{tabRef}">Commits</a>
+    <a class="tab{#if activeTab == 'branches'} active{/if}" href="/repos/{repo.owner.username}/{repo.name}/branches">Branches</a>
+</nav>
+{/if}

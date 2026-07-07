@@ -268,6 +268,80 @@ class WebUiTest
 	}
 
 	@Test
+	void repositoryPagesRenderTabsWithActiveSection() throws Exception
+	{
+		User owner = persistUser("ui-tabs-" + unique());
+		Repository repo = service.create(owner, "tabbed", Repository.Visibility.PUBLIC, null);
+		GitTestSeeder.seed(service.repositoryPath(repo),
+			Map.of("a.txt", "a\n".getBytes(StandardCharsets.UTF_8)));
+
+		String base = "/repos/" + owner.username + "/tabbed";
+
+		given().when().get(base + "/tree/main")
+			.then().statusCode(200)
+			.body(containsString("class=\"tabs\""))
+			.body(containsString("class=\"tab active\" href=\"" + base + "/tree/main/\">Files"))
+			.body(containsString("class=\"tab\" href=\"" + base + "/commits/main\">Commits"))
+			.body(containsString("class=\"tab\" href=\"" + base + "/branches\">Branches"));
+
+		given().when().get(base + "/tree/main/a.txt")
+			.then().statusCode(200)
+			.body(containsString("class=\"tab active\" href=\"" + base + "/tree/main/\">Files"));
+
+		given().when().get(base + "/commits/main")
+			.then().statusCode(200)
+			.body(containsString("class=\"tab active\" href=\"" + base + "/commits/main\">Commits"));
+
+		given().when().get(base + "/branches")
+			.then().statusCode(200)
+			.body(containsString("class=\"tab active\" href=\"" + base + "/branches\">Branches"));
+	}
+
+	@Test
+	void tabLinksPreserveSelectedRef() throws Exception
+	{
+		User owner = persistUser("ui-kate-" + unique());
+		Repository repo = service.create(owner, "refkeep", Repository.Visibility.PUBLIC, null);
+		GitTestSeeder.seed(service.repositoryPath(repo),
+			Map.of("a.txt", "a\n".getBytes(StandardCharsets.UTF_8)));
+		try (org.eclipse.jgit.api.Git git = org.eclipse.jgit.api.Git.open(service.repositoryPath(repo).toFile()))
+		{
+			git.branchCreate().setName("feature").setStartPoint("main").call();
+		}
+
+		String base = "/repos/" + owner.username + "/refkeep";
+		given().when().get(base + "/tree/feature")
+			.then().statusCode(200)
+			.body(containsString("class=\"tab active\" href=\"" + base + "/tree/feature/\">Files"))
+			.body(containsString("href=\"" + base + "/commits/feature\">Commits"));
+	}
+
+	@Test
+	@io.quarkus.test.security.TestSecurity(user = "ui-nojs")
+	void formsWorkWithoutJavaScriptViaStandardPost() throws Exception
+	{
+		persistUser("ui-nojs");
+		String name = "nojs-" + unique();
+
+		// a plain form-encoded POST (what a browser sends with JS disabled) must complete the flow
+		given().contentType("application/x-www-form-urlencoded")
+			.formParam("name", name)
+			.formParam("visibility", "PUBLIC")
+			.formParam("description", "created without JS")
+			.when().redirects().follow(false).post("/repos")
+			.then().statusCode(org.hamcrest.Matchers.anyOf(
+				org.hamcrest.Matchers.is(302), org.hamcrest.Matchers.is(303)));
+
+		given().when().get("/repos/ui-nojs/" + name)
+			.then().statusCode(200);
+
+		// scripting is enhancement-only: loaded deferred, no inline handlers required for rendering
+		given().when().get("/")
+			.then().statusCode(200)
+			.body(containsString("<script defer src=\"/shark-hotkeys.js\">"));
+	}
+
+	@Test
 	void branchesPageMarksDefaultBranch() throws Exception
 	{
 		User owner = persistUser("ui-fred-" + unique());

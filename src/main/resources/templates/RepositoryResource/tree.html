@@ -1,6 +1,7 @@
 {#include layout}
 {#title}{path ?: '/'} at {ref} – {repo.name}{/title}
 <h1><a href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></h1>
+{#include RepositoryResource/tabs repo=repo tabRef=ref activeTab=activeTab /}
 <nav class="breadcrumb" aria-label="Path">
     {#for crumb in crumbs}
     {#if crumb.href}<a href="{crumb.href}">{crumb.label}</a>{#else}<span class="current">{crumb.label}</span>{/if}

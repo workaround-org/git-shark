@@ -15,5 +15,5 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
-      - name: Native build
-        run: ./mvnw -B package -Dnative -DskipTests -Dquarkus.native.container-build=true
+      - name: Native build & integration tests
+        run: ./mvnw -B verify -Dnative -Dquarkus.native.container-build=true

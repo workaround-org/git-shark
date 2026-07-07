@@ -52,6 +52,21 @@ class SmokeIT
 	}
 
 	@Test
+	void designSystemAssetsAreServed()
+	{
+		given()
+			.when().get("/shark.css")
+			.then()
+			.statusCode(200)
+			.body(org.hamcrest.CoreMatchers.containsString(":root"));
+
+		given()
+			.when().get("/shark-hotkeys.js")
+			.then()
+			.statusCode(200);
+	}
+
+	@Test
 	void sshPortPresentsSshBanner() throws Exception
 	{
 		int port = Integer.getInteger("gitshark.ssh.port", 2222);

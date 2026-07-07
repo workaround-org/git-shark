@@ -1,13 +1,15 @@
 {#include layout}
 {#title}Branches – {repo.name}{/title}
 <h1><a href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></h1>
+<p>Branches and tags</p>
+{#include RepositoryResource/tabs repo=repo tabRef=tabRef activeTab=activeTab /}
 <h2>Branches</h2>
 <table>
     <tr><th>Branch</th><th></th></tr>
     {#for branch in branches}
     <tr>
         <td><a href="/repos/{repo.owner.username}/{repo.name}/tree/{branch.name}/">{branch.name}</a></td>
-        <td>{#if branch.defaultBranch}default{/if}</td>
+        <td>{#if branch.defaultBranch}<span class="badge badge-default">default</span>{/if}</td>
     </tr>
     {/for}
 </table>

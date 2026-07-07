@@ -50,16 +50,16 @@ public class RepositoryResource
 			int branchCount, int tagCount);
 
 		static native TemplateInstance tree(Repository repo, String ref, String path,
-			List<GitBrowseService.TreeEntry> entries, List<Crumb> crumbs);
+			List<GitBrowseService.TreeEntry> entries, List<Crumb> crumbs, String activeTab);
 
 		static native TemplateInstance blob(Repository repo, String ref, String path, boolean binary, String content,
-			String language, List<Crumb> crumbs);
+			String language, List<Crumb> crumbs, String activeTab);
 
 		static native TemplateInstance commits(Repository repo, String ref, List<GitBrowseService.CommitInfo> commits,
-			int page, int prevPage, int nextPage, int size, boolean hasNext);
+			int page, int prevPage, int nextPage, int size, boolean hasNext, String activeTab);
 
 		static native TemplateInstance branches(Repository repo, List<GitBrowseService.BranchInfo> branches,
-			List<String> tags);
+			List<String> tags, String activeTab, String tabRef);
 	}
 
 	@Inject
@@ -167,7 +167,7 @@ public class RepositoryResource
 		Repository repo = requireReadable(owner, name);
 		Path repoPath = service.repositoryPath(repo);
 		return browse.listTree(repoPath, ref, path)
-			.map(entries -> Templates.tree(repo, ref, path, entries, breadcrumbs(repo, ref, path)))
+			.map(entries -> Templates.tree(repo, ref, path, entries, breadcrumbs(repo, ref, path), "files"))
 			.orElseGet(() -> blobView(repo, repoPath, ref, path));
 	}
 
@@ -196,7 +196,7 @@ public class RepositoryResource
 			.commits(service.repositoryPath(repo), ref, boundedPage, boundedSize)
 			.orElseThrow(NotFoundException::new);
 		return Templates.commits(repo, ref, commitPage.commits(), boundedPage, boundedPage - 1, boundedPage + 1,
-			boundedSize, commitPage.hasNext());
+			boundedSize, commitPage.hasNext(), "commits");
 	}
 
 	@GET
@@ -205,7 +205,8 @@ public class RepositoryResource
 	{
 		Repository repo = requireReadable(owner, name);
 		Path path = service.repositoryPath(repo);
-		return Templates.branches(repo, browse.branches(path), browse.tags(path));
+		String tabRef = browse.isEmpty(path) ? null : browse.defaultBranch(path);
+		return Templates.branches(repo, browse.branches(path), browse.tags(path), "branches", tabRef);
 	}
 
 	@POST
@@ -261,7 +262,7 @@ public class RepositoryResource
 		GitBrowseService.BlobView blob = browse.blob(repoPath, ref, path).orElseThrow(NotFoundException::new);
 		String content = blob.binary() ? null : new String(blob.content(), StandardCharsets.UTF_8);
 		String language = blob.binary() ? null : highlightLanguage(path);
-		return Templates.blob(repo, ref, path, blob.binary(), content, language, breadcrumbs(repo, ref, path));
+		return Templates.blob(repo, ref, path, blob.binary(), content, language, breadcrumbs(repo, ref, path), "files");
 	}
 
 	// Extension → highlight.js language id. Every value here MUST have a grammar in the bundled highlight assets

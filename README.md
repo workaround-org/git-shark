@@ -14,7 +14,7 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
   - push and private read authenticate with **personal access tokens** (HTTP Basic password)
 - Clone/fetch/push over `ssh://git@<host>:2222/<owner>/<repo>.git`
   - public-key authentication only; keys managed per user in the UI
-- Web UI: landing page with login CTA for visitors (`/`), repository list for authenticated users (`/`), public repository browse at `/explore`, file/tree browser with self-hosted syntax highlighting (extension-based language detection, falls back to plain text for unknown extensions and binary files), commit log (paginated), branches & tags, one-time handle selection (`/onboarding`), profile settings (`/settings/profile`)
+- Web UI: landing page with login CTA for visitors (`/`), repository list for authenticated users (`/`), public repository browse at `/explore`, file/tree browser with self-hosted syntax highlighting (extension-based language detection, falls back to plain text for unknown extensions and binary files), commit log (paginated), branches & tags, one-time handle selection (`/onboarding`), profile settings (`/settings/profile`). Repository pages share Files / Commits / Branches tab navigation that preserves the selected ref. Keyboard shortcuts are an optional, progressive enhancement (`?` opens a help overlay, `Escape` closes it, `g h` goes home) — every page works fully without JavaScript
 - OIDC login (authorization code flow) via `GET /login`; on first login the user account is created without a username and the browser is redirected to `/onboarding`, where the user picks a URL-safe handle (`^[a-z0-9][a-z0-9-]{0,38}$`, unique). The chosen handle — not the OIDC `preferred_username` claim (which is an SPN form in kanidm and not URL-safe) — is used in all repo, SSH, ActivityPub, and webfinger URLs. The `name` claim becomes an editable display name; both can be changed later at `/settings/profile`. A request filter blocks all app pages until a handle is chosen. Logout is local-session only via `POST /logout` (the kanidm provider advertises no `end_session_endpoint`, so RP-Initiated Logout is disabled)
 - Single access policy on all paths: owner read/write, public world-readable, private owner-only
 - **Federation (ForgeFed / ActivityPub)** — *opt-in, off by default.* Public repositories are
@@ -56,6 +56,7 @@ and pull/merge requests are **not** federated (git-shark has no such features ye
 - The SSH host key is generated on first start and persisted, so the host identity is
   stable across restarts.
 - SSH serves only `git-upload-pack`/`git-receive-pack`; shells and other commands are rejected.
+- UI fonts (Space Grotesk, JetBrains Mono) are self-hosted from the application origin — no CDN or other external requests, so the UI works fully offline/air-gapped.
 
 ## Configuration
 

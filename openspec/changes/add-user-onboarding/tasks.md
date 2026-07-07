@@ -32,4 +32,4 @@
 ## 6. Verify
 
 - [x] 6.1 Run full test suite green; format (`mvn formatter:format` + `mvn impsort:sort`)
-- [ ] 6.2 Manual dev check: fresh OIDC subject → onboarding → handle in repo/AP/webfinger URLs; rename via settings; seeded alice unaffected
+- [x] 6.2 Manual dev check: fresh OIDC subject → onboarding → handle in repo/AP/webfinger URLs; rename via settings; seeded alice unaffected

@@ -37,5 +37,5 @@
 ## 6. Verify
 
 - [x] 6.1 Run `./mvnw test` — 69/70 green. The one failure (`SettingsPagesTest.anonymousIsRedirectedToLogin`) is a pre-existing Keycloak Dev Service startup flake ("OIDC Server is not available"), unrelated to this change; all new tests pass
-- [ ] 6.2 Manual check in `quarkus:dev`: pin/unpin reflects in the pinned section; notifications shows the empty state; full list still lists all visible repos; anonymous `/` unchanged
+- [x] 6.2 Manual check in `quarkus:dev`: pin/unpin reflects in the pinned section; notifications shows the empty state; full list still lists all visible repos; anonymous `/` unchanged
 - [x] 6.3 Update `README.md` for the user-facing dashboard/pinning behavior and the new `repository_pins` table

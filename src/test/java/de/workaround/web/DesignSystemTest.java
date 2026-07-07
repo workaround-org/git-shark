@@ -78,6 +78,76 @@ class DesignSystemTest
 			.body(containsString("/shark-hotkeys.js"));
 	}
 
+	@Test
+	void branchesPageMarksDefaultBranchWithBadge() throws Exception
+	{
+		User owner = persistUser("ds-badge-" + unique());
+		Repository repo = service.create(owner, "ds-branched", Repository.Visibility.PUBLIC, null);
+		de.workaround.git.GitTestSeeder.seed(service.repositoryPath(repo),
+			java.util.Map.of("a.txt", "a\n".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+
+		given().when().get("/repos/" + owner.username + "/ds-branched/branches")
+			.then().statusCode(200)
+			.body(containsString("badge badge-default"));
+	}
+
+	@Test
+	void commitPaginationUsesSecondaryButtons() throws Exception
+	{
+		User owner = persistUser("ds-pager-" + unique());
+		Repository repo = service.create(owner, "ds-paged", Repository.Visibility.PUBLIC, null);
+		de.workaround.git.GitTestSeeder.seed(service.repositoryPath(repo),
+			java.util.Map.of("a.txt", "a\n".getBytes(java.nio.charset.StandardCharsets.UTF_8)), 3);
+
+		String base = "/repos/" + owner.username + "/ds-paged/commits/main";
+
+		given().when().get(base + "?size=2")
+			.then().statusCode(200)
+			.body(containsString("class=\"btn btn-secondary\""))
+			.body(containsString("Older"));
+
+		given().when().get(base + "?size=2&page=1")
+			.then().statusCode(200)
+			.body(containsString("class=\"btn btn-secondary\""))
+			.body(containsString("Newer"));
+	}
+
+	@Test
+	@io.quarkus.test.security.TestSecurity(user = "ds-settings")
+	void settingsPagesUseDesignSystemActionColumns()
+	{
+		persistUser("ds-settings");
+
+		given().when().get("/settings/keys")
+			.then().statusCode(200)
+			.body(containsString("class=\"btn btn-primary\""))
+			.body(containsString("class=\"actions\""));
+
+		given().when().get("/settings/tokens")
+			.then().statusCode(200)
+			.body(containsString("class=\"btn btn-primary\""))
+			.body(containsString("class=\"actions\""));
+	}
+
+	@Test
+	void fontsAreSelfHostedWithoutCdnRequests()
+	{
+		given().when().get("/")
+			.then().statusCode(200)
+			.body(not(containsString("fonts.googleapis.com")))
+			.body(not(containsString("fonts.gstatic.com")));
+
+		given().when().get("/shark.css")
+			.then().statusCode(200)
+			.body(containsString("@font-face"))
+			.body(containsString("/fonts/"));
+
+		given().when().get("/fonts/space-grotesk-latin.woff2")
+			.then().statusCode(200);
+		given().when().get("/fonts/jetbrains-mono-latin.woff2")
+			.then().statusCode(200);
+	}
+
 	private static String unique()
 	{
 		return UUID.randomUUID().toString().substring(0, 8);

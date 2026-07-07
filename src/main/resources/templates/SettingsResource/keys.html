@@ -5,12 +5,12 @@
 <p class="error">{error}</p>
 {/if}
 <table>
-    <tr><th>Title</th><th>Fingerprint</th><th></th></tr>
+    <tr><th>Title</th><th>Fingerprint</th><th class="actions"></th></tr>
     {#for key in keys}
     <tr>
         <td>{key.title}</td>
         <td><code>{key.fingerprint}</code></td>
-        <td>
+        <td class="actions">
             <form class="inline" method="post" action="/settings/keys/{key.id}/delete">
                 <button class="btn btn-danger btn-sm">Remove</button>
             </form>

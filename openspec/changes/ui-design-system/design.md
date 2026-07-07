@@ -62,6 +62,11 @@ Mono", "Cascadia Code", Menlo, Consolas, monospace`. Alternative considered: sel
 on every modern OS with zero payload and zero native-image config; revisit only if the rendered result disappoints.
 This satisfies "self-hosted, no CDN" trivially — there are no font requests at all.
 
+**Addendum (2026-07-07):** the rendered result did disappoint — during implementation the UI adopted Space Grotesk +
+JetBrains Mono, initially via Google Fonts CDN, which violated the "no external font requests" requirement. Resolved by
+self-hosting both families as variable WOFF2 (latin + latin-ext, ~97 KB total) under `META-INF/resources/fonts/` with
+`@font-face` in `shark.css` and OFL license texts alongside. System stacks remain as fallbacks in the font tokens.
+
 ### D4: Tabs are links, active state from a template parameter
 
 The repo templates already render per-section pages; each repository page passes an `activeTab` string into the
