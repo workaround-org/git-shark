@@ -577,6 +577,31 @@ form.inline {
     display: inline;
 }
 
+/* path breadcrumb */
+
+nav.breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 14px;
+    margin: 0 0 var(--s4);
+}
+
+nav.breadcrumb a {
+    color: var(--accent-deep);
+}
+
+nav.breadcrumb .current {
+    color: var(--ink);
+    font-weight: 600;
+}
+
+nav.breadcrumb .sep {
+    color: var(--faint);
+}
+
 /* code */
 
 code, pre {

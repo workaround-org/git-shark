@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -49,10 +50,10 @@ public class RepositoryResource
 			int branchCount, int tagCount);
 
 		static native TemplateInstance tree(Repository repo, String ref, String path,
-			List<GitBrowseService.TreeEntry> entries);
+			List<GitBrowseService.TreeEntry> entries, List<Crumb> crumbs);
 
 		static native TemplateInstance blob(Repository repo, String ref, String path, boolean binary, String content,
-			String language);
+			String language, List<Crumb> crumbs);
 
 		static native TemplateInstance commits(Repository repo, String ref, List<GitBrowseService.CommitInfo> commits,
 			int page, int prevPage, int nextPage, int size, boolean hasNext);
@@ -166,7 +167,7 @@ public class RepositoryResource
 		Repository repo = requireReadable(owner, name);
 		Path repoPath = service.repositoryPath(repo);
 		return browse.listTree(repoPath, ref, path)
-			.map(entries -> Templates.tree(repo, ref, path, entries))
+			.map(entries -> Templates.tree(repo, ref, path, entries, breadcrumbs(repo, ref, path)))
 			.orElseGet(() -> blobView(repo, repoPath, ref, path));
 	}
 
@@ -260,7 +261,7 @@ public class RepositoryResource
 		GitBrowseService.BlobView blob = browse.blob(repoPath, ref, path).orElseThrow(NotFoundException::new);
 		String content = blob.binary() ? null : new String(blob.content(), StandardCharsets.UTF_8);
 		String language = blob.binary() ? null : highlightLanguage(path);
-		return Templates.blob(repo, ref, path, blob.binary(), content, language);
+		return Templates.blob(repo, ref, path, blob.binary(), content, language, breadcrumbs(repo, ref, path));
 	}
 
 	// Extension → highlight.js language id. Every value here MUST have a grammar in the bundled highlight assets
@@ -329,6 +330,39 @@ public class RepositoryResource
 		languages.add("dockerfile");
 		languages.add("makefile");
 		return languages;
+	}
+
+	/** A single segment of the path breadcrumb. {@code href} is {@code null} for the current location (rendered plain). */
+	public record Crumb(String label, String href)
+	{
+	}
+
+	/**
+	 * Builds the path breadcrumb for a tree or blob view: the ref, then one crumb per path segment. Every crumb links
+	 * to its directory tree except the last, which is the current location and is rendered as plain text.
+	 */
+	private static List<Crumb> breadcrumbs(Repository repo, String ref, String path)
+	{
+		String treeBase = "/repos/" + repo.owner.username + "/" + repo.name + "/tree/" + ref;
+		List<Crumb> crumbs = new ArrayList<>();
+		crumbs.add(new Crumb(ref, treeBase));
+		if (path != null && !path.isEmpty())
+		{
+			StringBuilder cumulative = new StringBuilder();
+			for (String segment : path.split("/"))
+			{
+				if (segment.isEmpty())
+				{
+					continue;
+				}
+				cumulative.append('/').append(segment);
+				crumbs.add(new Crumb(segment, treeBase + cumulative));
+			}
+		}
+		// the current location is not a link
+		Crumb current = crumbs.get(crumbs.size() - 1);
+		crumbs.set(crumbs.size() - 1, new Crumb(current.label(), null));
+		return crumbs;
 	}
 
 	private Repository requireReadable(String owner, String name)

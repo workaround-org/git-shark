@@ -1,16 +1,22 @@
 {#include layout}
 {#title}{path ?: '/'} at {ref} – {repo.name}{/title}
 <h1><a href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></h1>
-<p><code>{ref}</code> &middot; /{path}</p>
-<table>
-    <tr><th>Name</th></tr>
-    {#for entry in entries}
-    <tr>
-        <td>
-            {#if entry.directory}&#x1F4C1;{/if}
-            <a href="/repos/{repo.owner.username}/{repo.name}/tree/{ref}/{entry.path}">{entry.name}</a>
-        </td>
-    </tr>
+<nav class="breadcrumb" aria-label="Path">
+    {#for crumb in crumbs}
+    {#if crumb.href}<a href="{crumb.href}">{crumb.label}</a>{#else}<span class="current">{crumb.label}</span>{/if}
+    {#if crumb_hasNext}<span class="sep">/</span>{/if}
     {/for}
-</table>
+</nav>
+<div class="panel">
+    <div class="files">
+        {#for entry in entries}
+        <a class="frow" href="/repos/{repo.owner.username}/{repo.name}/tree/{ref}/{entry.path}">
+            <span class="fname">
+                <span class="g{#if entry.directory} dir{/if}">{#if entry.directory}▸{#else}≡{/if}</span>
+                <span class="n">{entry.name}</span>
+            </span>
+        </a>
+        {/for}
+    </div>
+</div>
 {/include}

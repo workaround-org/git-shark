@@ -180,6 +180,49 @@ class WebUiTest
 		}
 	}
 
+	@Test
+	void fileAndTreeViewsShowClickableBreadcrumbPath() throws Exception
+	{
+		User owner = persistUser("ui-jane-" + unique());
+		Repository repo = service.create(owner, "crumbs", Repository.Visibility.PUBLIC, null);
+		GitTestSeeder.seed(service.repositoryPath(repo),
+			Map.of("src/main/java/App.java", "class App {}\n".getBytes(StandardCharsets.UTF_8)));
+
+		String base = "/repos/" + owner.username + "/crumbs";
+
+		// directory view: the ref and each ancestor segment link to their tree; the current dir is not a link
+		given().when().get(base + "/tree/main/src/main")
+			.then().statusCode(200)
+			.body(containsString("class=\"breadcrumb\""))
+			.body(containsString("href=\"" + base + "/tree/main\""))
+			.body(containsString("href=\"" + base + "/tree/main/src\""));
+
+		// file view: clicking the ref jumps to the repo root, clicking a segment jumps into that directory
+		given().when().get(base + "/tree/main/src/main/java/App.java")
+			.then().statusCode(200)
+			.body(containsString("class=\"breadcrumb\""))
+			.body(containsString("href=\"" + base + "/tree/main\""))
+			.body(containsString("href=\"" + base + "/tree/main/src/main/java\""));
+	}
+
+	@Test
+	void directoryEntriesAreFullyClickableRows() throws Exception
+	{
+		User owner = persistUser("ui-karl-" + unique());
+		Repository repo = service.create(owner, "rows", Repository.Visibility.PUBLIC, null);
+		GitTestSeeder.seed(service.repositoryPath(repo), Map.of(
+			"docs/guide.md", "x\n".getBytes(StandardCharsets.UTF_8),
+			"README.md", "x\n".getBytes(StandardCharsets.UTF_8)));
+
+		String base = "/repos/" + owner.username + "/rows";
+
+		// the whole row (icon + name) is a single anchor, so the entire box is clickable — not just the text
+		given().when().get(base + "/tree/main")
+			.then().statusCode(200)
+			.body(containsString("<a class=\"frow\" href=\"" + base + "/tree/main/docs\""))
+			.body(containsString("<a class=\"frow\" href=\"" + base + "/tree/main/README.md\""));
+	}
+
 	private static String readResource(String path) throws Exception
 	{
 		try (java.io.InputStream in = WebUiTest.class.getClassLoader().getResourceAsStream(path))
