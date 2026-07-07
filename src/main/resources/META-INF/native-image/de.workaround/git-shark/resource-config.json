@@ -2,7 +2,8 @@
   "resources": {
     "includes": [
       {"pattern": "org/eclipse/jgit/internal/JGitText\\.properties"},
-      {"pattern": ".*JGitText.*\\.properties"}
+      {"pattern": ".*JGitText.*\\.properties"},
+      {"pattern": "org/eclipse/jgit/.*\\.properties"}
     ]
   },
   "bundles": [

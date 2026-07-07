@@ -191,6 +191,11 @@
                         </native.image.path>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>${maven.home}</maven.home>
+                        <!-- Integration tests launch the packaged app (prod profile): seed alice/demo
+                             so transport tests have a repository, and keep runtime data out of ./data -->
+                        <quarkus.test.env.GITSHARK_DEV_SEED_DATA>true</quarkus.test.env.GITSHARK_DEV_SEED_DATA>
+                        <quarkus.test.env.GITSHARK_STORAGE_ROOT>${project.build.directory}/it-data/repositories</quarkus.test.env.GITSHARK_STORAGE_ROOT>
+                        <quarkus.test.env.GITSHARK_SSH_HOST_KEY>${project.build.directory}/it-data/ssh/host-key</quarkus.test.env.GITSHARK_SSH_HOST_KEY>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

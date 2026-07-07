@@ -8,7 +8,8 @@ import static org.hamcrest.CoreMatchers.is;
 
 /**
  * Boots the packaged application (JVM jar or native binary) and verifies the service is alive:
- * HTTP health endpoint up and the embedded SSH server accepting connections.
+ * HTTP health endpoint up, public pages (Qute templates) rendering, the OpenAPI document
+ * served, and the embedded SSH server accepting connections.
  */
 @QuarkusIntegrationTest
 class SmokeIT
@@ -21,6 +22,33 @@ class SmokeIT
 			.then()
 			.statusCode(200)
 			.body("status", is("UP"));
+	}
+
+	@Test
+	void landingPageRenders()
+	{
+		given()
+			.when().get("/")
+			.then()
+			.statusCode(200);
+	}
+
+	@Test
+	void explorePageRenders()
+	{
+		given()
+			.when().get("/explore")
+			.then()
+			.statusCode(200);
+	}
+
+	@Test
+	void openApiDocumentIsServed()
+	{
+		given()
+			.when().get("/q/openapi")
+			.then()
+			.statusCode(200);
 	}
 
 	@Test

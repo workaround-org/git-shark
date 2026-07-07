@@ -82,11 +82,26 @@ and pull/merge requests are **not** federated (git-shark has no such features ye
 ```shell script
 ./mvnw quarkus:dev     # dev mode; PostgreSQL + Keycloak via Dev Services (Docker/Podman required)
 ./mvnw test            # JVM tests
-./mvnw verify -Dnative # native build + integration smoke tests (HTTP health, SSH banner)
+./mvnw verify -Dnative # native build + integration tests (HTTP, Git protocol, SSH)
 ```
 
 Native build uses a container build automatically when no local GraalVM is present
 (`-Dquarkus.native.container-build=true` to force). Binary: `target/git-shark-1.0-SNAPSHOT-runner`.
+Native-specific fixes: JGit's NLS classes (`JGitText`, `HttpServerText`) and its config enums are
+registered in `META-INF/native-image/reflect-config.json`, and BouncyCastle is registered at build
+time via `quarkus.security.security-providers=BC` (Apache SSHD's runtime provider registration
+doesn't work in native images).
+
+Integration tests (Failsafe, `*IT`) run against the packaged app — JVM jar or native binary alike:
+
+- `SmokeIT` — health endpoint, landing page, explore page, OpenAPI document, SSH banner
+- `GitHttpIT` — anonymous JGit clone of the seeded `alice/demo` repo over smart HTTP, anonymous
+  push rejection (refs unchanged), repository overview page, raw file serving
+- `SshHandshakeIT` — full SSH handshake (KEX/host key/cipher via Apache SSHD + BouncyCastle),
+  asserting clean `publickey`-auth rejection for an unregistered key
+
+ITs seed demo data (`GITSHARK_DEV_SEED_DATA=true`) and isolate runtime data under
+`target/it-data` (see Failsafe `systemPropertyVariables` in `pom.xml`).
 
 ### Dev mode seed data
 
@@ -105,5 +120,5 @@ Two `%dev`-only flags are set in `application.properties` (both default `false` 
 
 ## CI
 
-`.github/workflows/ci.yml`: JVM tests on every push/PR; native build + native smoke tests
+`.github/workflows/ci.yml`: JVM tests on every push/PR; native build + integration tests
 gate main-branch builds.
