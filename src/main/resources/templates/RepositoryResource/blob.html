@@ -4,7 +4,16 @@
 <p><code>{ref}</code> &middot; /{path}</p>
 {#if binary}
 <p>Binary file. <a href="/repos/{repo.owner.username}/{repo.name}/raw/{ref}/{path}">Download</a></p>
+{#else if language}
+<pre><code class="language-{language}">{content}</code></pre>
 {#else}
 <pre>{content}</pre>
 {/if}
+{#scripts}
+{#if language}
+<script src="/highlight.min.js"></script>
+<script src="/highlight-extra.min.js"></script>
+<script>hljs.highlightAll();</script>
+{/if}
+{/scripts}
 {/include}
