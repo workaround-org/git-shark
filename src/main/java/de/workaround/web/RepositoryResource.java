@@ -6,6 +6,10 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import de.workaround.account.CurrentUser;
 import de.workaround.git.AccessPolicy;
@@ -47,7 +51,8 @@ public class RepositoryResource
 		static native TemplateInstance tree(Repository repo, String ref, String path,
 			List<GitBrowseService.TreeEntry> entries);
 
-		static native TemplateInstance blob(Repository repo, String ref, String path, boolean binary, String content);
+		static native TemplateInstance blob(Repository repo, String ref, String path, boolean binary, String content,
+			String language);
 
 		static native TemplateInstance commits(Repository repo, String ref, List<GitBrowseService.CommitInfo> commits,
 			int page, int prevPage, int nextPage, int size, boolean hasNext);
@@ -254,7 +259,76 @@ public class RepositoryResource
 	{
 		GitBrowseService.BlobView blob = browse.blob(repoPath, ref, path).orElseThrow(NotFoundException::new);
 		String content = blob.binary() ? null : new String(blob.content(), StandardCharsets.UTF_8);
-		return Templates.blob(repo, ref, path, blob.binary(), content);
+		String language = blob.binary() ? null : highlightLanguage(path);
+		return Templates.blob(repo, ref, path, blob.binary(), content, language);
+	}
+
+	// Extension → highlight.js language id. Every value here MUST have a grammar in the bundled highlight assets
+	// (highlight.min.js + highlight-extra.min.js); WebUiTest guards that so a new mapping can't silently no-op.
+	private static final Map<String, String> HIGHLIGHT_BY_EXTENSION = Map.ofEntries(
+		Map.entry("java", "java"),
+		Map.entry("js", "javascript"), Map.entry("mjs", "javascript"), Map.entry("cjs", "javascript"),
+		Map.entry("jsx", "javascript"),
+		Map.entry("ts", "typescript"), Map.entry("tsx", "typescript"),
+		Map.entry("py", "python"),
+		Map.entry("rb", "ruby"),
+		Map.entry("go", "go"),
+		Map.entry("rs", "rust"),
+		Map.entry("c", "c"), Map.entry("h", "c"),
+		Map.entry("cc", "cpp"), Map.entry("cpp", "cpp"), Map.entry("cxx", "cpp"), Map.entry("hpp", "cpp"),
+		Map.entry("hxx", "cpp"),
+		Map.entry("cs", "csharp"),
+		Map.entry("kt", "kotlin"), Map.entry("kts", "kotlin"),
+		Map.entry("swift", "swift"),
+		Map.entry("scala", "scala"),
+		Map.entry("groovy", "groovy"), Map.entry("gradle", "groovy"),
+		Map.entry("php", "php"),
+		Map.entry("pl", "perl"), Map.entry("pm", "perl"),
+		Map.entry("lua", "lua"),
+		Map.entry("r", "r"),
+		Map.entry("dart", "dart"),
+		Map.entry("sh", "bash"), Map.entry("bash", "bash"), Map.entry("zsh", "bash"),
+		Map.entry("sql", "sql"),
+		Map.entry("xml", "xml"), Map.entry("html", "xml"), Map.entry("htm", "xml"), Map.entry("xhtml", "xml"),
+		Map.entry("svg", "xml"),
+		Map.entry("css", "css"), Map.entry("scss", "scss"), Map.entry("less", "less"),
+		Map.entry("json", "json"),
+		Map.entry("yaml", "yaml"), Map.entry("yml", "yaml"),
+		Map.entry("toml", "ini"), Map.entry("ini", "ini"), Map.entry("cfg", "ini"), Map.entry("properties", "ini"),
+		Map.entry("md", "markdown"), Map.entry("markdown", "markdown"),
+		Map.entry("diff", "diff"), Map.entry("patch", "diff"),
+		Map.entry("mk", "makefile"));
+
+	/**
+	 * Maps a file path to a highlight.js language identifier, or {@code null} when the extension is unknown so the
+	 * blob is rendered as plain text (no highlighter loaded). Kept explicit rather than relying on highlight.js
+	 * auto-detection, which is unreliable on short snippets.
+	 */
+	static String highlightLanguage(String path)
+	{
+		int slash = path.lastIndexOf('/');
+		String name = (slash < 0 ? path : path.substring(slash + 1)).toLowerCase(Locale.ROOT);
+		// extensionless / dotted well-known filenames
+		if (name.equals("dockerfile") || name.startsWith("dockerfile."))
+		{
+			return "dockerfile";
+		}
+		if (name.equals("makefile"))
+		{
+			return "makefile";
+		}
+		int dot = name.lastIndexOf('.');
+		String ext = dot <= 0 ? "" : name.substring(dot + 1);
+		return HIGHLIGHT_BY_EXTENSION.get(ext);
+	}
+
+	/** Distinct highlight.js language ids this mapping can emit — used by tests to assert each has a bundled grammar. */
+	static Set<String> highlightLanguages()
+	{
+		Set<String> languages = new TreeSet<>(HIGHLIGHT_BY_EXTENSION.values());
+		languages.add("dockerfile");
+		languages.add("makefile");
+		return languages;
 	}
 
 	private Repository requireReadable(String owner, String name)

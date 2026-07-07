@@ -125,6 +125,71 @@ class WebUiTest
 	}
 
 	@Test
+	void blobViewHighlightsSourceCodeByLanguage() throws Exception
+	{
+		User owner = persistUser("ui-hank-" + unique());
+		Repository repo = service.create(owner, "syntax", Repository.Visibility.PUBLIC, null);
+		GitTestSeeder.seed(service.repositoryPath(repo), Map.of(
+			"Main.java", "class Main {}\n".getBytes(StandardCharsets.UTF_8),
+			"App.scala", "object App\n".getBytes(StandardCharsets.UTF_8),
+			"Dockerfile", "FROM scratch\n".getBytes(StandardCharsets.UTF_8),
+			"config.properties", "a=b\n".getBytes(StandardCharsets.UTF_8),
+			"notes.unknownext", "just plain text\n".getBytes(StandardCharsets.UTF_8)));
+
+		String base = "/repos/" + owner.username + "/syntax";
+
+		given().when().get(base + "/tree/main/Main.java")
+			.then().statusCode(200)
+			.body(containsString("language-java"))
+			.body(containsString("/highlight.min.js"));
+
+		// languages served from the extra grammar bundle
+		given().when().get(base + "/tree/main/App.scala")
+			.then().statusCode(200)
+			.body(containsString("language-scala"))
+			.body(containsString("/highlight-extra.min.js"));
+
+		given().when().get(base + "/tree/main/Dockerfile")
+			.then().statusCode(200)
+			.body(containsString("language-dockerfile"));
+
+		// .properties reuses the ini grammar
+		given().when().get(base + "/tree/main/config.properties")
+			.then().statusCode(200)
+			.body(containsString("language-ini"));
+
+		// unknown extensions render as plain text, no highlighter loaded
+		given().when().get(base + "/tree/main/notes.unknownext")
+			.then().statusCode(200)
+			.body(containsString("just plain text"))
+			.body(not(containsString("/highlight.min.js")));
+	}
+
+	@Test
+	void everyMappedHighlightLanguageHasABundledGrammar() throws Exception
+	{
+		String bundle = readResource("META-INF/resources/highlight.min.js") + "\n"
+			+ readResource("META-INF/resources/highlight-extra.min.js");
+
+		for (String language : RepositoryResource.highlightLanguages())
+		{
+			boolean registered = bundle.contains("grmr_" + language)
+				|| bundle.contains("registerLanguage(\"" + language + "\"");
+			org.junit.jupiter.api.Assertions.assertTrue(registered,
+				"no highlight.js grammar bundled for mapped language: " + language);
+		}
+	}
+
+	private static String readResource(String path) throws Exception
+	{
+		try (java.io.InputStream in = WebUiTest.class.getClassLoader().getResourceAsStream(path))
+		{
+			org.junit.jupiter.api.Assertions.assertNotNull(in, "resource not found on classpath: " + path);
+			return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+		}
+	}
+
+	@Test
 	void emptyRepositoryShowsSetupInstructions() throws Exception
 	{
 		User owner = persistUser("ui-dora-" + unique());
