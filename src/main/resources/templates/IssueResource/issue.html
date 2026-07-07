@@ -1,0 +1,27 @@
+{#include layout}
+{#title}{issue.title} – {repo.name}{/title}
+<h1><a href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></h1>
+<p><a href="/repos/{repo.owner.username}/{repo.name}/issues">← Issues</a></p>
+<h2>{issue.title} <span class="issue-no">#{issue.number}</span></h2>
+<p>
+    <span class="badge status-{issue.status}">{issue.status.label}</span>
+    <span class="muted">opened by {issue.author.username}</span>
+</p>
+{#if issue.description}
+<pre class="issue-desc">{issue.description}</pre>
+{#else}
+<p class="muted">No description provided.</p>
+{/if}
+{#if owner}
+<form class="issue-actions" method="post" action="/repos/{repo.owner.username}/{repo.name}/issues/{issue.id}/status">
+    <span class="lbl">Move to</span>
+    {#for status in statuses}
+    <button type="submit" class="btn btn-secondary btn-sm" name="status" value="{status}"{#if status == issue.status} disabled{/if}>{status.label}</button>
+    {/for}
+</form>
+<form method="post" action="/repos/{repo.owner.username}/{repo.name}/issues/{issue.id}/delete"
+      onsubmit="return confirm('Delete this issue? This cannot be undone.')">
+    <button type="submit" class="btn btn-danger">Delete issue</button>
+</form>
+{/if}
+{/include}

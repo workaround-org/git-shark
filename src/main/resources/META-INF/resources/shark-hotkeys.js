@@ -75,4 +75,50 @@
             target.showModal();
         }
     });
+
+    // Copy-to-clipboard: [data-copy="text"] copies its value and briefly confirms on the button.
+    document.addEventListener("click", function (event) {
+        var button = event.target.closest("[data-copy]");
+        if (!button) {
+            return;
+        }
+        event.preventDefault();
+        var text = button.getAttribute("data-copy");
+        if (!navigator.clipboard || !navigator.clipboard.writeText) {
+            return;
+        }
+        navigator.clipboard.writeText(text).then(function () {
+            if (!button.classList.contains("copied")) {
+                var original = button.textContent;
+                button.classList.add("copied");
+                button.textContent = "✓";
+                setTimeout(function () {
+                    button.textContent = original;
+                    button.classList.remove("copied");
+                }, 1200);
+            }
+            showCopyToast(button);
+        }).catch(function () {
+            // clipboard denied (e.g. insecure context); the command stays visible to copy manually
+        });
+    });
+
+    // Brief "Copied!" toast. Appended inside the nearest <dialog> (if any) so it renders on the
+    // top layer above the modal backdrop; otherwise on <body>.
+    function showCopyToast(nearButton) {
+        var container = (nearButton.closest && nearButton.closest("dialog")) || document.body;
+        var toast = document.createElement("div");
+        toast.className = "copy-toast";
+        toast.textContent = "Copied!";
+        container.appendChild(toast);
+        requestAnimationFrame(function () {
+            toast.classList.add("show");
+        });
+        setTimeout(function () {
+            toast.classList.remove("show");
+            setTimeout(function () {
+                toast.remove();
+            }, 200);
+        }, 1200);
+    }
 })();

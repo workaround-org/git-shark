@@ -31,6 +31,7 @@
             {/if}
             <a href="/repos/{repo.owner.username}/{repo.name}/branches"><span class="g">⑂</span> Branches <span class="ct">{branchCount}</span></a>
             <a href="/repos/{repo.owner.username}/{repo.name}/branches"><span class="g">⬡</span> Tags <span class="ct">{tagCount}</span></a>
+            <a href="/repos/{repo.owner.username}/{repo.name}/issues"><span class="g">◇</span> Issues <span class="ct">{openIssueCount}</span></a>
         </nav>
     </aside>
 
@@ -92,7 +93,13 @@ git push -u origin main</pre>
         <label for="clone-https">HTTPS</label>
         <label for="clone-ssh">SSH</label>
     </div>
-    <code class="clone-url url-https">git clone {httpUrl}</code>
-    <code class="clone-url url-ssh">git clone {sshUrl}</code>
+    <div class="clone-url url-https">
+        <code>git clone {httpUrl}</code>
+        <button type="button" class="btn-icon copy-btn" data-copy="git clone {httpUrl}" aria-label="Copy clone command" title="Copy">⧉</button>
+    </div>
+    <div class="clone-url url-ssh">
+        <code>git clone {sshUrl}</code>
+        <button type="button" class="btn-icon copy-btn" data-copy="git clone {sshUrl}" aria-label="Copy clone command" title="Copy">⧉</button>
+    </div>
 </dialog>
 {/include}

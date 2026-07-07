@@ -12,6 +12,7 @@ import org.eclipse.jgit.transport.resolver.ServiceNotEnabledException;
 import de.workaround.federation.FederationPushService;
 import de.workaround.git.AccessPolicy;
 import de.workaround.git.GitRepositoryService;
+import de.workaround.git.IssueCommitCloser;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
 import jakarta.inject.Inject;
@@ -41,6 +42,9 @@ public class GitHttpServlet extends GitServlet
 
 	@Inject
 	FederationPushService pushService;
+
+	@Inject
+	IssueCommitCloser issueCloser;
 
 	@Override
 	public void init(ServletConfig config) throws ServletException
@@ -105,8 +109,10 @@ public class GitHttpServlet extends GitServlet
 		String ownerName = repository.owner.username;
 		String repoName = repository.name;
 		java.util.UUID pusherId = user.id;
-		receivePack.setPostReceiveHook((rp, commands) ->
-			pushService.onPush(ownerName, repoName, pusherId, rp.getRepository(), commands));
+		receivePack.setPostReceiveHook((rp, commands) -> {
+			pushService.onPush(ownerName, repoName, pusherId, rp.getRepository(), commands);
+			issueCloser.onPush(ownerName, repoName, pusherId, rp.getRepository(), commands);
+		});
 		return receivePack;
 	}
 

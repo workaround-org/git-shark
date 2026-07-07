@@ -33,6 +33,9 @@ public class GitSshCommandFactory implements CommandFactory
 	@Inject
 	de.workaround.federation.FederationPushService pushService;
 
+	@Inject
+	de.workaround.git.IssueCommitCloser issueCloser;
+
 	@Override
 	public Command createCommand(ChannelSession channel, String command)
 	{
@@ -142,8 +145,10 @@ public class GitSshCommandFactory implements CommandFactory
 						{
 							String ownerName = parts[0];
 							String repoName = parts[1];
-							receivePack.setPostReceiveHook((rp, commands) ->
-								pushService.onPush(ownerName, repoName, userId, rp.getRepository(), commands));
+							receivePack.setPostReceiveHook((rp, commands) -> {
+								pushService.onPush(ownerName, repoName, userId, rp.getRepository(), commands);
+								issueCloser.onPush(ownerName, repoName, userId, rp.getRepository(), commands);
+							});
 						}
 						receivePack.receive(in, out, err);
 					}

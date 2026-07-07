@@ -1,0 +1,14 @@
+{#include layout}
+{#title}New issue – {repo.name}{/title}
+<h1><a href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></h1>
+<p><a href="/repos/{repo.owner.username}/{repo.name}/issues">← Issues</a></p>
+<h2>New issue</h2>
+<form class="issue-form" method="post" action="/repos/{repo.owner.username}/{repo.name}/issues">
+    <input type="text" name="title" placeholder="Issue title" required autocomplete="off">
+    <textarea name="description" placeholder="Description (optional)" rows="6"></textarea>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Create issue</button>
+        <a class="btn btn-secondary" href="/repos/{repo.owner.username}/{repo.name}/issues">Cancel</a>
+    </div>
+</form>
+{/include}
