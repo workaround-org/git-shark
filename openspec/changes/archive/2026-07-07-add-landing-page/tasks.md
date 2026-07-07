@@ -22,5 +22,5 @@
 ## 4. Verify
 
 - [x] 4.1 Run `./mvnw test` — all tests green (52/52)
-- [ ] 4.2 Manual check in `quarkus:dev`: anonymous `/` shows hero, logged-in `/` shows repos, `/explore` lists public repos
-- [ ] 4.3 Update `README.md` if the public landing/`/explore` behavior is user-facing
+- [x] 4.2 Manual check in `quarkus:dev`: anonymous `/` shows hero, logged-in `/` shows repos, `/explore` lists public repos
+- [x] 4.3 Update `README.md` if the public landing/`/explore` behavior is user-facing

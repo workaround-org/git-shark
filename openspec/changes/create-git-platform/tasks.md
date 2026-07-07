@@ -56,7 +56,7 @@
 
 ## 8. Native Build Completion & CI
 
-- [ ] 8.1 Extend native-image reflection/resource config for all features (Qute templates, OIDC, JGit pack machinery, MINA crypto); native build green
+- [x] 8.1 Extend native-image reflection/resource config for all features (Qute templates, OIDC, JGit pack machinery, MINA crypto); native build green
 - [ ] 8.2 Native integration smoke tests: HTTP clone+push, SSH clone, OIDC-protected page, Flyway migration on boot
 - [x] 8.3 CI pipeline: JVM tests + native build + native smoke tests on main-branch builds
 - [x] 8.4 README: setup, configuration (storage root, SSH port, OIDC, Postgres), clone URL schemes, TLS-termination requirement for PAT auth
