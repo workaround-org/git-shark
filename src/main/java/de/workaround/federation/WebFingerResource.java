@@ -59,7 +59,7 @@ public class WebFingerResource
 		}
 		String identifier = acct.substring(0, at);
 		String host = acct.substring(at + 1);
-		if (!host.equalsIgnoreCase(baseHost()))
+		if (!isOurHost(host))
 		{
 			throw new NotFoundException();
 		}
@@ -90,11 +90,14 @@ public class WebFingerResource
 		}
 	}
 
-	private String baseHost()
+	/**
+	 * Accepts the acct host as the bare host (standard WebFinger) or as host:port — the latter so
+	 * dev two-host trials on one machine, where only the port distinguishes instances, still match.
+	 */
+	private boolean isOurHost(String host)
 	{
-		// Authority, not host: keeps a non-default port significant (acct:owner/name@host:port),
-		// which the dev two-host trial on one machine relies on.
-		return URI.create(config.baseUrl()).getAuthority();
+		URI base = URI.create(config.baseUrl());
+		return host.equalsIgnoreCase(base.getHost()) || host.equalsIgnoreCase(base.getAuthority());
 	}
 
 }

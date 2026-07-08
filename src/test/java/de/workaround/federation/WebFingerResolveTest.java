@@ -72,6 +72,27 @@ class WebFingerResolveTest
 		assertTrue(client.resolveWebFinger("nobody/nothing-" + unique(), "localhost:8082").isEmpty());
 	}
 
+	/**
+	 * The served endpoint accepts the acct host as the bare host (standard WebFinger, what our
+	 * client sends) and as host:port (lenient, for clients that include the authority).
+	 */
+	@Test
+	void acceptsBareHostAndAuthorityAcctForms()
+	{
+		User owner = persistUser("wf-carl-" + unique());
+		Repository repo = createRepo(owner, "lib-" + unique());
+		String handle = owner.username + "/" + repo.name;
+
+		io.restassured.RestAssured.given()
+			.queryParam("resource", "acct:" + handle + "@localhost")
+			.when().get("http://localhost:8082/.well-known/webfinger")
+			.then().statusCode(200);
+		io.restassured.RestAssured.given()
+			.queryParam("resource", "acct:" + handle + "@localhost:8082")
+			.when().get("http://localhost:8082/.well-known/webfinger")
+			.then().statusCode(200);
+	}
+
 	@Transactional
 	Repository createRepo(User owner, String name)
 	{

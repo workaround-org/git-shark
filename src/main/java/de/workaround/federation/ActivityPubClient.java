@@ -126,13 +126,15 @@ public class ActivityPubClient
 
 	/**
 	 * Resolves {@code acct:{identifier}@{host}} via the host's WebFinger endpoint to the actor id in
-	 * its {@code self} link. The host may carry a non-default port (dev two-host trials); https is
-	 * used unless the dev-insecure flag permits http.
+	 * its {@code self} link. The host may carry a non-default port (dev two-host trials) — the port
+	 * addresses the endpoint but is stripped from the {@code acct:} resource, which names the bare
+	 * host per WebFinger convention. https is used unless the dev-insecure flag permits http.
 	 */
 	public Optional<String> resolveWebFinger(String identifier, String host)
 	{
 		String scheme = config.devAllowInsecure() ? "http" : "https";
-		String resource = "acct:" + identifier + "@" + host;
+		String acctHost = host.contains(":") ? host.substring(0, host.indexOf(':')) : host;
+		String resource = "acct:" + identifier + "@" + acctHost;
 		String url = scheme + "://" + host + "/.well-known/webfinger?resource="
 			+ URLEncoder.encode(resource, java.nio.charset.StandardCharsets.UTF_8);
 		URI uri;
