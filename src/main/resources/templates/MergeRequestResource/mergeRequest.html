@@ -73,16 +73,17 @@
             <div class="comment">
                 <div class="comment-head">
                     <span class="who">{c.author.username}</span>
-                    {#if owner || c.author.id == currentUserId}
-                    <form class="inline" method="post"
-                          action="/repos/{repo.owner.username}/{repo.name}/merge-requests/{mr.id}/comments/{c.id}/delete"
-                          onsubmit="return confirm('Delete this comment?')">
-                        <button type="submit" class="comment-del">Delete</button>
-                    </form>
-                    {/if}
                 </div>
                 <div class="comment-body">{c.body}</div>
             </div>
+            {#if owner || c.author.id == currentUserId}
+            <form class="comment-del-form" method="post"
+                  action="/repos/{repo.owner.username}/{repo.name}/merge-requests/{mr.id}/comments/{c.id}/delete">
+                <button type="submit" class="comment-del" title="Delete comment" aria-label="Delete comment">
+                    <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 9Z"/></svg>
+                </button>
+            </form>
+            {/if}
         </div>
         {/for}
         {/for}

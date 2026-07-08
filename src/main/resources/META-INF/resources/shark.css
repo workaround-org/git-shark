@@ -1064,6 +1064,8 @@ details.archive > .panel {
 }
 
 .dl-comment-row {
+    display: flex;
+    align-items: center;
     padding: var(--s2) var(--s3) var(--s2) 96px;
     background: var(--surface);
     border-top: 1px dashed var(--border);
@@ -1071,6 +1073,7 @@ details.archive > .panel {
 }
 
 .comment {
+    flex: 1 1 auto;
     max-width: 640px;
 }
 
@@ -1086,17 +1089,40 @@ details.archive > .panel {
     font-size: 13px;
 }
 
+/* the form box is elided so the button aligns like the diff-line comment icon (sticky to the right edge) */
+.comment-del-form {
+    display: contents;
+}
+
 .comment-del {
-    border: none;
-    background: none;
+    flex: 0 0 auto;
+    margin-left: auto;
+    position: sticky;
+    right: 6px;
+    margin-right: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 24px;
     padding: 0;
+    border: none;
+    border-radius: 5px;
     cursor: pointer;
-    color: var(--danger);
-    font: 500 12px/1 var(--font);
+    color: var(--muted);
+    background: none;
+    opacity: 0;
+}
+
+/* reveal the delete icon only while hovering/focusing the comment */
+.dl-comment-row:hover .comment-del,
+.dl-comment-row:focus-within .comment-del {
+    opacity: 1;
 }
 
 .comment-del:hover {
-    text-decoration: underline;
+    color: #fff;
+    background: var(--danger);
 }
 
 .comment-body {
