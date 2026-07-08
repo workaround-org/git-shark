@@ -1,10 +1,9 @@
 package de.workaround.dev;
 
 import java.nio.file.Path;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
 
 import de.workaround.git.GitBrowseService;
 import de.workaround.git.GitRepositoryService;
