@@ -2,8 +2,9 @@
 
 How to enable and operate ForgeFed/ActivityPub federation on a git-shark
 instance. For what federation offers end users, see the
-[user guide](federation-users.md); for a general deployment walkthrough, see
-[Getting Started](getting-started.md).
+[user guide](../users/federation.md); for a general deployment walkthrough, see
+[Getting Started](getting-started.md). For architecture and implementation
+decisions, see the [maintainer notes](../maintainers/forgefed.md).
 
 Federation is **off by default** and fails closed: nothing is emitted or
 accepted until it is explicitly enabled *and* correctly configured.

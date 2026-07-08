@@ -7,7 +7,7 @@ account on the remote server needed.
 
 > Federation is optional and off by default. If the features below are missing on
 > your instance, the operator has not enabled it (see the
-> [deployment guide](federation-deployment.md)).
+> [deployment guide](../admins/federation.md)).
 
 ---
 
