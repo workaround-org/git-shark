@@ -1,0 +1,27 @@
+{#include layout}
+{#title}Following – git-shark{/title}
+<h1>Following</h1>
+{#if error}
+<p class="error">{error}</p>
+{/if}
+<table>
+    <tr><th>Remote repository</th><th>State</th><th>Since</th><th class="actions"></th></tr>
+    {#for follow in follows}
+    <tr>
+        <td><a href="{follow.remoteActorId}" rel="noopener noreferrer">{follow.remoteActorId}</a></td>
+        <td>{#if follow.accepted}Accepted{#else}Pending{/if}</td>
+        <td>{follow.createdAt}</td>
+        <td class="actions">
+            <form class="inline" method="post" action="/following/{follow.id}/unfollow">
+                <button class="btn btn-danger btn-sm">Unfollow</button>
+            </form>
+        </td>
+    </tr>
+    {/for}
+</table>
+<h2>Follow remote repository</h2>
+<form method="post" action="/following">
+    <p><label>Handle or actor URL <input name="handle" placeholder="owner/name@remote-host" required></label></p>
+    <button class="btn btn-primary">Follow</button>
+</form>
+{/include}

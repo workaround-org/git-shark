@@ -14,6 +14,7 @@
     <nav>
         {#insert nav}
         {#if cdi:currentUser.loggedIn}
+        <a href="/following">Following</a>
         <a href="/settings/profile">Profile</a>
         <a href="/settings/keys">SSH keys</a>
         <a href="/settings/tokens">Access tokens</a>
