@@ -5,9 +5,14 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import de.workaround.federation.ActivityDispatcher;
 import de.workaround.model.RemoteActor;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import static io.restassured.RestAssured.given;
@@ -20,6 +25,12 @@ import static org.hamcrest.Matchers.is;
 @QuarkusTest
 class FollowingPagesTest
 {
+	@Inject
+	ActivityDispatcher dispatcher;
+
+	@Inject
+	ObjectMapper mapper;
+
 	@Test
 	@TestSecurity(user = "following-tester")
 	void followListAndUnfollowRoundTrip()
@@ -65,6 +76,30 @@ class FollowingPagesTest
 	}
 
 	@Test
+	@TestSecurity(user = "push-feed-tester")
+	void receivedPushesFromFollowedRepoAppearOnPage()
+	{
+		String remote = "https://peer.test/ap/repos/bob/feed-" + unique();
+		seedRemoteActor(remote, remote + "/inbox");
+
+		given()
+			.redirects().follow(false)
+			.formParam("handle", remote)
+			.when().post("/following")
+			.then()
+			.statusCode(anyOf(is(302), is(303)));
+
+		dispatchPush(remote, "Pushed 3 commit(s) to refs/heads/main");
+
+		given()
+			.when().get("/following")
+			.then()
+			.statusCode(200)
+			.body(containsString("Recent pushes"))
+			.body(containsString("Pushed 3 commit(s) to refs/heads/main"));
+	}
+
+	@Test
 	@TestSecurity(user = "following-err-tester")
 	void unresolvableHandleShowsError()
 	{
@@ -84,6 +119,18 @@ class FollowingPagesTest
 			.when().get("/following")
 			.then()
 			.statusCode(302);
+	}
+
+	@Transactional
+	void dispatchPush(String actor, String summary)
+	{
+		ObjectNode node = mapper.createObjectNode();
+		node.put("id", actor + "/activities/" + UUID.randomUUID());
+		node.put("type", "Push");
+		node.put("actor", actor);
+		node.put("target", "refs/heads/main");
+		node.put("summary", summary);
+		dispatcher.dispatch(node);
 	}
 
 	@Transactional

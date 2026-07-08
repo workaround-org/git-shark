@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import de.workaround.model.FederationKey;
+import de.workaround.model.ReceivedPush;
 import de.workaround.model.RemoteActor;
 import de.workaround.model.RemoteFollow;
 import de.workaround.model.User;
@@ -51,8 +52,13 @@ public class RemoteFollowService
 	@Inject
 	DeliveryService delivery;
 
+	private static final int FEED_LIMIT = 50;
+
 	@Inject
 	RemoteFollow.Repo follows;
+
+	@Inject
+	ReceivedPush.Repo pushes;
 
 	@Inject
 	User.Repo users;
@@ -121,6 +127,19 @@ public class RemoteFollowService
 	public List<RemoteFollow> list(User user)
 	{
 		return follows.findByUser(user);
+	}
+
+	/** Recent {@code Push} activities of the repositories the user follows, newest first. */
+	@Transactional
+	public List<ReceivedPush> recentPushes(User user)
+	{
+		List<String> actorIds = follows.findByUser(user).stream().map(f -> f.remoteActorId).toList();
+		if (actorIds.isEmpty())
+		{
+			return List.of();
+		}
+		List<ReceivedPush> feed = pushes.findByRemoteActorIds(actorIds);
+		return feed.size() > FEED_LIMIT ? feed.subList(0, FEED_LIMIT) : feed;
 	}
 
 	/** Resolves the input to a remote actor id: pass URLs through, WebFinger-resolve handles. */

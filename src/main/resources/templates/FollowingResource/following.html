@@ -19,6 +19,20 @@
     </tr>
     {/for}
 </table>
+{#if pushes}
+<h2>Recent pushes</h2>
+<table>
+    <tr><th>Repository</th><th>Ref</th><th>Summary</th><th>Received</th></tr>
+    {#for push in pushes}
+    <tr>
+        <td><a href="{push.remoteActorId}" rel="noopener noreferrer">{push.remoteActorId}</a></td>
+        <td>{push.target}</td>
+        <td>{push.summary}</td>
+        <td>{push.receivedAt}</td>
+    </tr>
+    {/for}
+</table>
+{/if}
 <h2>Follow remote repository</h2>
 <form method="post" action="/following">
     <p><label>Handle or actor URL <input name="handle" placeholder="owner/name@remote-host" required></label></p>
