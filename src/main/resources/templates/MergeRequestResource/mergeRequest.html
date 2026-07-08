@@ -1,6 +1,8 @@
 {#include layout}
 {#title}{mr.title} – {repo.name}{/title}
-<h1><a href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></h1>
+<div class="repo-layout">
+{#include RepositoryResource/sidebar nav=nav active='merge-requests' /}
+<section class="repo-main">
 <p><a href="/repos/{repo.owner.username}/{repo.name}/merge-requests">&larr; Merge requests</a></p>
 <h2>{mr.title} <span class="issue-no">!{mr.number}</span></h2>
 <p>
@@ -91,4 +93,6 @@
 </div>
 {/for}
 {/if}
+</section>
+</div>
 {/include}

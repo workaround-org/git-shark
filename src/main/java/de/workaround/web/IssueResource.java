@@ -22,8 +22,10 @@ import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 
 @jakarta.ws.rs.Path("/repos/{owner}/{name}/issues")
 @Produces(MediaType.TEXT_HTML)
@@ -32,11 +34,13 @@ public class IssueResource
 	@CheckedTemplate
 	static class Templates
 	{
-		static native TemplateInstance issues(Repository repo, boolean owner, List<Issue> open, List<Issue> done);
+		static native TemplateInstance issues(Repository repo, RepoNav nav, boolean owner, List<Issue> open,
+			List<Issue> done);
 
-		static native TemplateInstance newIssue(Repository repo);
+		static native TemplateInstance newIssue(Repository repo, RepoNav nav);
 
-		static native TemplateInstance issue(Repository repo, boolean owner, Issue issue, List<Issue.Status> statuses);
+		static native TemplateInstance issue(Repository repo, RepoNav nav, boolean owner, Issue issue,
+			List<Issue.Status> statuses);
 	}
 
 	@Inject
@@ -51,6 +55,12 @@ public class IssueResource
 	@Inject
 	IssueService issueService;
 
+	@Inject
+	RepoNavService repoNav;
+
+	@Context
+	UriInfo uriInfo;
+
 	@GET
 	public TemplateInstance list(@PathParam("owner") String owner, @PathParam("name") String name)
 	{
@@ -61,7 +71,7 @@ public class IssueResource
 		// open issues stay visible; DONE issues are tucked into a collapsible archive on the page
 		List<Issue> open = all.stream().filter(issue -> issue.status != Issue.Status.DONE).toList();
 		List<Issue> done = all.stream().filter(issue -> issue.status == Issue.Status.DONE).toList();
-		return Templates.issues(repo, isOwner, open, done);
+		return Templates.issues(repo, repoNav.build(repo, uriInfo), isOwner, open, done);
 	}
 
 	@GET
@@ -74,7 +84,7 @@ public class IssueResource
 		{
 			throw new de.workaround.git.ForbiddenOperationException("Only the repository owner can open issues");
 		}
-		return Templates.newIssue(repo);
+		return Templates.newIssue(repo, repoNav.build(repo, uriInfo));
 	}
 
 	@POST
@@ -97,7 +107,7 @@ public class IssueResource
 		Issue issue = issueService.find(repo, parseId(id)).orElseThrow(NotFoundException::new);
 		User user = currentUser.get();
 		boolean isOwner = user != null && user.id.equals(repo.owner.id);
-		return Templates.issue(repo, isOwner, issue, List.of(Issue.Status.values()));
+		return Templates.issue(repo, repoNav.build(repo, uriInfo), isOwner, issue, List.of(Issue.Status.values()));
 	}
 
 	@POST

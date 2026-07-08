@@ -16,8 +16,6 @@ import de.workaround.account.CurrentUser;
 import de.workaround.git.AccessPolicy;
 import de.workaround.git.GitBrowseService;
 import de.workaround.git.GitRepositoryService;
-import de.workaround.git.IssueService;
-import de.workaround.git.MergeRequestService;
 import de.workaround.git.RepositoryPinService;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
@@ -39,7 +37,6 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import org.commonmark.parser.Parser;
 import org.commonmark.renderer.html.HtmlRenderer;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @jakarta.ws.rs.Path("/repos/{owner}/{name}")
 @Produces(MediaType.TEXT_HTML)
@@ -48,23 +45,24 @@ public class RepositoryResource
 	@CheckedTemplate
 	static class Templates
 	{
-		static native TemplateInstance overview(Repository repo, boolean owner, boolean empty, String defaultBranch,
-			List<GitBrowseService.TreeEntry> entries, String httpUrl, String sshUrl, boolean loggedIn,
-			boolean pinned, GitBrowseService.CommitInfo latestCommit, String latestCommitAge, int commitCount,
-			int branchCount, int tagCount, long openIssueCount, long openMrCount, String readmeName,
-			String readmeHtml);
+		static native TemplateInstance overview(Repository repo, RepoNav nav, boolean owner,
+			List<GitBrowseService.TreeEntry> entries, GitBrowseService.CommitInfo latestCommit, String latestCommitAge,
+			String readmeName, String readmeHtml);
 
-		static native TemplateInstance tree(Repository repo, String ref, String path,
-			List<GitBrowseService.TreeEntry> entries, List<Crumb> crumbs, String activeTab);
+		static native TemplateInstance tree(Repository repo, RepoNav nav, String ref, String path,
+			List<GitBrowseService.TreeEntry> entries, List<Crumb> crumbs);
 
-		static native TemplateInstance blob(Repository repo, String ref, String path, boolean binary, String content,
-			String language, List<Crumb> crumbs, String activeTab);
+		static native TemplateInstance blob(Repository repo, RepoNav nav, String ref, String path, boolean binary,
+			String content, String language, List<Crumb> crumbs);
 
-		static native TemplateInstance commits(Repository repo, String ref, List<GitBrowseService.CommitInfo> commits,
-			int page, int prevPage, int nextPage, int size, boolean hasNext, String activeTab);
+		static native TemplateInstance commits(Repository repo, RepoNav nav, String ref,
+			List<GitBrowseService.CommitInfo> commits, int page, int prevPage, int nextPage, int size,
+			boolean hasNext);
 
-		static native TemplateInstance branches(Repository repo, List<GitBrowseService.BranchInfo> branches,
-			List<String> tags, String activeTab, String tabRef);
+		static native TemplateInstance branches(Repository repo, RepoNav nav,
+			List<GitBrowseService.BranchInfo> branches);
+
+		static native TemplateInstance tags(Repository repo, RepoNav nav, List<String> tags);
 	}
 
 	@Inject
@@ -83,13 +81,7 @@ public class RepositoryResource
 	RepositoryPinService pinService;
 
 	@Inject
-	IssueService issueService;
-
-	@Inject
-	MergeRequestService mergeRequestService;
-
-	@ConfigProperty(name = "gitshark.ssh.port")
-	int sshPort;
+	RepoNavService repoNav;
 
 	@Context
 	UriInfo uriInfo;
@@ -98,36 +90,26 @@ public class RepositoryResource
 	public TemplateInstance overview(@PathParam("owner") String owner, @PathParam("name") String name)
 	{
 		Repository repo = requireReadable(owner, name);
+		RepoNav nav = repoNav.build(repo, uriInfo);
 		Path path = service.repositoryPath(repo);
-		boolean empty = browse.isEmpty(path);
-		String defaultBranch = empty ? null : browse.defaultBranch(path);
-		List<GitBrowseService.TreeEntry> entries = empty
+		List<GitBrowseService.TreeEntry> entries = nav.empty()
 			? List.of()
-			: browse.listTree(path, defaultBranch, "").orElse(List.of());
+			: browse.listTree(path, nav.defaultBranch(), "").orElse(List.of());
 		User user = currentUser.get();
 		boolean isOwner = user != null && user.id.equals(repo.owner.id);
-		boolean loggedIn = user != null;
-		boolean pinned = loggedIn && pinService.isPinned(user, repo);
-		GitBrowseService.CommitInfo latestCommit = empty ? null
-			: browse.commits(path, defaultBranch, 0, 1)
+		GitBrowseService.CommitInfo latestCommit = nav.empty() ? null
+			: browse.commits(path, nav.defaultBranch(), 0, 1)
 				.filter(commitPage -> !commitPage.commits().isEmpty())
 				.map(commitPage -> commitPage.commits().get(0))
 				.orElse(null);
 		String latestCommitAge = latestCommit == null ? null : relativeAge(latestCommit.date());
-		int commitCount = empty ? 0 : browse.commitCount(path, defaultBranch);
-		int branchCount = browse.branches(path).size();
-		int tagCount = browse.tags(path).size();
-		long openIssueCount = issueService.countOpen(repo);
-		long openMrCount = mergeRequestService.countOpen(repo);
 		GitBrowseService.TreeEntry readmeEntry = findReadme(entries);
 		String readmeName = readmeEntry == null ? null : readmeEntry.name();
-		String readmeHtml = readmeEntry == null ? null : browse.blob(path, defaultBranch, readmeEntry.path())
+		String readmeHtml = readmeEntry == null ? null : browse.blob(path, nav.defaultBranch(), readmeEntry.path())
 			.filter(blob -> !blob.binary())
 			.map(blob -> renderMarkdown(new String(blob.content(), StandardCharsets.UTF_8)))
 			.orElse(null);
-		return Templates.overview(repo, isOwner, empty, defaultBranch, entries, httpUrl(repo), sshUrl(repo),
-			loggedIn, pinned, latestCommit, latestCommitAge, commitCount, branchCount, tagCount, openIssueCount,
-			openMrCount, readmeName, readmeHtml);
+		return Templates.overview(repo, nav, isOwner, entries, latestCommit, latestCommitAge, readmeName, readmeHtml);
 	}
 
 	// README file names the overview looks for, in order of preference (matched case-insensitively).
@@ -217,10 +199,11 @@ public class RepositoryResource
 	{
 		String path = rawPath == null || rawPath.isEmpty() ? "" : rawPath.substring(1);
 		Repository repo = requireReadable(owner, name);
+		RepoNav nav = repoNav.build(repo, uriInfo);
 		Path repoPath = service.repositoryPath(repo);
 		return browse.listTree(repoPath, ref, path)
-			.map(entries -> Templates.tree(repo, ref, path, entries, breadcrumbs(repo, ref, path), "files"))
-			.orElseGet(() -> blobView(repo, repoPath, ref, path));
+			.map(entries -> Templates.tree(repo, nav, ref, path, entries, breadcrumbs(repo, ref, path)))
+			.orElseGet(() -> blobView(repo, nav, repoPath, ref, path));
 	}
 
 	@GET
@@ -242,13 +225,14 @@ public class RepositoryResource
 		@QueryParam("size") @DefaultValue("50") int size)
 	{
 		Repository repo = requireReadable(owner, name);
+		RepoNav nav = repoNav.build(repo, uriInfo);
 		int boundedSize = Math.min(Math.max(size, 1), 100);
 		int boundedPage = Math.max(page, 0);
 		GitBrowseService.CommitPage commitPage = browse
 			.commits(service.repositoryPath(repo), ref, boundedPage, boundedSize)
 			.orElseThrow(NotFoundException::new);
-		return Templates.commits(repo, ref, commitPage.commits(), boundedPage, boundedPage - 1, boundedPage + 1,
-			boundedSize, commitPage.hasNext(), "commits");
+		return Templates.commits(repo, nav, ref, commitPage.commits(), boundedPage, boundedPage - 1, boundedPage + 1,
+			boundedSize, commitPage.hasNext());
 	}
 
 	@GET
@@ -256,9 +240,19 @@ public class RepositoryResource
 	public TemplateInstance branches(@PathParam("owner") String owner, @PathParam("name") String name)
 	{
 		Repository repo = requireReadable(owner, name);
+		RepoNav nav = repoNav.build(repo, uriInfo);
 		Path path = service.repositoryPath(repo);
-		String tabRef = browse.isEmpty(path) ? null : browse.defaultBranch(path);
-		return Templates.branches(repo, browse.branches(path), browse.tags(path), "branches", tabRef);
+		return Templates.branches(repo, nav, browse.branches(path));
+	}
+
+	@GET
+	@jakarta.ws.rs.Path("tags")
+	public TemplateInstance tags(@PathParam("owner") String owner, @PathParam("name") String name)
+	{
+		Repository repo = requireReadable(owner, name);
+		RepoNav nav = repoNav.build(repo, uriInfo);
+		Path path = service.repositoryPath(repo);
+		return Templates.tags(repo, nav, browse.tags(path));
 	}
 
 	@POST
@@ -309,12 +303,12 @@ public class RepositoryResource
 		return URI.create("/");
 	}
 
-	private TemplateInstance blobView(Repository repo, Path repoPath, String ref, String path)
+	private TemplateInstance blobView(Repository repo, RepoNav nav, Path repoPath, String ref, String path)
 	{
 		GitBrowseService.BlobView blob = browse.blob(repoPath, ref, path).orElseThrow(NotFoundException::new);
 		String content = blob.binary() ? null : new String(blob.content(), StandardCharsets.UTF_8);
 		String language = blob.binary() ? null : highlightLanguage(path);
-		return Templates.blob(repo, ref, path, blob.binary(), content, language, breadcrumbs(repo, ref, path), "files");
+		return Templates.blob(repo, nav, ref, path, blob.binary(), content, language, breadcrumbs(repo, ref, path));
 	}
 
 	// Extension → highlight.js language id. Every value here MUST have a grammar in the bundled highlight assets
@@ -427,17 +421,6 @@ public class RepositoryResource
 			throw new NotFoundException();
 		}
 		return repo;
-	}
-
-	private String httpUrl(Repository repo)
-	{
-		return uriInfo.getBaseUri().resolve("/git/" + repo.owner.username + "/" + repo.name + ".git").toString();
-	}
-
-	private String sshUrl(Repository repo)
-	{
-		return "ssh://git@" + uriInfo.getBaseUri().getHost() + ":" + sshPort
-			+ "/" + repo.owner.username + "/" + repo.name + ".git";
 	}
 
 }

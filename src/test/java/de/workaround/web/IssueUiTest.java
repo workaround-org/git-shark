@@ -147,6 +147,23 @@ class IssueUiTest
 	}
 
 	@Test
+	@TestSecurity(user = "iss-side")
+	void issuePagesShowTheRepositorySidebar()
+	{
+		User owner = persistUser("iss-side");
+		Repository repo = service.create(owner, "sb", Repository.Visibility.PUBLIC, null);
+		Issue issue = issueService.create(owner, repo, "Sidebar please", null);
+		String base = "/repos/" + owner.username + "/sb";
+
+		given().when().get(base + "/issues")
+			.then().statusCode(200).body(containsString("class=\"repo-nav\""));
+		given().when().get(base + "/issues/" + issue.id)
+			.then().statusCode(200).body(containsString("class=\"repo-nav\""));
+		given().when().get(base + "/issues/new")
+			.then().statusCode(200).body(containsString("class=\"repo-nav\""));
+	}
+
+	@Test
 	void anonymousCannotCreateIssues()
 	{
 		User owner = persistUser("iss-owner2-" + UUID.randomUUID().toString().substring(0, 8));

@@ -29,8 +29,10 @@ import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 
 @jakarta.ws.rs.Path("/repos/{owner}/{name}/merge-requests")
 @Produces(MediaType.TEXT_HTML)
@@ -39,12 +41,13 @@ public class MergeRequestResource
 	@CheckedTemplate
 	static class Templates
 	{
-		static native TemplateInstance mergeRequests(Repository repo, boolean owner, List<MergeRequest> open,
-			List<MergeRequest> closed);
+		static native TemplateInstance mergeRequests(Repository repo, RepoNav nav, boolean owner,
+			List<MergeRequest> open, List<MergeRequest> closed);
 
-		static native TemplateInstance newMergeRequest(Repository repo, List<String> branches, String defaultBranch);
+		static native TemplateInstance newMergeRequest(Repository repo, RepoNav nav, List<String> branches,
+			String defaultBranch);
 
-		static native TemplateInstance mergeRequest(Repository repo, boolean owner, boolean loggedIn,
+		static native TemplateInstance mergeRequest(Repository repo, RepoNav nav, boolean owner, boolean loggedIn,
 			UUID currentUserId, MergeRequest mr, List<FileDiffView> files, int additions, int deletions);
 	}
 
@@ -83,6 +86,12 @@ public class MergeRequestResource
 	@Inject
 	MergeRequestComment.Repo commentRepo;
 
+	@Inject
+	RepoNavService repoNav;
+
+	@Context
+	UriInfo uriInfo;
+
 	@GET
 	public TemplateInstance list(@PathParam("owner") String owner, @PathParam("name") String name)
 	{
@@ -90,7 +99,7 @@ public class MergeRequestResource
 		List<MergeRequest> all = mergeRequestService.list(repo);
 		List<MergeRequest> open = all.stream().filter(mr -> mr.status == MergeRequest.Status.OPEN).toList();
 		List<MergeRequest> closed = all.stream().filter(mr -> mr.status != MergeRequest.Status.OPEN).toList();
-		return Templates.mergeRequests(repo, isOwner(repo), open, closed);
+		return Templates.mergeRequests(repo, repoNav.build(repo, uriInfo), isOwner(repo), open, closed);
 	}
 
 	@GET
@@ -105,7 +114,7 @@ public class MergeRequestResource
 		Path path = service.repositoryPath(repo);
 		List<String> branches = browse.branches(path).stream().map(GitBrowseService.BranchInfo::name).toList();
 		String defaultBranch = browse.isEmpty(path) ? null : browse.defaultBranch(path);
-		return Templates.newMergeRequest(repo, branches, defaultBranch);
+		return Templates.newMergeRequest(repo, repoNav.build(repo, uriInfo), branches, defaultBranch);
 	}
 
 	@POST
@@ -162,7 +171,8 @@ public class MergeRequestResource
 				fileIndex++;
 			}
 		}
-		return Templates.mergeRequest(repo, isOwner(repo), loggedIn, currentUserId, mr, files, additions, deletions);
+		return Templates.mergeRequest(repo, repoNav.build(repo, uriInfo), isOwner(repo), loggedIn, currentUserId, mr,
+			files, additions, deletions);
 	}
 
 	@POST

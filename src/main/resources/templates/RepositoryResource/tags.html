@@ -1,0 +1,19 @@
+{#include layout}
+{#title}Tags – {repo.name}{/title}
+<div class="repo-layout">
+    {#include RepositoryResource/sidebar nav=nav active='tags' /}
+    <section class="repo-main">
+        <h2>Tags</h2>
+        {#if tags.isEmpty()}
+        <p>No tags.</p>
+        {#else}
+        <table>
+            <tr><th>Tag</th></tr>
+            {#for tag in tags}
+            <tr><td><a href="/repos/{repo.owner.username}/{repo.name}/tree/{tag}/">{tag}</a></td></tr>
+            {/for}
+        </table>
+        {/if}
+    </section>
+</div>
+{/include}

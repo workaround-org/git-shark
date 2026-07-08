@@ -268,52 +268,53 @@ class WebUiTest
 	}
 
 	@Test
-	void repositoryPagesRenderTabsWithActiveSection() throws Exception
+	void everyRepositorySubPageShowsTheLeftSidebar() throws Exception
 	{
-		User owner = persistUser("ui-tabs-" + unique());
-		Repository repo = service.create(owner, "tabbed", Repository.Visibility.PUBLIC, null);
+		User owner = persistUser("ui-side-" + unique());
+		Repository repo = service.create(owner, "sided", Repository.Visibility.PUBLIC, null);
 		GitTestSeeder.seed(service.repositoryPath(repo),
 			Map.of("a.txt", "a\n".getBytes(StandardCharsets.UTF_8)));
 
-		String base = "/repos/" + owner.username + "/tabbed";
+		String base = "/repos/" + owner.username + "/sided";
 
-		given().when().get(base + "/tree/main")
-			.then().statusCode(200)
-			.body(containsString("class=\"tabs\""))
-			.body(containsString("class=\"tab active\" href=\"" + base + "/tree/main/\">Files"))
-			.body(containsString("class=\"tab\" href=\"" + base + "/commits/main\">Commits"))
-			.body(containsString("class=\"tab\" href=\"" + base + "/branches\">Branches"));
-
-		given().when().get(base + "/tree/main/a.txt")
-			.then().statusCode(200)
-			.body(containsString("class=\"tab active\" href=\"" + base + "/tree/main/\">Files"));
-
-		given().when().get(base + "/commits/main")
-			.then().statusCode(200)
-			.body(containsString("class=\"tab active\" href=\"" + base + "/commits/main\">Commits"));
-
-		given().when().get(base + "/branches")
-			.then().statusCode(200)
-			.body(containsString("class=\"tab active\" href=\"" + base + "/branches\">Branches"));
+		// the left repo bar (identity + section nav) is present on every repo sub-page, not just the code overview...
+		for (String sub : java.util.List.of("", "/tree/main", "/tree/main/a.txt", "/commits/main", "/branches",
+			"/issues", "/merge-requests"))
+		{
+			given().when().get(base + sub)
+				.then().statusCode(200)
+				.body(containsString("class=\"repo-side\""))
+				.body(containsString("class=\"repo-nav\""))
+				// ...and the old horizontal tab strip is gone: navigation lives only in the sidebar now
+				.body(not(containsString("class=\"tabs\"")));
+		}
 	}
 
 	@Test
-	void tabLinksPreserveSelectedRef() throws Exception
+	void sidebarMarksTheActiveSection() throws Exception
 	{
-		User owner = persistUser("ui-kate-" + unique());
-		Repository repo = service.create(owner, "refkeep", Repository.Visibility.PUBLIC, null);
+		User owner = persistUser("ui-active-" + unique());
+		Repository repo = service.create(owner, "actrepo", Repository.Visibility.PUBLIC, null);
 		GitTestSeeder.seed(service.repositoryPath(repo),
 			Map.of("a.txt", "a\n".getBytes(StandardCharsets.UTF_8)));
-		try (org.eclipse.jgit.api.Git git = org.eclipse.jgit.api.Git.open(service.repositoryPath(repo).toFile()))
-		{
-			git.branchCreate().setName("feature").setStartPoint("main").call();
-		}
 
-		String base = "/repos/" + owner.username + "/refkeep";
-		given().when().get(base + "/tree/feature")
+		String base = "/repos/" + owner.username + "/actrepo";
+
+		given().when().get(base)
 			.then().statusCode(200)
-			.body(containsString("class=\"tab active\" href=\"" + base + "/tree/feature/\">Files"))
-			.body(containsString("href=\"" + base + "/commits/feature\">Commits"));
+			.body(containsString("class=\"active\" href=\"" + base + "\">"));
+		given().when().get(base + "/commits/main")
+			.then().statusCode(200)
+			.body(containsString("class=\"active\" href=\"" + base + "/commits/main\">"));
+		given().when().get(base + "/branches")
+			.then().statusCode(200)
+			.body(containsString("class=\"active\" href=\"" + base + "/branches\">"));
+		given().when().get(base + "/issues")
+			.then().statusCode(200)
+			.body(containsString("class=\"active\" href=\"" + base + "/issues\">"));
+		given().when().get(base + "/merge-requests")
+			.then().statusCode(200)
+			.body(containsString("class=\"active\" href=\"" + base + "/merge-requests\">"));
 	}
 
 	@Test
@@ -353,6 +354,38 @@ class WebUiTest
 			.then().statusCode(200)
 			.body(containsString("main"))
 			.body(containsString("default"));
+	}
+
+	@Test
+	void tagsHaveTheirOwnPageSeparateFromBranches() throws Exception
+	{
+		User owner = persistUser("ui-tags-" + unique());
+		Repository repo = service.create(owner, "tagged", Repository.Visibility.PUBLIC, null);
+		GitTestSeeder.seed(service.repositoryPath(repo),
+			Map.of("a.txt", "a\n".getBytes(StandardCharsets.UTF_8)));
+		try (org.eclipse.jgit.api.Git git = org.eclipse.jgit.api.Git.open(service.repositoryPath(repo).toFile()))
+		{
+			git.tag().setName("v1.0").call();
+		}
+
+		String base = "/repos/" + owner.username + "/tagged";
+
+		// the tag lives on its own dedicated page, which marks the Tags nav item active
+		given().when().get(base + "/tags")
+			.then().statusCode(200)
+			.body(containsString("v1.0"))
+			.body(containsString("class=\"active\" href=\"" + base + "/tags\">"));
+
+		// the sidebar points Tags at that page, not at /branches
+		given().when().get(base)
+			.then().statusCode(200)
+			.body(containsString("href=\"" + base + "/tags\">"));
+
+		// the branches page is branches-only now: the tag no longer shows up there
+		given().when().get(base + "/branches")
+			.then().statusCode(200)
+			.body(containsString("main"))
+			.body(not(containsString("v1.0")));
 	}
 
 	@Test

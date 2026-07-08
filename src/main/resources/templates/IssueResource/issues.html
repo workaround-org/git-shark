@@ -1,41 +1,45 @@
 {#include layout}
 {#title}Issues – {repo.name}{/title}
-<h1><a href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></h1>
-<div class="issues-head">
-    <h2>Issues</h2>
-    {#if owner}
-    <a class="btn btn-primary" href="/repos/{repo.owner.username}/{repo.name}/issues/new">New issue</a>
-    {/if}
+<div class="repo-layout">
+    {#include RepositoryResource/sidebar nav=nav active='issues' /}
+    <section class="repo-main">
+        <div class="issues-head">
+            <h2>Issues</h2>
+            {#if owner}
+            <a class="btn btn-primary" href="/repos/{repo.owner.username}/{repo.name}/issues/new">New issue</a>
+            {/if}
+        </div>
+        {#if open.isEmpty()}
+        <p class="muted">No open issues.</p>
+        {#else}
+        <div class="panel">
+            {#for issue in open}
+            <a class="frow" href="/repos/{repo.owner.username}/{repo.name}/issues/{issue.id}">
+                <span class="fname">
+                    <span class="badge status-{issue.status}">{issue.status.label}</span>
+                    <span class="n">{issue.title}</span>
+                    <span class="issue-no">#{issue.number}</span>
+                </span>
+            </a>
+            {/for}
+        </div>
+        {/if}
+        {#if done.size > 0}
+        <details class="archive">
+            <summary>Archive <span class="ct">{done.size}</span></summary>
+            <div class="panel">
+                {#for issue in done}
+                <a class="frow" href="/repos/{repo.owner.username}/{repo.name}/issues/{issue.id}">
+                    <span class="fname">
+                        <span class="badge status-{issue.status}">{issue.status.label}</span>
+                        <span class="n">{issue.title}</span>
+                        <span class="issue-no">#{issue.number}</span>
+                    </span>
+                </a>
+                {/for}
+            </div>
+        </details>
+        {/if}
+    </section>
 </div>
-{#if open.isEmpty()}
-<p class="muted">No open issues.</p>
-{#else}
-<div class="panel">
-    {#for issue in open}
-    <a class="frow" href="/repos/{repo.owner.username}/{repo.name}/issues/{issue.id}">
-        <span class="fname">
-            <span class="badge status-{issue.status}">{issue.status.label}</span>
-            <span class="n">{issue.title}</span>
-            <span class="issue-no">#{issue.number}</span>
-        </span>
-    </a>
-    {/for}
-</div>
-{/if}
-{#if done.size > 0}
-<details class="archive">
-    <summary>Archive <span class="ct">{done.size}</span></summary>
-    <div class="panel">
-        {#for issue in done}
-        <a class="frow" href="/repos/{repo.owner.username}/{repo.name}/issues/{issue.id}">
-            <span class="fname">
-                <span class="badge status-{issue.status}">{issue.status.label}</span>
-                <span class="n">{issue.title}</span>
-                <span class="issue-no">#{issue.number}</span>
-            </span>
-        </a>
-        {/for}
-    </div>
-</details>
-{/if}
 {/include}

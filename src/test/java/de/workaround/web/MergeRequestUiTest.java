@@ -127,6 +127,23 @@ class MergeRequestUiTest
 	}
 
 	@Test
+	@TestSecurity(user = "mru-side")
+	void mergeRequestPagesShowTheRepositorySidebar()
+	{
+		User owner = persistUser("mru-side");
+		seed(owner, "sb");
+		String base = "/repos/" + owner.username + "/sb/merge-requests";
+
+		String location = given().redirects().follow(false).contentType("application/x-www-form-urlencoded")
+			.formParam("title", "Sidebar MR").formParam("sourceBranch", "feature").formParam("targetBranch", "main")
+			.when().post(base).then().statusCode(303).extract().header("Location");
+
+		given().when().get(base).then().statusCode(200).body(containsString("class=\"repo-nav\""));
+		given().when().get(base + "/new").then().statusCode(200).body(containsString("class=\"repo-nav\""));
+		given().when().get(location).then().statusCode(200).body(containsString("class=\"repo-nav\""));
+	}
+
+	@Test
 	@TestSecurity(user = "mru-count")
 	void repoOverviewShowsOpenMergeRequestCount()
 	{

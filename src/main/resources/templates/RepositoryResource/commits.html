@@ -1,25 +1,28 @@
 {#include layout}
 {#title}Commits at {ref} – {repo.name}{/title}
-<h1><a href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></h1>
-<p>Commits on <code>{ref}</code></p>
-{#include RepositoryResource/tabs repo=repo tabRef=ref activeTab=activeTab /}
-<table>
-    <tr><th>Commit</th><th>Message</th><th>Author</th><th>Date</th></tr>
-    {#for commit in commits}
-    <tr>
-        <td><code>{commit.shortId}</code></td>
-        <td>{commit.message}</td>
-        <td>{commit.author}</td>
-        <td>{commit.date}</td>
-    </tr>
-    {/for}
-</table>
-<p class="pagination">
-    {#if page > 0}
-    <a class="btn btn-secondary" href="/repos/{repo.owner.username}/{repo.name}/commits/{ref}?page={prevPage}&size={size}">Newer</a>
-    {/if}
-    {#if hasNext}
-    <a class="btn btn-secondary" href="/repos/{repo.owner.username}/{repo.name}/commits/{ref}?page={nextPage}&size={size}">Older</a>
-    {/if}
-</p>
+<div class="repo-layout">
+    {#include RepositoryResource/sidebar nav=nav active='commits' /}
+    <section class="repo-main">
+        <p>Commits on <code>{ref}</code></p>
+        <table>
+            <tr><th>Commit</th><th>Message</th><th>Author</th><th>Date</th></tr>
+            {#for commit in commits}
+            <tr>
+                <td><code>{commit.shortId}</code></td>
+                <td>{commit.message}</td>
+                <td>{commit.author}</td>
+                <td>{commit.date}</td>
+            </tr>
+            {/for}
+        </table>
+        <p class="pagination">
+            {#if page > 0}
+            <a class="btn btn-secondary" href="/repos/{repo.owner.username}/{repo.name}/commits/{ref}?page={prevPage}&size={size}">Newer</a>
+            {/if}
+            {#if hasNext}
+            <a class="btn btn-secondary" href="/repos/{repo.owner.username}/{repo.name}/commits/{ref}?page={nextPage}&size={size}">Older</a>
+            {/if}
+        </p>
+    </section>
+</div>
 {/include}

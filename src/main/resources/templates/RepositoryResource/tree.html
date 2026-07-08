@@ -1,23 +1,26 @@
 {#include layout}
 {#title}{path ?: '/'} at {ref} – {repo.name}{/title}
-<h1><a href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></h1>
-{#include RepositoryResource/tabs repo=repo tabRef=ref activeTab=activeTab /}
-<nav class="breadcrumb" aria-label="Path">
-    {#for crumb in crumbs}
-    {#if crumb.href}<a href="{crumb.href}">{crumb.label}</a>{#else}<span class="current">{crumb.label}</span>{/if}
-    {#if crumb_hasNext}<span class="sep">/</span>{/if}
-    {/for}
-</nav>
-<div class="panel">
-    <div class="files">
-        {#for entry in entries}
-        <a class="frow" href="/repos/{repo.owner.username}/{repo.name}/tree/{ref}/{entry.path}">
-            <span class="fname">
-                <span class="g{#if entry.directory} dir{/if}">{#if entry.directory}▸{#else}≡{/if}</span>
-                <span class="n">{entry.name}</span>
-            </span>
-        </a>
-        {/for}
-    </div>
+<div class="repo-layout">
+    {#include RepositoryResource/sidebar nav=nav active='code' /}
+    <section class="repo-main">
+        <nav class="breadcrumb" aria-label="Path">
+            {#for crumb in crumbs}
+            {#if crumb.href}<a href="{crumb.href}">{crumb.label}</a>{#else}<span class="current">{crumb.label}</span>{/if}
+            {#if crumb_hasNext}<span class="sep">/</span>{/if}
+            {/for}
+        </nav>
+        <div class="panel">
+            <div class="files">
+                {#for entry in entries}
+                <a class="frow" href="/repos/{repo.owner.username}/{repo.name}/tree/{ref}/{entry.path}">
+                    <span class="fname">
+                        <span class="g{#if entry.directory} dir{/if}">{#if entry.directory}▸{#else}≡{/if}</span>
+                        <span class="n">{entry.name}</span>
+                    </span>
+                </a>
+                {/for}
+            </div>
+        </div>
+    </section>
 </div>
 {/include}

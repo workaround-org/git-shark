@@ -1,20 +1,23 @@
 {#include layout}
 {#title}{path} at {ref} – {repo.name}{/title}
-<h1><a href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></h1>
-{#include RepositoryResource/tabs repo=repo tabRef=ref activeTab=activeTab /}
-<nav class="breadcrumb" aria-label="Path">
-    {#for crumb in crumbs}
-    {#if crumb.href}<a href="{crumb.href}">{crumb.label}</a>{#else}<span class="current">{crumb.label}</span>{/if}
-    {#if crumb_hasNext}<span class="sep">/</span>{/if}
-    {/for}
-</nav>
-{#if binary}
-<p>Binary file. <a class="btn btn-secondary" href="/repos/{repo.owner.username}/{repo.name}/raw/{ref}/{path}">Download</a></p>
-{#else if language}
-<pre><code class="language-{language}">{content}</code></pre>
-{#else}
-<pre>{content}</pre>
-{/if}
+<div class="repo-layout">
+    {#include RepositoryResource/sidebar nav=nav active='code' /}
+    <section class="repo-main">
+        <nav class="breadcrumb" aria-label="Path">
+            {#for crumb in crumbs}
+            {#if crumb.href}<a href="{crumb.href}">{crumb.label}</a>{#else}<span class="current">{crumb.label}</span>{/if}
+            {#if crumb_hasNext}<span class="sep">/</span>{/if}
+            {/for}
+        </nav>
+        {#if binary}
+        <p>Binary file. <a class="btn btn-secondary" href="/repos/{repo.owner.username}/{repo.name}/raw/{ref}/{path}">Download</a></p>
+        {#else if language}
+        <pre><code class="language-{language}">{content}</code></pre>
+        {#else}
+        <pre>{content}</pre>
+        {/if}
+    </section>
+</div>
 {#scripts}
 {#if language}
 <script src="/highlight.min.js"></script>
