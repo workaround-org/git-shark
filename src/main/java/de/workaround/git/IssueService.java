@@ -60,6 +60,11 @@ public class IssueService
 		return issues.findByRepositoryAndId(repository, id);
 	}
 
+	public Optional<Issue> find(Repository repository, int number)
+	{
+		return issues.findByRepositoryAndNumber(repository, number);
+	}
+
 	@Transactional
 	public void updateStatus(User actor, Issue issue, Issue.Status status)
 	{

@@ -80,6 +80,9 @@ public class MergeRequest implements PanacheEntity.Managed
 		@Find
 		Optional<MergeRequest> findByRepositoryAndId(Repository repository, UUID id);
 
+		@Find
+		Optional<MergeRequest> findByRepositoryAndNumber(Repository repository, int number);
+
 		@HQL("select count(mr) from MergeRequest mr where mr.repository = :repository and mr.status = OPEN")
 		long countOpen(Repository repository);
 

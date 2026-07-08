@@ -25,6 +25,8 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
 - Line-level review comments on a merge request's diff: any authenticated user who can read the repository can comment on a specific diff line (added, deleted, or context) from the merge-request detail page; comments render inline beneath the line they anchor to. A comment can be deleted by its author or by the repository owner. Comments are anchored to a file plus the diff line's old/new line numbers and must land on a line that's part of the current diff. Hovering a commentable line reveals a comment icon on the right; clicking it opens the form inline — a progressive-enhancement disclosure that works without JavaScript
 - OIDC login (authorization code flow) via `GET /login`; on first login the user account is created without a username and the browser is redirected to `/onboarding`, where the user picks a URL-safe handle (`^[a-z0-9][a-z0-9-]{0,38}$`, unique). The chosen handle — not the OIDC `preferred_username` claim (which is an SPN form in kanidm and not URL-safe) — is used in all repo, SSH, ActivityPub, and webfinger URLs. The `name` claim becomes an editable display name; both can be changed later at `/settings/profile`. A request filter blocks all app pages until a handle is chosen. Logout is local-session only via `POST /logout` (the kanidm provider advertises no `end_session_endpoint`, so RP-Initiated Logout is disabled)
 - Single access policy on all paths: owner read/write, public world-readable, private owner-only
+- **JSON REST API** under `/api/v1`, authenticated with the same personal access tokens as
+  git-over-HTTP (`Authorization: Bearer <token>`), auto-documented via OpenAPI/Swagger UI (see below)
 - **Federation (ForgeFed / ActivityPub)** — *opt-in, off by default.* Public repositories are
   exposed as ForgeFed `Repository` actors that remote instances can follow and receive `Push`
   activities from (see below)
@@ -55,6 +57,33 @@ and merge requests exist locally but are **not** federated yet.
 > stable, non-loopback HTTPS origin before turning it on; git-shark refuses to emit actor documents
 > otherwise.
 
+## REST API
+
+A JSON REST API is served under `/api/v1`, auto-documented via the existing
+`quarkus-smallrye-openapi` extension (`GET /q/openapi`, `GET /q/swagger-ui`).
+
+- Authenticated with the **same personal access tokens** used for git-over-HTTP, but sent as
+  `Authorization: Bearer <token>` (not HTTP Basic)
+- Anonymous requests are allowed for public reads only; mutations require a token and repository
+  ownership (posting a comment only requires read access)
+- Same visibility rules as the UI: private repositories are hidden as `404`, not `403`
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/v1/user` | The token owner (`401` without a valid token) |
+| GET | `/api/v1/repos` | Repositories visible to the caller |
+| POST | `/api/v1/repos` | Create a repository (`400` invalid name, `409` duplicate) |
+| GET | `/api/v1/repos/{owner}/{name}` | Repository detail |
+| DELETE | `/api/v1/repos/{owner}/{name}` | Delete a repository (owner only) |
+| GET, POST | `/api/v1/repos/{owner}/{name}/issues` | List / create issues |
+| GET, PATCH, DELETE | `/api/v1/repos/{owner}/{name}/issues/{number}` | Get / update status / delete an issue |
+| GET, POST | `/api/v1/repos/{owner}/{name}/merge-requests` | List / create merge requests |
+| GET | `/api/v1/repos/{owner}/{name}/merge-requests/{number}` | Merge request detail |
+| POST | `/api/v1/repos/{owner}/{name}/merge-requests/{number}/merge` | Merge |
+| POST | `/api/v1/repos/{owner}/{name}/merge-requests/{number}/close` | Close |
+| GET, POST | `/api/v1/repos/{owner}/{name}/merge-requests/{number}/comments` | List / add line-level review comments (any reader may comment) |
+| DELETE | `/api/v1/repos/{owner}/{name}/merge-requests/{number}/comments/{commentId}` | Delete a comment (author or repo owner) |
+
 ## Architecture notes
 
 - Repository names resolve to UUID-based storage paths **through the database only**
@@ -83,8 +112,9 @@ and merge requests exist locally but are **not** federated yet.
 | `GITSHARK_FEDERATION_MAX_ATTEMPTS` | `8` | Max delivery attempts before a queued activity is dead-lettered |
 | `GITSHARK_FEDERATION_DEV_ALLOW_INSECURE` | `false` | **Dev/local only.** Lets the SSRF guard accept `http` + loopback/private targets so two instances can federate on one machine (peer allowlist still enforced). Never enable in production. |
 
-> **TLS required in production:** personal access tokens travel as HTTP Basic credentials.
-> Terminate TLS in front of the service; never expose plain HTTP publicly.
+> **TLS required in production:** personal access tokens travel as HTTP Basic credentials
+> (git-over-HTTP) or a `Bearer` token (REST API). Terminate TLS in front of the service; never
+> expose plain HTTP publicly.
 
 ## Development
 
