@@ -1148,6 +1148,19 @@ td.actions .btn {
     display: block;
 }
 
+/* copied confirmation for any [data-copy] button (clone dialog, token page, ...) */
+.copy-btn.copied {
+    color: var(--success-deep);
+}
+
+/* one-time token reveal: plaintext with a copy button on the same line */
+pre.token-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s2);
+}
+
 /* hotkey help dialog */
 
 dialog#hotkey-help {
@@ -1444,10 +1457,6 @@ dialog#hotkey-help kbd {
 
 .clone-url .copy-btn {
     flex: none;
-}
-
-.clone-url .copy-btn.copied {
-    color: var(--success-deep);
 }
 
 #clone-https:checked ~ .url-https,

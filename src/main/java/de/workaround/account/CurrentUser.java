@@ -4,12 +4,15 @@ import de.workaround.model.User;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 /**
  * Resolves the logged-in UI user, provisioning the local record from token claims on access.
- * Returns null for anonymous requests.
+ * Returns null for anonymous requests. Named so templates can switch the header nav via
+ * {cdi:currentUser.loggedIn} without each page passing the user along.
  */
+@Named("currentUser")
 @RequestScoped
 public class CurrentUser
 {
@@ -20,6 +23,12 @@ public class CurrentUser
 	UserProvisioningService provisioning;
 
 	private User cached;
+
+	/** Cheap auth check for templates — no user provisioning, just the identity state. */
+	public boolean isLoggedIn()
+	{
+		return !identity.isAnonymous();
+	}
 
 	public User get()
 	{

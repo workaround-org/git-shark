@@ -78,6 +78,19 @@ class SettingsPagesTest
 	}
 
 	@Test
+	@TestSecurity(user = "token-copy-tester")
+	void tokenCreatedPageHasCopyButton()
+	{
+		given()
+			.formParam("label", "copy-token")
+			.when().post("/settings/tokens")
+			.then()
+			.statusCode(200)
+			.body(containsString("copy-btn"))
+			.body(containsString("data-copy=\"gs_"));
+	}
+
+	@Test
 	void anonymousIsRedirectedToLogin()
 	{
 		given()

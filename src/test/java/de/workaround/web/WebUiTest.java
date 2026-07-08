@@ -500,6 +500,34 @@ class WebUiTest
 	}
 
 	@Test
+	void anonymousHeaderShowsOnlyLoginButton() throws Exception
+	{
+		given()
+			.when().get("/explore")
+			.then()
+			.statusCode(200)
+			.body(containsString("href=\"/login\""))
+			.body(not(containsString("Logout")))
+			.body(not(containsString("Access tokens")))
+			.body(not(containsString("/settings/profile")));
+	}
+
+	@Test
+	@TestSecurity(user = "ui-nav-user")
+	void loggedInHeaderShowsAccountNavigation() throws Exception
+	{
+		persistUser("ui-nav-user");
+
+		given()
+			.when().get("/explore")
+			.then()
+			.statusCode(200)
+			.body(containsString("Access tokens"))
+			.body(containsString("Logout"))
+			.body(not(containsString("href=\"/login\"")));
+	}
+
+	@Test
 	@TestSecurity(user = "ui-mallory")
 	void privateRepositoryHiddenFromStranger() throws Exception
 	{

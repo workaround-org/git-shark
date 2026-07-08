@@ -130,6 +130,16 @@ class DesignSystemTest
 	}
 
 	@Test
+	void copyButtonConfirmationStyleWorksOutsideCloneDialog()
+	{
+		// the copied-state color must apply to every [data-copy] button (e.g. the token page),
+		// not only to buttons inside the clone dialog
+		given().when().get("/shark.css")
+			.then().statusCode(200)
+			.body(containsString("\n.copy-btn.copied"));
+	}
+
+	@Test
 	void fontsAreSelfHostedWithoutCdnRequests()
 	{
 		given().when().get("/")
