@@ -51,6 +51,9 @@ When enabled, each public repository (and each user) is an actor under `/ap`:
 - A remote actor `POST`s a signed `Follow` to a repo inbox → recorded + `Accept`'d; `Undo` unfollows
 - On push, a `Push` activity is published to the outbox and delivered to followers via a persisted,
   retrying, HTTP-Signature-signed delivery queue
+- Outbound: logged-in users can follow a remote repository/actor from the **Following** page by
+  handle (`owner/name@host`) or actor URL; the handle is resolved via WebFinger and a signed `Follow`
+  is enqueued for delivery, tracked as PENDING until the remote `Accept`s (unfollow sends `Undo`)
 
 Inbound activities must carry a valid HTTP Signature from an **allowlisted** peer; outbound fetches
 are HTTPS-only, allowlist-bound, and SSRF-guarded (no private/loopback/link-local targets). Issues

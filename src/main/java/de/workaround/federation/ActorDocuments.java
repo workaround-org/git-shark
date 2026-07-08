@@ -135,6 +135,30 @@ public class ActorDocuments
 		return node;
 	}
 
+	/** Builds a {@code Follow} of a remote actor, attributed to a local actor. */
+	public ObjectNode follow(String actorId, String remoteActorId, String activityId)
+	{
+		ObjectNode node = mapper.createObjectNode();
+		node.put("@context", ActivityPubMedia.ACTIVITYSTREAMS);
+		node.put("id", activityId);
+		node.put("type", "Follow");
+		node.put("actor", actorId);
+		node.put("object", remoteActorId);
+		return node;
+	}
+
+	/** Builds an {@code Undo} of a previously sent activity, attributed to the same local actor. */
+	public ObjectNode undo(String actorId, ObjectNode activity)
+	{
+		ObjectNode node = mapper.createObjectNode();
+		node.put("@context", ActivityPubMedia.ACTIVITYSTREAMS);
+		node.put("id", actorId + "/activities/" + UUID.randomUUID());
+		node.put("type", "Undo");
+		node.put("actor", actorId);
+		node.set("object", activity);
+		return node;
+	}
+
 	/** Builds an {@code Accept} of an inbound {@code Follow}, attributed to the followed actor. */
 	public ObjectNode acceptFollow(String actorId, JsonNode follow)
 	{

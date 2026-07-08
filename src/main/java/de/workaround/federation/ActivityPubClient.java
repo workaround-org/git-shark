@@ -2,6 +2,7 @@ package de.workaround.federation;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -35,6 +36,9 @@ public class ActivityPubClient
 
 	@Inject
 	RemoteUrlGuard guard;
+
+	@Inject
+	FederationConfig config;
 
 	@Inject
 	RemoteActor.Repo remoteActors;
@@ -118,6 +122,59 @@ public class ActivityPubClient
 	{
 		String actorId = keyId.contains("#") ? keyId.substring(0, keyId.indexOf('#')) : keyId;
 		return fetchActor(actorId).map(actor -> ActorKeyService.parsePublic(actor.publicKeyPem));
+	}
+
+	/**
+	 * Resolves {@code acct:{identifier}@{host}} via the host's WebFinger endpoint to the actor id in
+	 * its {@code self} link. The host may carry a non-default port (dev two-host trials); https is
+	 * used unless the dev-insecure flag permits http.
+	 */
+	public Optional<String> resolveWebFinger(String identifier, String host)
+	{
+		String scheme = config.devAllowInsecure() ? "http" : "https";
+		String resource = "acct:" + identifier + "@" + host;
+		String url = scheme + "://" + host + "/.well-known/webfinger?resource="
+			+ URLEncoder.encode(resource, java.nio.charset.StandardCharsets.UTF_8);
+		URI uri;
+		try
+		{
+			uri = guard.requireSafe(url);
+		}
+		catch (RemoteUrlGuard.UnsafeUrlException e)
+		{
+			return Optional.empty();
+		}
+		try
+		{
+			HttpResponse<String> response = http.send(
+				HttpRequest.newBuilder(uri)
+					.header("Accept", ActivityPubMedia.JRD_JSON)
+					.timeout(Duration.ofSeconds(15))
+					.GET().build(),
+				HttpResponse.BodyHandlers.ofString());
+			if (response.statusCode() / 100 != 2 || response.body().length() > MAX_RESPONSE_BYTES)
+			{
+				return Optional.empty();
+			}
+			JsonNode jrd = mapper.readTree(response.body());
+			for (JsonNode link : jrd.path("links"))
+			{
+				if ("self".equals(link.path("rel").asText("")))
+				{
+					return Optional.ofNullable(link.path("href").asText(null));
+				}
+			}
+			return Optional.empty();
+		}
+		catch (IOException e)
+		{
+			return Optional.empty();
+		}
+		catch (InterruptedException e)
+		{
+			Thread.currentThread().interrupt();
+			return Optional.empty();
+		}
 	}
 
 	/** Signs and POSTs the activity to the inbox, returning the outcome (never throws on network errors). */

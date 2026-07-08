@@ -92,7 +92,9 @@ public class WebFingerResource
 
 	private String baseHost()
 	{
-		return URI.create(config.baseUrl()).getHost();
+		// Authority, not host: keeps a non-default port significant (acct:owner/name@host:port),
+		// which the dev two-host trial on one machine relies on.
+		return URI.create(config.baseUrl()).getAuthority();
 	}
 
 }

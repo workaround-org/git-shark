@@ -8,7 +8,8 @@ import org.jboss.logging.Logger;
 
 /**
  * Routes a verified, deduplicated inbound activity to the right handler. Inbound {@code Accept}
- * (acknowledging a follow we sent) is logged; unknown types are stored-and-ignored.
+ * (acknowledging a follow we sent) confirms the outbound follow; unknown types are
+ * stored-and-ignored.
  */
 @ApplicationScoped
 public class ActivityDispatcher
@@ -21,6 +22,9 @@ public class ActivityDispatcher
 	@Inject
 	UndoHandler undoHandler;
 
+	@Inject
+	AcceptHandler acceptHandler;
+
 	/** Called within the inbox receipt transaction, after the activity id has been recorded. */
 	public void dispatch(JsonNode activity)
 	{
@@ -29,7 +33,7 @@ public class ActivityDispatcher
 		{
 			case "Follow" -> followHandler.handle(activity);
 			case "Undo" -> undoHandler.handle(activity);
-			case "Accept" -> LOG.debugf("Received Accept: %s", activity.path("id").asText(""));
+			case "Accept" -> acceptHandler.handle(activity);
 			default -> LOG.debugf("Ignoring unsupported activity type: %s", type);
 		}
 	}
