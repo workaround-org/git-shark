@@ -25,6 +25,9 @@ public class ActivityDispatcher
 	@Inject
 	AcceptHandler acceptHandler;
 
+	@Inject
+	PushHandler pushHandler;
+
 	/** Called within the inbox receipt transaction, after the activity id has been recorded. */
 	public void dispatch(JsonNode activity)
 	{
@@ -34,6 +37,7 @@ public class ActivityDispatcher
 			case "Follow" -> followHandler.handle(activity);
 			case "Undo" -> undoHandler.handle(activity);
 			case "Accept" -> acceptHandler.handle(activity);
+			case "Push" -> pushHandler.handle(activity);
 			default -> LOG.debugf("Ignoring unsupported activity type: %s", type);
 		}
 	}

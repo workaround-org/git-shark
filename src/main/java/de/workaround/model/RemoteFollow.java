@@ -67,6 +67,9 @@ public class RemoteFollow implements PanacheEntity.Managed
 		@Find
 		Optional<RemoteFollow> findByFollowActivityId(String followActivityId);
 
+		@Find
+		List<RemoteFollow> findByRemoteActorId(String remoteActorId);
+
 		@HQL("select f from RemoteFollow f where f.user = :user order by f.createdAt")
 		List<RemoteFollow> findByUser(User user);
 	}

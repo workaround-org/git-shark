@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import de.workaround.account.CurrentUser;
 import de.workaround.federation.RemoteFollowService;
+import de.workaround.model.ReceivedPush;
 import de.workaround.model.RemoteFollow;
 import de.workaround.model.User;
 import io.quarkus.qute.CheckedTemplate;
@@ -29,7 +30,8 @@ public class FollowingResource
 	@CheckedTemplate
 	static class Templates
 	{
-		static native TemplateInstance following(List<RemoteFollow> follows, String error);
+		static native TemplateInstance following(List<RemoteFollow> follows, List<ReceivedPush> pushes,
+			String error);
 	}
 
 	@Inject
@@ -41,7 +43,8 @@ public class FollowingResource
 	@GET
 	public TemplateInstance list()
 	{
-		return Templates.following(service.list(currentUser.require()), null);
+		User user = currentUser.require();
+		return Templates.following(service.list(user), service.recentPushes(user), null);
 	}
 
 	@POST
@@ -57,7 +60,7 @@ public class FollowingResource
 		catch (RemoteFollowService.RemoteFollowException e)
 		{
 			return Response.status(Response.Status.BAD_REQUEST)
-				.entity(Templates.following(service.list(user), e.getMessage()))
+				.entity(Templates.following(service.list(user), service.recentPushes(user), e.getMessage()))
 				.build();
 		}
 	}
