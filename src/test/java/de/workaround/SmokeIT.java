@@ -4,26 +4,16 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.is;
 
 /**
  * Boots the packaged application (JVM jar or native binary) and verifies the service is alive:
- * HTTP health endpoint up, public pages (Qute templates) rendering, the OpenAPI document
- * served, and the embedded SSH server accepting connections.
+ * public pages (Qute templates) rendering, static design-system assets served, and the embedded
+ * SSH server accepting connections. Health and OpenAPI live on the management interface
+ * (%prod.quarkus.management.enabled=true → a separate port), so they are not asserted here.
  */
 @QuarkusIntegrationTest
 class SmokeIT
 {
-	@Test
-	void healthEndpointIsUp()
-	{
-		given()
-			.when().get("/q/health")
-			.then()
-			.statusCode(200)
-			.body("status", is("UP"));
-	}
-
 	@Test
 	void landingPageRenders()
 	{
@@ -38,15 +28,6 @@ class SmokeIT
 	{
 		given()
 			.when().get("/explore")
-			.then()
-			.statusCode(200);
-	}
-
-	@Test
-	void openApiDocumentIsServed()
-	{
-		given()
-			.when().get("/q/openapi")
 			.then()
 			.statusCode(200);
 	}
