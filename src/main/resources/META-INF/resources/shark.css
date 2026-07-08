@@ -935,36 +935,147 @@ details.archive > .panel {
     background: var(--danger-bg);
 }
 
-pre.diff {
-    margin: 0;
-    padding: 0;
+.diff-body {
     overflow-x: auto;
-    font: 12.5px/1.5 var(--mono);
+    font: 12.5px/1.6 var(--mono);
     background: var(--surface);
 }
 
-pre.diff .dl {
-    display: block;
-    padding: 0 var(--s3);
-    white-space: pre;
+.diff-body .dl {
     color: var(--ink);
+    border-bottom: 1px solid var(--border-soft);
 }
 
-pre.diff .dl.add {
+.diff-body .dl:last-child {
+    border-bottom: none;
+}
+
+.dl-line {
+    display: flex;
+    align-items: flex-start;
+    min-width: max-content;
+}
+
+.dl-line .ln {
+    flex: 0 0 auto;
+    width: 44px;
+    padding: 0 8px;
+    text-align: right;
+    color: var(--faint);
+    background: var(--border-soft);
+    border-right: 1px solid var(--border);
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.dl-line .dl-text {
+    flex: 1 1 auto;
+    padding: 0 var(--s3);
+    white-space: pre;
+}
+
+.diff-body .dl.add .dl-line {
     background: oklch(0.95 0.05 150);
 }
 
-pre.diff .dl.del {
+.diff-body .dl.add .ln {
+    background: oklch(0.9 0.06 150);
+}
+
+.diff-body .dl.del .dl-line {
     background: oklch(0.95 0.05 27);
 }
 
-pre.diff .dl.hunk {
+.diff-body .dl.del .ln {
+    background: oklch(0.9 0.06 27);
+}
+
+.diff-body .dl.hunk .dl-line {
     color: var(--accent-deep);
     background: var(--accent-soft);
 }
 
-pre.diff .dl.meta {
+.diff-body .dl.hunk .ln {
+    background: var(--accent-soft);
+}
+
+.diff-body .dl.meta .dl-line {
     color: var(--faint);
+}
+
+/* per-line comment affordance and threads */
+
+.dl-add-comment > summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 2px var(--s3) 2px 96px;
+    font: 500 11px/1.4 var(--font);
+    color: var(--accent-deep);
+    background: var(--accent-soft);
+    opacity: 0;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.dl:hover .dl-add-comment > summary,
+.dl-add-comment[open] > summary {
+    opacity: 1;
+}
+
+.dl-add-comment > summary::-webkit-details-marker {
+    display: none;
+}
+
+.dl-add-comment form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s2);
+    max-width: 560px;
+    padding: var(--s2) var(--s3) var(--s3) 96px;
+    background: var(--surface);
+}
+
+.dl-comment-row {
+    padding: var(--s2) var(--s3) var(--s2) 96px;
+    background: var(--surface);
+    border-top: 1px dashed var(--border);
+    font-family: var(--font);
+}
+
+.comment {
+    max-width: 640px;
+}
+
+.comment-head {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    margin-bottom: 2px;
+}
+
+.comment-head .who {
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.comment-del {
+    border: none;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+    color: var(--danger);
+    font: 500 12px/1 var(--font);
+}
+
+.comment-del:hover {
+    text-decoration: underline;
+}
+
+.comment-body {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 13.5px;
+    color: var(--ink);
 }
 
 /* dashboard */

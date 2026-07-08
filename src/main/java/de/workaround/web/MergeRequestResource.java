@@ -2,6 +2,7 @@ package de.workaround.web;
 
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -11,14 +12,17 @@ import de.workaround.git.ForbiddenOperationException;
 import de.workaround.git.GitBrowseService;
 import de.workaround.git.GitMergeService;
 import de.workaround.git.GitRepositoryService;
+import de.workaround.git.MergeRequestCommentService;
 import de.workaround.git.MergeRequestService;
 import de.workaround.model.MergeRequest;
+import de.workaround.model.MergeRequestComment;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateInstance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.FormParam;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
@@ -40,8 +44,18 @@ public class MergeRequestResource
 
 		static native TemplateInstance newMergeRequest(Repository repo, List<String> branches, String defaultBranch);
 
-		static native TemplateInstance mergeRequest(Repository repo, boolean owner, MergeRequest mr,
-			GitMergeService.DiffView diff);
+		static native TemplateInstance mergeRequest(Repository repo, boolean owner, boolean loggedIn,
+			UUID currentUserId, MergeRequest mr, List<FileDiffView> files, int additions, int deletions);
+	}
+
+	/** A diff line paired with whether it accepts comments and the comments already anchored to it. */
+	public record DiffLineView(GitMergeService.DiffLine line, boolean commentable, List<MergeRequestComment> comments)
+	{
+	}
+
+	/** A changed file's diff lines augmented with per-line comment state, for the merge-request detail view. */
+	public record FileDiffView(String path, String changeType, int additions, int deletions, List<DiffLineView> lines)
+	{
 	}
 
 	@Inject
@@ -58,6 +72,12 @@ public class MergeRequestResource
 
 	@Inject
 	MergeRequestService mergeRequestService;
+
+	@Inject
+	MergeRequestCommentService commentService;
+
+	@Inject
+	MergeRequestComment.Repo commentRepo;
 
 	@GET
 	public TemplateInstance list(@PathParam("owner") String owner, @PathParam("name") String name)
@@ -104,7 +124,72 @@ public class MergeRequestResource
 		Repository repo = requireReadable(owner, name);
 		MergeRequest mr = mergeRequestService.find(repo, parseId(id)).orElseThrow(NotFoundException::new);
 		GitMergeService.DiffView diff = mergeRequestService.diff(mr).orElse(null);
-		return Templates.mergeRequest(repo, isOwner(repo), mr, diff);
+		List<MergeRequestComment> comments = commentService.list(mr);
+		User user = currentUser.get();
+		boolean loggedIn = user != null;
+		UUID currentUserId = user == null ? null : user.id;
+
+		List<FileDiffView> files = new ArrayList<>();
+		int additions = 0;
+		int deletions = 0;
+		if (diff != null)
+		{
+			for (GitMergeService.FileDiff file : diff.files())
+			{
+				List<DiffLineView> lines = new ArrayList<>();
+				for (GitMergeService.DiffLine line : file.lines())
+				{
+					boolean commentable = isContent(line.type());
+					List<MergeRequestComment> lineComments = commentable
+						? comments.stream()
+							.filter(c -> c.filePath.equals(file.path()) && c.oldLine == line.oldLine()
+								&& c.newLine == line.newLine())
+							.toList()
+						: List.of();
+					lines.add(new DiffLineView(line, commentable && loggedIn, lineComments));
+				}
+				files.add(new FileDiffView(file.path(), file.changeType(), file.additions(), file.deletions(), lines));
+				additions += file.additions();
+				deletions += file.deletions();
+			}
+		}
+		return Templates.mergeRequest(repo, isOwner(repo), loggedIn, currentUserId, mr, files, additions, deletions);
+	}
+
+	@POST
+	@jakarta.ws.rs.Path("{id}/comments")
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	public Response comment(@PathParam("owner") String owner, @PathParam("name") String name,
+		@PathParam("id") String id, @FormParam("filePath") String filePath,
+		@FormParam("oldLine") @DefaultValue("-1") int oldLine, @FormParam("newLine") @DefaultValue("-1") int newLine,
+		@FormParam("body") String body)
+	{
+		Repository repo = requireReadable(owner, name);
+		MergeRequest mr = mergeRequestService.find(repo, parseId(id)).orElseThrow(NotFoundException::new);
+		commentService.add(currentUser.require(), mr, filePath, oldLine, newLine, body);
+		return Response.seeOther(detailUri(repo, mr.id)).build();
+	}
+
+	@POST
+	@jakarta.ws.rs.Path("{id}/comments/{commentId}/delete")
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	public Response deleteComment(@PathParam("owner") String owner, @PathParam("name") String name,
+		@PathParam("id") String id, @PathParam("commentId") String commentId)
+	{
+		Repository repo = requireReadable(owner, name);
+		MergeRequest mr = mergeRequestService.find(repo, parseId(id)).orElseThrow(NotFoundException::new);
+		MergeRequestComment comment = commentRepo.findById(parseId(commentId));
+		if (comment == null || !comment.mergeRequest.id.equals(mr.id))
+		{
+			throw new NotFoundException();
+		}
+		commentService.delete(currentUser.require(), comment);
+		return Response.seeOther(detailUri(repo, mr.id)).build();
+	}
+
+	private static boolean isContent(String lineType)
+	{
+		return "add".equals(lineType) || "del".equals(lineType) || "context".equals(lineType);
 	}
 
 	@POST

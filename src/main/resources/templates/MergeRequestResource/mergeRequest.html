@@ -23,22 +23,63 @@
 </div>
 {/if}
 <h3>Changes</h3>
-{#if diff == null || diff.files.isEmpty()}
+{#if files.isEmpty()}
 <p class="muted">No changes to show. The source branch has nothing new over the target.</p>
 {#else}
 <p class="diffstat-summary">
-    <b>{diff.files.size()}</b> file{#if diff.files.size() != 1}s{/if} changed,
-    <span class="add">+{diff.additions}</span> <span class="del">-{diff.deletions}</span>
+    <b>{files.size()}</b> file{#if files.size() != 1}s{/if} changed,
+    <span class="add">+{additions}</span> <span class="del">-{deletions}</span>
+    {#if !loggedIn}<span class="muted">· log in to comment on a line</span>{/if}
 </p>
-{#for file in diff.files}
+{#for file in files}
 <div class="diff-file">
     <div class="diff-file-head">
         <span class="badge ct-{file.changeType}">{file.changeType}</span>
         <code>{file.path}</code>
         <span class="diffstat"><span class="add">+{file.additions}</span> <span class="del">-{file.deletions}</span></span>
     </div>
-    <pre class="diff">{#for line in file.lines}<span class="dl {line.type}">{line.text}</span>
-{/for}</pre>
+    <div class="diff-body">
+        {#for lv in file.lines}
+        <div class="dl {lv.line.type}">
+            <div class="dl-line">
+                <span class="ln">{#if lv.line.oldLine != -1}{lv.line.oldLine}{/if}</span>
+                <span class="ln">{#if lv.line.newLine != -1}{lv.line.newLine}{/if}</span>
+                <span class="dl-text">{lv.line.text}</span>
+            </div>
+            {#if lv.commentable}
+            <details class="dl-add-comment">
+                <summary title="Comment on this line" aria-label="Comment on this line">+ Comment on this line</summary>
+                <form method="post" action="/repos/{repo.owner.username}/{repo.name}/merge-requests/{mr.id}/comments">
+                    <input type="hidden" name="filePath" value="{file.path}">
+                    <input type="hidden" name="oldLine" value="{lv.line.oldLine}">
+                    <input type="hidden" name="newLine" value="{lv.line.newLine}">
+                    <textarea name="body" rows="3" placeholder="Comment on this line" required autocomplete="off"></textarea>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-sm">Comment</button>
+                    </div>
+                </form>
+            </details>
+            {/if}
+        </div>
+        {#for c in lv.comments}
+        <div class="dl-comment-row">
+            <div class="comment">
+                <div class="comment-head">
+                    <span class="who">{c.author.username}</span>
+                    {#if owner || c.author.id == currentUserId}
+                    <form class="inline" method="post"
+                          action="/repos/{repo.owner.username}/{repo.name}/merge-requests/{mr.id}/comments/{c.id}/delete"
+                          onsubmit="return confirm('Delete this comment?')">
+                        <button type="submit" class="comment-del">Delete</button>
+                    </form>
+                    {/if}
+                </div>
+                <div class="comment-body">{c.body}</div>
+            </div>
+        </div>
+        {/for}
+        {/for}
+    </div>
 </div>
 {/for}
 {/if}

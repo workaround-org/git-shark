@@ -8,6 +8,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
@@ -40,8 +42,16 @@ import jakarta.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class GitMergeService
 {
-	/** A single line of a unified diff, tagged so the UI can colour it without re-parsing the patch. */
-	public record DiffLine(String type, String text)
+	/** Matches a unified-diff hunk header, capturing the 1-based old and new starting line numbers. */
+	private static final Pattern HUNK_HEADER = Pattern.compile("^@@ -(\\d+)(?:,\\d+)? \\+(\\d+)(?:,\\d+)? @@");
+
+	/**
+	 * A single line of a unified diff, tagged so the UI can colour it without re-parsing the patch. {@code oldLine}
+	 * and {@code newLine} are the 1-based line numbers on the old and new side, or {@code -1} where the line has no
+	 * counterpart (added lines have no old number, deleted lines no new number, meta/hunk lines have neither). The
+	 * {@code (oldLine, newLine)} pair uniquely anchors a comment to a line within a file.
+	 */
+	public record DiffLine(String type, String text, int oldLine, int newLine)
 	{
 	}
 
@@ -194,6 +204,8 @@ public class GitMergeService
 		List<DiffLine> lines = new ArrayList<>();
 		int additions = 0;
 		int deletions = 0;
+		int oldLn = 0;
+		int newLn = 0;
 		String[] raw = patch.split("\n", -1);
 		for (int i = 0; i < raw.length; i++)
 		{
@@ -204,9 +216,17 @@ public class GitMergeService
 				break;
 			}
 			String type;
+			int oldLine = -1;
+			int newLine = -1;
 			if (line.startsWith("@@"))
 			{
 				type = "hunk";
+				Matcher matcher = HUNK_HEADER.matcher(line);
+				if (matcher.find())
+				{
+					oldLn = Integer.parseInt(matcher.group(1));
+					newLn = Integer.parseInt(matcher.group(2));
+				}
 			}
 			else if (line.startsWith("+++") || line.startsWith("---") || line.startsWith("diff ")
 				|| line.startsWith("index ") || line.startsWith("new file") || line.startsWith("deleted file")
@@ -219,17 +239,21 @@ public class GitMergeService
 			{
 				type = "add";
 				additions++;
+				newLine = newLn++;
 			}
 			else if (line.startsWith("-"))
 			{
 				type = "del";
 				deletions++;
+				oldLine = oldLn++;
 			}
 			else
 			{
 				type = "context";
+				oldLine = oldLn++;
+				newLine = newLn++;
 			}
-			lines.add(new DiffLine(type, line));
+			lines.add(new DiffLine(type, line, oldLine, newLine));
 		}
 		String path = entry.getChangeType() == DiffEntry.ChangeType.DELETE ? entry.getOldPath() : entry.getNewPath();
 		return new FileDiff(path, entry.getChangeType().name(), lines, additions, deletions);
