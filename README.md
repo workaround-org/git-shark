@@ -40,7 +40,8 @@ git-shark speaks [ForgeFed](https://forgefed.org) over ActivityPub server-to-ser
 can interoperate. The first goal is **git-shark ↔ git-shark**: a remote instance follows a public
 repository and receives a signed `Push` activity whenever commits land. Standard ActivityStreams +
 ForgeFed vocabulary and HTTP Signatures (RSA) are used throughout, so other ForgeFed software *could*
-interoperate later (untested).
+interoperate later (untested). Detailed guides: [for users](docs/federation-users.md) and
+[for deployment](docs/federation-deployment.md).
 
 When enabled, each public repository (and each user) is an actor under `/ap`:
 
