@@ -838,6 +838,135 @@ details.archive > .panel {
     font: 500 12.5px/1 var(--mono);
 }
 
+/* merge requests */
+
+.badge.status-OPEN {
+    color: var(--accent-deep);
+    border-color: transparent;
+    background: var(--accent-soft);
+}
+
+.badge.status-MERGED {
+    color: #fff;
+    border-color: var(--success);
+    background: var(--success);
+}
+
+.badge.status-CLOSED {
+    color: var(--danger);
+    border-color: var(--danger-border);
+    background: var(--danger-bg);
+}
+
+.mr-branches {
+    font: 500 12.5px/1 var(--mono);
+    color: var(--muted);
+}
+
+.mr-branches code {
+    color: var(--accent-deep);
+}
+
+.mr-branch-picker {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    flex-wrap: wrap;
+}
+
+.mr-branch-picker select {
+    font: 500 13px/1 var(--mono);
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--ink);
+}
+
+.mr-branch-picker .into {
+    color: var(--muted);
+}
+
+/* diff view */
+
+.diffstat-summary {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.diffstat .add, .diffstat-summary .add {
+    color: var(--success-deep);
+}
+
+.diffstat .del, .diffstat-summary .del {
+    color: var(--danger);
+}
+
+.diff-file {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 0 0 var(--s3);
+    overflow: hidden;
+}
+
+.diff-file-head {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    padding: var(--s2) var(--s3);
+    background: var(--border-soft);
+    border-bottom: 1px solid var(--border);
+}
+
+.diff-file-head .diffstat {
+    margin-left: auto;
+    font: 500 12px/1 var(--mono);
+}
+
+.badge.ct-ADD {
+    color: var(--success-deep);
+    border-color: transparent;
+    background: var(--accent-soft);
+}
+
+.badge.ct-DELETE {
+    color: var(--danger);
+    border-color: var(--danger-border);
+    background: var(--danger-bg);
+}
+
+pre.diff {
+    margin: 0;
+    padding: 0;
+    overflow-x: auto;
+    font: 12.5px/1.5 var(--mono);
+    background: var(--surface);
+}
+
+pre.diff .dl {
+    display: block;
+    padding: 0 var(--s3);
+    white-space: pre;
+    color: var(--ink);
+}
+
+pre.diff .dl.add {
+    background: oklch(0.95 0.05 150);
+}
+
+pre.diff .dl.del {
+    background: oklch(0.95 0.05 27);
+}
+
+pre.diff .dl.hunk {
+    color: var(--accent-deep);
+    background: var(--accent-soft);
+}
+
+pre.diff .dl.meta {
+    color: var(--faint);
+}
+
 /* dashboard */
 
 .dashboard-section {

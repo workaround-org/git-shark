@@ -17,6 +17,7 @@ import de.workaround.git.AccessPolicy;
 import de.workaround.git.GitBrowseService;
 import de.workaround.git.GitRepositoryService;
 import de.workaround.git.IssueService;
+import de.workaround.git.MergeRequestService;
 import de.workaround.git.RepositoryPinService;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
@@ -48,7 +49,7 @@ public class RepositoryResource
 		static native TemplateInstance overview(Repository repo, boolean owner, boolean empty, String defaultBranch,
 			List<GitBrowseService.TreeEntry> entries, String httpUrl, String sshUrl, boolean loggedIn,
 			boolean pinned, GitBrowseService.CommitInfo latestCommit, String latestCommitAge, int commitCount,
-			int branchCount, int tagCount, long openIssueCount);
+			int branchCount, int tagCount, long openIssueCount, long openMrCount);
 
 		static native TemplateInstance tree(Repository repo, String ref, String path,
 			List<GitBrowseService.TreeEntry> entries, List<Crumb> crumbs, String activeTab);
@@ -81,6 +82,9 @@ public class RepositoryResource
 	@Inject
 	IssueService issueService;
 
+	@Inject
+	MergeRequestService mergeRequestService;
+
 	@ConfigProperty(name = "gitshark.ssh.port")
 	int sshPort;
 
@@ -111,8 +115,10 @@ public class RepositoryResource
 		int branchCount = browse.branches(path).size();
 		int tagCount = browse.tags(path).size();
 		long openIssueCount = issueService.countOpen(repo);
+		long openMrCount = mergeRequestService.countOpen(repo);
 		return Templates.overview(repo, isOwner, empty, defaultBranch, entries, httpUrl(repo), sshUrl(repo),
-			loggedIn, pinned, latestCommit, latestCommitAge, commitCount, branchCount, tagCount, openIssueCount);
+			loggedIn, pinned, latestCommit, latestCommitAge, commitCount, branchCount, tagCount, openIssueCount,
+			openMrCount);
 	}
 
 	private static String relativeAge(Instant when)

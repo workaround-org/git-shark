@@ -1,0 +1,45 @@
+{#include layout}
+{#title}{mr.title} – {repo.name}{/title}
+<h1><a href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></h1>
+<p><a href="/repos/{repo.owner.username}/{repo.name}/merge-requests">&larr; Merge requests</a></p>
+<h2>{mr.title} <span class="issue-no">!{mr.number}</span></h2>
+<p>
+    <span class="badge status-{mr.status}">{mr.status.label}</span>
+    <span class="mr-branches"><code>{mr.sourceBranch}</code> &rarr; <code>{mr.targetBranch}</code></span>
+    <span class="muted">opened by {mr.author.username}</span>
+</p>
+{#if mr.description}
+<pre class="issue-desc">{mr.description}</pre>
+{/if}
+{#if owner && mr.status.name() == 'OPEN'}
+<div class="issue-actions">
+    <form method="post" action="/repos/{repo.owner.username}/{repo.name}/merge-requests/{mr.id}/merge">
+        <button type="submit" class="btn btn-primary">Merge</button>
+    </form>
+    <form method="post" action="/repos/{repo.owner.username}/{repo.name}/merge-requests/{mr.id}/close"
+          onsubmit="return confirm('Close this merge request without merging?')">
+        <button type="submit" class="btn btn-secondary">Close</button>
+    </form>
+</div>
+{/if}
+<h3>Changes</h3>
+{#if diff == null || diff.files.isEmpty()}
+<p class="muted">No changes to show. The source branch has nothing new over the target.</p>
+{#else}
+<p class="diffstat-summary">
+    <b>{diff.files.size()}</b> file{#if diff.files.size() != 1}s{/if} changed,
+    <span class="add">+{diff.additions}</span> <span class="del">-{diff.deletions}</span>
+</p>
+{#for file in diff.files}
+<div class="diff-file">
+    <div class="diff-file-head">
+        <span class="badge ct-{file.changeType}">{file.changeType}</span>
+        <code>{file.path}</code>
+        <span class="diffstat"><span class="add">+{file.additions}</span> <span class="del">-{file.deletions}</span></span>
+    </div>
+    <pre class="diff">{#for line in file.lines}<span class="dl {line.type}">{line.text}</span>
+{/for}</pre>
+</div>
+{/for}
+{/if}
+{/include}

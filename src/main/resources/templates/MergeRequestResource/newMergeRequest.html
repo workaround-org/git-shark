@@ -1,0 +1,31 @@
+{#include layout}
+{#title}New merge request – {repo.name}{/title}
+<h1><a href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></h1>
+<p><a href="/repos/{repo.owner.username}/{repo.name}/merge-requests">&larr; Merge requests</a></p>
+<h2>New merge request</h2>
+<form class="issue-form" method="post" action="/repos/{repo.owner.username}/{repo.name}/merge-requests">
+    <input type="text" name="title" placeholder="Merge request title" required autocomplete="off">
+    <div class="mr-branch-picker">
+        <label>Merge
+            <select name="sourceBranch" required>
+                {#for branch in branches}
+                <option value="{branch}">{branch}</option>
+                {/for}
+            </select>
+        </label>
+        <span class="into">into</span>
+        <label>
+            <select name="targetBranch" required>
+                {#for branch in branches}
+                <option value="{branch}"{#if branch == defaultBranch} selected{/if}>{branch}</option>
+                {/for}
+            </select>
+        </label>
+    </div>
+    <textarea name="description" placeholder="Description (optional)" rows="6"></textarea>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Create merge request</button>
+        <a class="btn btn-secondary" href="/repos/{repo.owner.username}/{repo.name}/merge-requests">Cancel</a>
+    </div>
+</form>
+{/include}
