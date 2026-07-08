@@ -133,5 +133,5 @@ Two `%dev`-only flags are set in `application.properties` (both default `false` 
   JVM container image to GHCR.
 - `.github/workflows/native.yml` — native build + integration tests on every push/PR.
 - `.github/workflows/mirror.yml` — mirrors all branches and tags to
-  `https://gitshark.ha1nz.de/git/miggi/GitShark.git` on every push (force + prune; auth via
-  `GITSHARK_TOKEN` repository secret holding a GitShark access token).
+  `https://gitshark.ha1nz.de/git/miggi/GitShark.git` on every push to `main` (force + prune;
+  auth via `GITSHARK_TOKEN` repository secret holding a GitShark access token).
