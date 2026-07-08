@@ -50,6 +50,12 @@ class MergeRequestCommentUiTest
 		MergeRequest mr = seededMr(owner, "board");
 		String detail = "/repos/" + owner.username + "/board/merge-requests/" + mr.id;
 
+		// a commentable line exposes a hover comment icon (not a full-width placeholder bar)
+		given().when().get(detail)
+			.then().statusCode(200)
+			.body(containsString("dl-comment-icon"))
+			.body(not(containsString("Comment on this line</summary>")));
+
 		given().redirects().follow(false).contentType("application/x-www-form-urlencoded")
 			.formParam("filePath", "feature.txt").formParam("oldLine", "-1").formParam("newLine", "1")
 			.formParam("body", "please rename this")

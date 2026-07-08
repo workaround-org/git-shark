@@ -48,8 +48,12 @@ public class MergeRequestResource
 			UUID currentUserId, MergeRequest mr, List<FileDiffView> files, int additions, int deletions);
 	}
 
-	/** A diff line paired with whether it accepts comments and the comments already anchored to it. */
-	public record DiffLineView(GitMergeService.DiffLine line, boolean commentable, List<MergeRequestComment> comments)
+	/**
+	 * A diff line paired with a page-unique id (for the no-JS comment toggle), whether it accepts comments, and the
+	 * comments already anchored to it.
+	 */
+	public record DiffLineView(String anchorId, GitMergeService.DiffLine line, boolean commentable,
+		List<MergeRequestComment> comments)
 	{
 	}
 
@@ -134,9 +138,11 @@ public class MergeRequestResource
 		int deletions = 0;
 		if (diff != null)
 		{
+			int fileIndex = 0;
 			for (GitMergeService.FileDiff file : diff.files())
 			{
 				List<DiffLineView> lines = new ArrayList<>();
+				int lineIndex = 0;
 				for (GitMergeService.DiffLine line : file.lines())
 				{
 					boolean commentable = isContent(line.type());
@@ -146,11 +152,14 @@ public class MergeRequestResource
 								&& c.newLine == line.newLine())
 							.toList()
 						: List.of();
-					lines.add(new DiffLineView(line, commentable && loggedIn, lineComments));
+					String anchorId = "cl-" + fileIndex + "-" + lineIndex;
+					lines.add(new DiffLineView(anchorId, line, commentable && loggedIn, lineComments));
+					lineIndex++;
 				}
 				files.add(new FileDiffView(file.path(), file.changeType(), file.additions(), file.deletions(), lines));
 				additions += file.additions();
 				deletions += file.deletions();
+				fileIndex++;
 			}
 		}
 		return Templates.mergeRequest(repo, isOwner(repo), loggedIn, currentUserId, mr, files, additions, deletions);

@@ -942,6 +942,7 @@ details.archive > .panel {
 }
 
 .diff-body .dl {
+    position: relative;
     color: var(--ink);
     border-bottom: 1px solid var(--border-soft);
 }
@@ -1005,34 +1006,61 @@ details.archive > .panel {
 
 /* per-line comment affordance and threads */
 
-.dl-add-comment > summary {
-    cursor: pointer;
-    list-style: none;
-    padding: 2px var(--s3) 2px 96px;
-    font: 500 11px/1.4 var(--font);
-    color: var(--accent-deep);
-    background: var(--accent-soft);
+/* the checkbox is the no-JS toggle: kept in the DOM but visually removed; the label icon flips it */
+.dl-toggle {
+    position: absolute;
+    width: 0;
+    height: 0;
     opacity: 0;
-    -webkit-user-select: none;
-    user-select: none;
+    pointer-events: none;
 }
 
-.dl:hover .dl-add-comment > summary,
-.dl-add-comment[open] > summary {
+.dl-comment-icon {
+    flex: 0 0 auto;
+    margin-left: auto;
+    align-self: center;
+    position: sticky;
+    right: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 18px;
+    margin-right: 6px;
+    border-radius: 4px;
+    color: #fff;
+    background: var(--accent);
+    cursor: pointer;
+    opacity: 0;
+}
+
+/* only reveal the icon while the row is hovered/focused, or once its form is open */
+.dl:hover .dl-comment-icon,
+.dl:focus-within .dl-comment-icon,
+.dl-toggle:checked ~ .dl-line .dl-comment-icon {
     opacity: 1;
 }
 
-.dl-add-comment > summary::-webkit-details-marker {
-    display: none;
+.dl-comment-icon:hover {
+    background: var(--accent-deep);
 }
 
-.dl-add-comment form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s2);
+.dl-comment-form {
+    display: none;
     max-width: 560px;
     padding: var(--s2) var(--s3) var(--s3) 96px;
     background: var(--surface);
+    border-top: 1px dashed var(--border);
+}
+
+.dl-comment-form form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s2);
+}
+
+.dl-toggle:checked ~ .dl-comment-form {
+    display: block;
 }
 
 .dl-comment-row {

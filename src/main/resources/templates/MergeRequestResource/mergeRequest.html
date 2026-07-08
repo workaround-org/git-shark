@@ -41,14 +41,21 @@
     <div class="diff-body">
         {#for lv in file.lines}
         <div class="dl {lv.line.type}">
+            {#if lv.commentable}
+            <input type="checkbox" id="{lv.anchorId}" class="dl-toggle">
+            {/if}
             <div class="dl-line">
                 <span class="ln">{#if lv.line.oldLine != -1}{lv.line.oldLine}{/if}</span>
                 <span class="ln">{#if lv.line.newLine != -1}{lv.line.newLine}{/if}</span>
                 <span class="dl-text">{lv.line.text}</span>
+                {#if lv.commentable}
+                <label for="{lv.anchorId}" class="dl-comment-icon" title="Comment on this line" aria-label="Comment on this line">
+                    <svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M4 3h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H8l-4 3v-3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/></svg>
+                </label>
+                {/if}
             </div>
             {#if lv.commentable}
-            <details class="dl-add-comment">
-                <summary title="Comment on this line" aria-label="Comment on this line">+ Comment on this line</summary>
+            <div class="dl-comment-form">
                 <form method="post" action="/repos/{repo.owner.username}/{repo.name}/merge-requests/{mr.id}/comments">
                     <input type="hidden" name="filePath" value="{file.path}">
                     <input type="hidden" name="oldLine" value="{lv.line.oldLine}">
@@ -58,7 +65,7 @@
                         <button type="submit" class="btn btn-primary btn-sm">Comment</button>
                     </div>
                 </form>
-            </details>
+            </div>
             {/if}
         </div>
         {#for c in lv.comments}
