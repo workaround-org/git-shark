@@ -19,6 +19,7 @@
         <sshd.version>2.18.0</sshd.version>
         <bouncycastle.version>1.84</bouncycastle.version>
         <commonmark.version>0.24.0</commonmark.version>
+        <quarkus-mcp-server.version>1.13.1</quarkus-mcp-server.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.6</surefire-plugin.version>
     </properties>
@@ -55,6 +56,11 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.mcp</groupId>
+            <artifactId>quarkus-mcp-server-http</artifactId>
+            <version>${quarkus-mcp-server.version}</version>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -142,6 +148,12 @@
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.mcp</groupId>
+            <artifactId>quarkus-mcp-server-test</artifactId>
+            <version>${quarkus-mcp-server.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
