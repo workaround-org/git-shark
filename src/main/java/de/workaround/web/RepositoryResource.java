@@ -37,6 +37,8 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
+import org.commonmark.parser.Parser;
+import org.commonmark.renderer.html.HtmlRenderer;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @jakarta.ws.rs.Path("/repos/{owner}/{name}")
@@ -49,7 +51,8 @@ public class RepositoryResource
 		static native TemplateInstance overview(Repository repo, boolean owner, boolean empty, String defaultBranch,
 			List<GitBrowseService.TreeEntry> entries, String httpUrl, String sshUrl, boolean loggedIn,
 			boolean pinned, GitBrowseService.CommitInfo latestCommit, String latestCommitAge, int commitCount,
-			int branchCount, int tagCount, long openIssueCount, long openMrCount);
+			int branchCount, int tagCount, long openIssueCount, long openMrCount, String readmeName,
+			String readmeHtml);
 
 		static native TemplateInstance tree(Repository repo, String ref, String path,
 			List<GitBrowseService.TreeEntry> entries, List<Crumb> crumbs, String activeTab);
@@ -116,9 +119,47 @@ public class RepositoryResource
 		int tagCount = browse.tags(path).size();
 		long openIssueCount = issueService.countOpen(repo);
 		long openMrCount = mergeRequestService.countOpen(repo);
+		GitBrowseService.TreeEntry readmeEntry = findReadme(entries);
+		String readmeName = readmeEntry == null ? null : readmeEntry.name();
+		String readmeHtml = readmeEntry == null ? null : browse.blob(path, defaultBranch, readmeEntry.path())
+			.filter(blob -> !blob.binary())
+			.map(blob -> renderMarkdown(new String(blob.content(), StandardCharsets.UTF_8)))
+			.orElse(null);
 		return Templates.overview(repo, isOwner, empty, defaultBranch, entries, httpUrl(repo), sshUrl(repo),
 			loggedIn, pinned, latestCommit, latestCommitAge, commitCount, branchCount, tagCount, openIssueCount,
-			openMrCount);
+			openMrCount, readmeName, readmeHtml);
+	}
+
+	// README file names the overview looks for, in order of preference (matched case-insensitively).
+	private static final List<String> README_NAMES = List.of("readme.md", "readme.markdown", "readme", "readme.txt");
+
+	private static final Parser MARKDOWN_PARSER = Parser.builder().build();
+
+	// escapeHtml + sanitizeUrls: README content is untrusted user input rendered into our page,
+	// so raw HTML blocks are escaped and javascript:/data: link targets are stripped.
+	private static final HtmlRenderer MARKDOWN_RENDERER = HtmlRenderer.builder()
+		.escapeHtml(true)
+		.sanitizeUrls(true)
+		.build();
+
+	private static GitBrowseService.TreeEntry findReadme(List<GitBrowseService.TreeEntry> entries)
+	{
+		for (String candidate : README_NAMES)
+		{
+			for (GitBrowseService.TreeEntry entry : entries)
+			{
+				if (!entry.directory() && entry.name().toLowerCase(Locale.ROOT).equals(candidate))
+				{
+					return entry;
+				}
+			}
+		}
+		return null;
+	}
+
+	static String renderMarkdown(String markdown)
+	{
+		return MARKDOWN_RENDERER.render(MARKDOWN_PARSER.parse(markdown));
 	}
 
 	private static String relativeAge(Instant when)

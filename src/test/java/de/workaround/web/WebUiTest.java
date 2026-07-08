@@ -387,6 +387,64 @@ class WebUiTest
 	}
 
 	@Test
+	void repositoryOverviewRendersReadme() throws Exception
+	{
+		User owner = persistUser("ui-rita-" + unique());
+		Repository repo = service.create(owner, "withreadme", Repository.Visibility.PUBLIC, null);
+		GitTestSeeder.seed(service.repositoryPath(repo), Map.of(
+			"README.md", "# Hello Shark\n\nSome *emphasis* here.\n".getBytes(StandardCharsets.UTF_8),
+			"a.txt", "a\n".getBytes(StandardCharsets.UTF_8)));
+
+		given().when().get("/repos/" + owner.username + "/withreadme")
+			.then().statusCode(200)
+			.body(containsString("readme-body"))
+			.body(containsString("README.md"))
+			.body(containsString("<h1>Hello Shark</h1>"))
+			.body(containsString("<em>emphasis</em>"));
+	}
+
+	@Test
+	void repositoryOverviewFindsReadmeCaseInsensitively() throws Exception
+	{
+		User owner = persistUser("ui-sven-" + unique());
+		Repository repo = service.create(owner, "lowerreadme", Repository.Visibility.PUBLIC, null);
+		GitTestSeeder.seed(service.repositoryPath(repo), Map.of(
+			"readme.md", "# lower heading\n".getBytes(StandardCharsets.UTF_8)));
+
+		given().when().get("/repos/" + owner.username + "/lowerreadme")
+			.then().statusCode(200)
+			.body(containsString("<h1>lower heading</h1>"));
+	}
+
+	@Test
+	void readmeEscapesRawHtml() throws Exception
+	{
+		User owner = persistUser("ui-tina-" + unique());
+		Repository repo = service.create(owner, "evilreadme", Repository.Visibility.PUBLIC, null);
+		GitTestSeeder.seed(service.repositoryPath(repo), Map.of(
+			"README.md", "# safe\n\n<script>alert('xss')</script>\n".getBytes(StandardCharsets.UTF_8)));
+
+		given().when().get("/repos/" + owner.username + "/evilreadme")
+			.then().statusCode(200)
+			.body(containsString("<h1>safe</h1>"))
+			.body(not(containsString("<script>alert")))
+			.body(containsString("&lt;script&gt;"));
+	}
+
+	@Test
+	void repositoryOverviewWithoutReadmeShowsNoReadmePanel() throws Exception
+	{
+		User owner = persistUser("ui-uwe-" + unique());
+		Repository repo = service.create(owner, "noreadme", Repository.Visibility.PUBLIC, null);
+		GitTestSeeder.seed(service.repositoryPath(repo),
+			Map.of("a.txt", "a\n".getBytes(StandardCharsets.UTF_8)));
+
+		given().when().get("/repos/" + owner.username + "/noreadme")
+			.then().statusCode(200)
+			.body(not(containsString("readme-body")));
+	}
+
+	@Test
 	void repositoryOverviewClonesViaDialogNotHeaderPill() throws Exception
 	{
 		User owner = persistUser("ui-jane-" + unique());

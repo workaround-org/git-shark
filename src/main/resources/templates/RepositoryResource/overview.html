@@ -68,6 +68,13 @@ git push -u origin main</pre>
                 {/for}
             </div>
         </div>
+
+        {#if readmeHtml}
+        <div class="panel readme">
+            <div class="readme-head"><span class="g">≡</span> {readmeName}</div>
+            <div class="readme-body">{readmeHtml.raw}</div>
+        </div>
+        {/if}
         {/if}
 
         {#if owner}
