@@ -27,6 +27,9 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
 - Single access policy on all paths: owner read/write, public world-readable, private owner-only
 - **JSON REST API** under `/api/v1`, authenticated with the same personal access tokens as
   git-over-HTTP (`Authorization: Bearer <token>`), auto-documented via OpenAPI/Swagger UI (see below)
+- **MCP server** at `/mcp` (Streamable HTTP), exposing the same feature set as the REST API as
+  MCP tools so an AI client can manage repositories, issues, merge requests, and MR line-comments
+  (see below)
 - **Federation (ForgeFed / ActivityPub)** — *opt-in, off by default.* Public repositories are
   exposed as ForgeFed `Repository` actors that remote instances can follow and receive `Push`
   activities from (see below)
@@ -83,6 +86,25 @@ A JSON REST API is served under `/api/v1`, auto-documented via the existing
 | POST | `/api/v1/repos/{owner}/{name}/merge-requests/{number}/close` | Close |
 | GET, POST | `/api/v1/repos/{owner}/{name}/merge-requests/{number}/comments` | List / add line-level review comments (any reader may comment) |
 | DELETE | `/api/v1/repos/{owner}/{name}/merge-requests/{number}/comments/{commentId}` | Delete a comment (author or repo owner) |
+
+## MCP server
+
+An MCP (Model Context Protocol) server is exposed via the Quarkiverse extension
+`io.quarkiverse.mcp:quarkus-mcp-server-http` (1.13.1), mirroring the REST API's feature set as
+MCP tools.
+
+- **Transport:** Streamable HTTP at `/mcp` (the extension also serves the legacy HTTP/SSE
+  variant, but Streamable HTTP is the one git-shark uses)
+- **Auth:** same personal access tokens as the REST API, sent as `Authorization: Bearer <token>`
+  on the MCP request; read tools work anonymously for public repos, write tools require a token
+  and repository ownership (commenting only requires read access)
+
+| Area | Tools |
+|---|---|
+| Repositories | `listRepositories`, `getRepository`, `createRepository`, `deleteRepository` |
+| Issues | `listIssues`, `getIssue`, `createIssue`, `updateIssueStatus`, `deleteIssue` |
+| Merge requests | `listMergeRequests`, `getMergeRequest`, `createMergeRequest`, `mergeMergeRequest`, `closeMergeRequest`, `listMergeRequestComments`, `addMergeRequestComment` |
+| User | `currentUser` |
 
 ## Architecture notes
 
