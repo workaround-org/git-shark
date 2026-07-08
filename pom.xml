@@ -18,6 +18,7 @@
         <jgit.version>7.3.0.202506031305-r</jgit.version>
         <sshd.version>2.18.0</sshd.version>
         <bouncycastle.version>1.84</bouncycastle.version>
+        <commonmark.version>0.24.0</commonmark.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.6</surefire-plugin.version>
     </properties>
@@ -76,6 +77,11 @@
             <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit.http.server</artifactId>
             <version>${jgit.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark</artifactId>
+            <version>${commonmark.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.sshd</groupId>
