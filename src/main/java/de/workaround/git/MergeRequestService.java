@@ -92,6 +92,11 @@ public class MergeRequestService
 		return mergeRequests.findByRepositoryAndId(repository, id);
 	}
 
+	public Optional<MergeRequest> find(Repository repository, int number)
+	{
+		return mergeRequests.findByRepositoryAndNumber(repository, number);
+	}
+
 	/** The live diff (merge-base..source) of the proposed change, or empty if a branch has since disappeared. */
 	public Optional<GitMergeService.DiffView> diff(MergeRequest mr)
 	{
