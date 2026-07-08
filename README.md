@@ -124,5 +124,9 @@ Two `%dev`-only flags are set in `application.properties` (both default `false` 
 
 ## CI
 
-`.github/workflows/ci.yml`: JVM tests on every push/PR; native build + integration tests
-gate main-branch builds.
+- `.github/workflows/jvm.yml` — JVM tests on every push/PR; on main, builds and pushes the
+  JVM container image to GHCR.
+- `.github/workflows/native.yml` — native build + integration tests on every push/PR.
+- `.github/workflows/mirror.yml` — mirrors all branches and tags to
+  `https://gitshark.ha1nz.de/git/miggi/GitShark.git` on every push (force + prune; auth via
+  `GITSHARK_TOKEN` repository secret holding a GitShark access token).
