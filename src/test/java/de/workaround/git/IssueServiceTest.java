@@ -88,6 +88,47 @@ class IssueServiceTest
 
 	@Test
 	@TestTransaction
+	void updateEditsTitleAndDescription()
+	{
+		User owner = persistUser("iss-kate");
+		Repository repo = persistRepo(owner, "r6");
+		Issue issue = issueService.create(owner, repo, "Old title", "old body");
+
+		issueService.update(owner, issue, "  New title  ", "new body");
+
+		Issue reloaded = issues.findById(issue.id);
+		assertEquals("New title", reloaded.title, "title is trimmed and updated");
+		assertEquals("new body", reloaded.description);
+		assertEquals(issue.number, reloaded.number, "editing must not change the number");
+	}
+
+	@Test
+	@TestTransaction
+	void updateRejectsBlankTitle()
+	{
+		User owner = persistUser("iss-liam");
+		Repository repo = persistRepo(owner, "r7");
+		Issue issue = issueService.create(owner, repo, "Keep me", "body");
+
+		assertThrows(InvalidIssueException.class, () -> issueService.update(owner, issue, "   ", "body"));
+		assertEquals("Keep me", issues.findById(issue.id).title, "a rejected update must not change the issue");
+	}
+
+	@Test
+	@TestTransaction
+	void updateWithBlankDescriptionClearsIt()
+	{
+		User owner = persistUser("iss-mona");
+		Repository repo = persistRepo(owner, "r8");
+		Issue issue = issueService.create(owner, repo, "Titled", "described");
+
+		issueService.update(owner, issue, "Titled", "   ");
+
+		assertNull(issues.findById(issue.id).description);
+	}
+
+	@Test
+	@TestTransaction
 	void deleteRemovesTheIssue()
 	{
 		User owner = persistUser("iss-erin");
@@ -153,6 +194,7 @@ class IssueServiceTest
 		assertThrows(ForbiddenOperationException.class, () -> issueService.create(stranger, repo, "Sneaky", null));
 		assertThrows(ForbiddenOperationException.class,
 			() -> issueService.updateStatus(stranger, issue, Issue.Status.DONE));
+		assertThrows(ForbiddenOperationException.class, () -> issueService.update(stranger, issue, "Hijack", null));
 		assertThrows(ForbiddenOperationException.class, () -> issueService.delete(stranger, issue));
 	}
 

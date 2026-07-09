@@ -65,6 +65,26 @@ public class IssueService
 		return issues.findByRepositoryAndNumber(repository, number);
 	}
 
+	/** Edits title and description; the number, author, status and creation time never change. */
+	@Transactional
+	public void update(User actor, Issue issue, String title, String description)
+	{
+		requireWrite(actor, issue.repository);
+		String trimmedTitle = title == null ? "" : title.strip();
+		if (trimmedTitle.isEmpty())
+		{
+			throw new InvalidIssueException("Issue title must not be empty");
+		}
+		// re-attach: the issue may have been loaded in a previous request/transaction. It may also have
+		// been deleted concurrently since then, so guard against a missing row (findById returns null).
+		Issue managed = issues.findById(issue.id);
+		if (managed != null)
+		{
+			managed.title = trimmedTitle;
+			managed.description = description == null || description.isBlank() ? null : description.strip();
+		}
+	}
+
 	@Transactional
 	public void updateStatus(User actor, Issue issue, Issue.Status status)
 	{

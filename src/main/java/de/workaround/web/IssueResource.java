@@ -39,6 +39,8 @@ public class IssueResource
 
 		static native TemplateInstance newIssue(Repository repo, RepoNav nav);
 
+		static native TemplateInstance editIssue(Repository repo, RepoNav nav, Issue issue);
+
 		static native TemplateInstance issue(Repository repo, RepoNav nav, boolean owner, Issue issue,
 			String descriptionHtml, List<Issue.Status> statuses);
 	}
@@ -110,6 +112,35 @@ public class IssueResource
 		String descriptionHtml = issue.description == null ? null : Markdown.render(issue.description);
 		return Templates.issue(repo, repoNav.build(repo, uriInfo), isOwner, issue, descriptionHtml,
 			List.of(Issue.Status.values()));
+	}
+
+	@GET
+	@jakarta.ws.rs.Path("{number:\\d+}/edit")
+	public TemplateInstance editForm(@PathParam("owner") String owner, @PathParam("name") String name,
+		@PathParam("number") int number)
+	{
+		Repository repo = requireReadable(owner, name);
+		Issue issue = issueService.find(repo, number).orElseThrow(NotFoundException::new);
+		// only users with write access (owner or collaborator) may edit an issue
+		if (!accessPolicy.canWrite(currentUser.get(), repo))
+		{
+			throw new de.workaround.git.ForbiddenOperationException("Only the repository owner or a collaborator can edit issues");
+		}
+		return Templates.editIssue(repo, repoNav.build(repo, uriInfo), issue);
+	}
+
+	@POST
+	@jakarta.ws.rs.Path("{number:\\d+}/edit")
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	public Response update(@PathParam("owner") String owner, @PathParam("name") String name,
+		@PathParam("number") int number, @FormParam("title") String title,
+		@FormParam("description") String description)
+	{
+		Repository repo = requireReadable(owner, name);
+		Issue issue = issueService.find(repo, number).orElseThrow(NotFoundException::new);
+		// title validation lives in IssueService (InvalidIssueException -> 400 via InvalidIssueExceptionMapper)
+		issueService.update(currentUser.require(), issue, title, description);
+		return Response.seeOther(issueUri(repo, issue.number)).build();
 	}
 
 	/** Issues were originally addressed by UUID; keep old bookmarks and federated links working. */

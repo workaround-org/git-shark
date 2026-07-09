@@ -216,6 +216,64 @@ class IssueUiTest
 	}
 
 	@Test
+	@TestSecurity(user = "iss-edit")
+	void ownerCanEditTitleAndDescription()
+	{
+		User owner = persistUser("iss-edit");
+		Repository repo = service.create(owner, "editable", Repository.Visibility.PUBLIC, null);
+		Issue issue = issueService.create(owner, repo, "Old title", "Old **body**");
+		String base = "/repos/" + owner.username + "/editable/issues";
+		String editUrl = base + "/" + issue.number + "/edit";
+
+		// the detail page links to the edit form
+		given().when().get(base + "/" + issue.number)
+			.then().statusCode(200)
+			.body(containsString(editUrl));
+
+		// the edit form is pre-filled with the current title and description
+		given().when().get(editUrl)
+			.then().statusCode(200)
+			.body(containsString("value=\"Old title\""))
+			.body(containsString("Old **body**"))
+			.body(containsString("action=\"" + editUrl + "\""));
+
+		// saving redirects back to the detail page
+		given().redirects().follow(false)
+			.contentType("application/x-www-form-urlencoded")
+			.formParam("title", "New title").formParam("description", "New **body**")
+			.when().post(editUrl)
+			.then().statusCode(303)
+			.header("Location", org.hamcrest.Matchers.endsWith(base + "/" + issue.number));
+
+		// the updated description is rendered as markdown
+		given().when().get(base + "/" + issue.number)
+			.then().statusCode(200)
+			.body(containsString("New title"))
+			.body(containsString("<strong>body</strong>"))
+			.body(not(containsString("Old title")));
+	}
+
+	@Test
+	void anonymousCannotEditIssues()
+	{
+		User owner = persistUser("iss-edit2-" + UUID.randomUUID().toString().substring(0, 8));
+		Repository repo = service.create(owner, "noedit", Repository.Visibility.PUBLIC, null);
+		Issue issue = issueService.create(owner, repo, "Locked", null);
+		String editUrl = "/repos/" + owner.username + "/noedit/issues/" + issue.number + "/edit";
+
+		given().when().get(editUrl).then().statusCode(403);
+		given().contentType("application/x-www-form-urlencoded")
+			.formParam("title", "Hijacked")
+			.when().post(editUrl)
+			.then().statusCode(403);
+
+		// visitors don't see the edit link on the detail page
+		given().when().get("/repos/" + owner.username + "/noedit/issues/" + issue.number)
+			.then().statusCode(200)
+			.body(not(containsString("/edit")));
+	}
+
+	@Test
 	void anonymousCannotCreateIssues()
 	{
 		User owner = persistUser("iss-owner2-" + UUID.randomUUID().toString().substring(0, 8));
