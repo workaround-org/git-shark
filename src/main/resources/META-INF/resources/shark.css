@@ -1879,21 +1879,18 @@ dialog#hotkey-help kbd {
     max-width: 100%;
 }
 
-.danger-zone {
-    margin-top: var(--s6);
+/* settings page — every section is a padded white card */
+
+.settings-card {
+    padding: var(--s5);
+    margin-top: var(--s5);
+}
+
+.settings-card > h2:first-child {
+    margin-top: 0;
 }
 
 /* push mirrors */
-
-.mirrors {
-    margin-top: var(--s6);
-    padding: var(--s4);
-}
-
-.mirrors-head {
-    font-weight: 600;
-    margin-bottom: var(--s3);
-}
 
 .mirror-list {
     list-style: none;

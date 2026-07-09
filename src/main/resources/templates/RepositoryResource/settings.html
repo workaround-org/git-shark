@@ -11,44 +11,50 @@
         <p class="error">{error}</p>
         {/if}
 
-        <h2>Visibility</h2>
-        <p class="muted">This repository is currently <strong>{repo.visibility.name()}</strong>.
-            Public repositories can be seen and cloned by anyone, including other federated instances;
-            private repositories are visible only to you and your collaborators.</p>
-        <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/visibility"
-              onsubmit="return confirm('Change the visibility of this repository?')">
-            <p>
-                <select name="visibility">
-                    <option value="PUBLIC"{#if repo.visibility.name() == 'PUBLIC'} selected{/if}>Public</option>
-                    <option value="PRIVATE"{#if repo.visibility.name() == 'PRIVATE'} selected{/if}>Private</option>
-                </select>
-            </p>
-            <button class="btn btn-primary">Change visibility</button>
-        </form>
+        <section class="panel settings-card">
+            <h2>Visibility</h2>
+            <p class="muted">This repository is currently <strong>{repo.visibility.name()}</strong>.
+                Public repositories can be seen and cloned by anyone, including other federated instances;
+                private repositories are visible only to you and your collaborators.</p>
+            <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/visibility"
+                  onsubmit="return confirm('Change the visibility of this repository?')">
+                <p>
+                    <select name="visibility">
+                        <option value="PUBLIC"{#if repo.visibility.name() == 'PUBLIC'} selected{/if}>Public</option>
+                        <option value="PRIVATE"{#if repo.visibility.name() == 'PRIVATE'} selected{/if}>Private</option>
+                    </select>
+                </p>
+                <button class="btn btn-primary">Change visibility</button>
+            </form>
+        </section>
 
-        <h2>Repository image</h2>
-        <p class="muted">Shown next to this repository across git-shark. Without one, the owner's profile picture is used.</p>
-        {#if repo.hasImage}
-        <img class="avatar-preview" src="/repos/{repo.ownerHandle}/{repo.name}/image?v={repo.imageUpdatedAt.toEpochMilli}" alt="Current repository image">
-        {/if}
-        <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/image" enctype="multipart/form-data">
-            <p><input type="file" name="image" accept="image/png,image/jpeg,image/gif,image/webp" required></p>
-            <p class="muted">PNG, JPEG, GIF or WebP, up to 2 MB.</p>
-            <button class="btn btn-primary">Upload</button>
-        </form>
-        {#if repo.hasImage}
-        <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/image/delete"
-              onsubmit="return confirm('Remove this repository image?')">
-            <button class="btn btn-danger">Remove image</button>
-        </form>
-        {/if}
+        <section class="panel settings-card">
+            <h2>Repository image</h2>
+            <p class="muted">Shown next to this repository across git-shark. Without one, the owner's profile picture is used.</p>
+            {#if repo.hasImage}
+            <img class="avatar-preview" src="/repos/{repo.ownerHandle}/{repo.name}/image?v={repo.imageUpdatedAt.toEpochMilli}" alt="Current repository image">
+            {/if}
+            <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/image" enctype="multipart/form-data">
+                <p><input type="file" name="image" accept="image/png,image/jpeg,image/gif,image/webp" required></p>
+                <p class="muted">PNG, JPEG, GIF or WebP, up to 2 MB.</p>
+                <button class="btn btn-primary">Upload</button>
+            </form>
+            {#if repo.hasImage}
+            <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/image/delete"
+                  onsubmit="return confirm('Remove this repository image?')">
+                <button class="btn btn-danger">Remove image</button>
+            </form>
+            {/if}
+        </section>
 
-        <h2>Collaborators</h2>
-        <p class="muted">Grant other users read and write access to this repository, including when it is private.</p>
-        <p><a class="btn btn-secondary" href="/repos/{repo.ownerHandle}/{repo.name}/settings/collaborators">Manage collaborators</a></p>
+        <section class="panel settings-card">
+            <h2>Collaborators</h2>
+            <p class="muted">Grant other users read and write access to this repository, including when it is private.</p>
+            <p><a class="btn btn-secondary" href="/repos/{repo.ownerHandle}/{repo.name}/settings/collaborators">Manage collaborators</a></p>
+        </section>
 
-        <div class="panel mirrors">
-            <div class="mirrors-head">Push mirrors</div>
+        <section class="panel settings-card">
+            <h2>Push mirrors</h2>
             {#if mirrors}
             <ul class="mirror-list">
                 {#for m in mirrors}
@@ -97,15 +103,15 @@
                 <p><label>Password / token (HTTPS only) <input type="password" name="secret" autocomplete="new-password"></label></p>
                 <button class="btn">Add mirror</button>
             </form>
-        </div>
+        </section>
 
-        <div class="danger-zone">
+        <section class="panel settings-card">
             <h2>Danger zone</h2>
             <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/delete">
                 <p><label>Type the repository name to confirm deletion <input name="confirm"></label></p>
                 <button class="btn btn-danger">Delete repository</button>
             </form>
-        </div>
+        </section>
     </section>
 
 </div>
