@@ -31,7 +31,9 @@ public class SecretCrypto
 
 	private static final int TAG_BITS = 128;
 
-	private static final SecureRandom RANDOM = new SecureRandom();
+	// instance field, not static: a build-time-initialized static SecureRandom would land in the
+	// native image heap with a cached seed, which GraalVM rejects (and would be unsafe anyway)
+	private final SecureRandom random = new SecureRandom();
 
 	private final SecretKeySpec key;
 
@@ -65,7 +67,7 @@ public class SecretCrypto
 		try
 		{
 			byte[] iv = new byte[IV_BYTES];
-			RANDOM.nextBytes(iv);
+			random.nextBytes(iv);
 			Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
 			cipher.init(Cipher.ENCRYPT_MODE, key, new GCMParameterSpec(TAG_BITS, iv));
 			byte[] ciphertext = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
