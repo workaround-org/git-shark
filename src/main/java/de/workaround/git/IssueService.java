@@ -102,7 +102,7 @@ public class IssueService
 	{
 		if (!accessPolicy.canWrite(actor, repository))
 		{
-			throw new ForbiddenOperationException("Only the repository owner can manage issues");
+			throw new ForbiddenOperationException("Only the repository owner or a collaborator can manage issues");
 		}
 	}
 

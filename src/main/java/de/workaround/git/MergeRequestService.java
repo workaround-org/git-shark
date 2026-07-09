@@ -158,7 +158,7 @@ public class MergeRequestService
 	{
 		if (!accessPolicy.canWrite(actor, repository))
 		{
-			throw new ForbiddenOperationException("Only the repository owner can manage merge requests");
+			throw new ForbiddenOperationException("Only the repository owner or a collaborator can manage merge requests");
 		}
 	}
 

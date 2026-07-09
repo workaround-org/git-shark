@@ -1,5 +1,6 @@
 package de.workaround.git;
 
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -12,11 +13,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AccessPolicyTest
 {
-	private final AccessPolicy policy = new AccessPolicy();
-
 	private final User owner = user();
 
 	private final User stranger = user();
+
+	private final User collaborator = user();
+
+	/** Policy whose collaborator lookup knows exactly one collaborator. */
+	private final AccessPolicy policy = new AccessPolicy(
+		(user, repository) -> Set.of(collaborator.id).contains(user.id));
 
 	@Test
 	void ownerReadsAndWritesOwnRepository()
@@ -46,6 +51,36 @@ class AccessPolicyTest
 		assertFalse(policy.canRead(stranger, repo));
 		assertFalse(policy.canRead(null, repo));
 		assertFalse(policy.canWrite(stranger, repo));
+	}
+
+	@Test
+	void collaboratorReadsAndWritesPrivateRepository()
+	{
+		Repository repo = repo(owner, Repository.Visibility.PRIVATE);
+
+		assertTrue(policy.canRead(collaborator, repo));
+		assertTrue(policy.canWrite(collaborator, repo));
+	}
+
+	@Test
+	void collaboratorWritesPublicRepository()
+	{
+		Repository repo = repo(owner, Repository.Visibility.PUBLIC);
+
+		assertTrue(policy.canWrite(collaborator, repo));
+	}
+
+	@Test
+	void anonymousIsNeverTreatedAsCollaborator()
+	{
+		// a lookup that would blow up on null users must never be consulted for anonymous requests
+		AccessPolicy paranoid = new AccessPolicy((user, repository) -> {
+			throw new AssertionError("lookup must not be called for anonymous users");
+		});
+		Repository repo = repo(owner, Repository.Visibility.PRIVATE);
+
+		assertFalse(paranoid.canRead(null, repo));
+		assertFalse(paranoid.canWrite(null, repo));
 	}
 
 	private static User user()

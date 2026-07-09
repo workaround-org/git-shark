@@ -75,7 +75,7 @@ public class MergeRequestCommentService
 		boolean isOwner = accessPolicy.canWrite(actor, managed.mergeRequest.repository);
 		if (!isAuthor && !isOwner)
 		{
-			throw new ForbiddenOperationException("Only the comment author or the repository owner can delete it");
+			throw new ForbiddenOperationException("Only the comment author, the repository owner or a collaborator can delete it");
 		}
 		comments.deleteById(managed.id);
 	}

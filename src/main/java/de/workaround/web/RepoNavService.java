@@ -51,6 +51,7 @@ public class RepoNavService
 		String defaultBranch = empty ? null : browse.defaultBranch(path);
 		User user = currentUser.get();
 		boolean loggedIn = user != null;
+		boolean isOwner = loggedIn && user.id.equals(repo.owner.id);
 		boolean pinned = loggedIn && pinService.isPinned(user, repo);
 		int commitCount = empty ? 0 : browse.commitCount(path, defaultBranch);
 		int branchCount = browse.branches(path).size();
@@ -61,7 +62,7 @@ public class RepoNavService
 			.toString();
 		String sshUrl = "ssh://git@" + uriInfo.getBaseUri().getHost() + ":" + sshPort + "/" + repo.owner.username
 			+ "/" + repo.name + ".git";
-		return new RepoNav(repo, loggedIn, pinned, empty, defaultBranch, commitCount, branchCount, tagCount,
+		return new RepoNav(repo, loggedIn, isOwner, pinned, empty, defaultBranch, commitCount, branchCount, tagCount,
 			openIssueCount, openMrCount, httpUrl, sshUrl, uriInfo.getRequestUri().getRawPath());
 	}
 }

@@ -1,0 +1,35 @@
+{#include layout}
+{#title}Collaborators – {repo.name}{/title}
+<div class="repo-layout">
+    {#include RepositoryResource/sidebar nav=nav active='collaborators' /}
+    <section class="repo-main">
+        <h2>Collaborators</h2>
+        <p>Collaborators can read and push to this repository, including when it is private. Only you can manage them.</p>
+        {#if error}
+        <p class="error">{error}</p>
+        {/if}
+        {#if collaborators.empty}
+        <p>No collaborators yet.</p>
+        {#else}
+        <table>
+            <tr><th>User</th><th class="actions"></th></tr>
+            {#for collaborator in collaborators}
+            <tr>
+                <td>{#avatar user=collaborator.user /} {collaborator.user.username}</td>
+                <td class="actions">
+                    <form class="inline" method="post" action="/repos/{repo.owner.username}/{repo.name}/settings/collaborators/{collaborator.user.username}/remove">
+                        <button class="btn btn-danger btn-sm">Remove</button>
+                    </form>
+                </td>
+            </tr>
+            {/for}
+        </table>
+        {/if}
+        <h3>Add collaborator</h3>
+        <form method="post" action="/repos/{repo.owner.username}/{repo.name}/settings/collaborators">
+            <p><label>Username <input name="username" required></label></p>
+            <button class="btn btn-primary">Add</button>
+        </form>
+    </section>
+</div>
+{/include}
