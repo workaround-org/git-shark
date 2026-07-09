@@ -23,6 +23,9 @@ OIDC login, and PostgreSQL metadata.
 - **[Getting Started](admins/getting-started.md)** — deploy git-shark with Docker
   Compose, from zero to a running instance behind TLS with OIDC login and SSH git
   access.
+- **[Persistent data](admins/persistent-data.md)** — every store that must survive
+  container recreation (database, repositories, avatars, SSH host key), what breaks
+  when each is lost, and how to retrofit older deployments.
 - **[Federation](admins/federation.md)** — enable and operate ForgeFed federation:
   configuration, allowlist, reverse-proxy requirements, delivery queue, monitoring.
 - **[Push mirrors](admins/mirrors.md)** — the secret key, outbound network and

@@ -193,7 +193,9 @@ Notes:
 - **Separate volumes for `/data/repositories`, `/data/avatars`, and `/data/ssh`** so
   Docker creates each mount point with the right ownership — no init container or
   `mkdir` needed. The SSH host key is generated on first boot and persists across
-  restarts (so client `known_hosts` entries stay valid).
+  restarts (so client `known_hosts` entries stay valid). All three mounts (plus the
+  database) are mandatory for a stateful deployment — see
+  [Persistent data](persistent-data.md) for what each holds and what breaks without it.
 - **HTTP port 8080 is not published** — it's reached through the reverse proxy on the
   Compose network (Step 6). Only SSH (2222) is exposed directly.
 - **Single app replica.** git-shark keeps git state on a `ReadWriteOnce`-style filesystem
@@ -337,7 +339,8 @@ fetches are HTTPS-only, allowlist-bound, and SSRF-guarded. Never set
 
 ## Operations
 
-**Backups** — three things hold state:
+**Backups** — three things hold state (full inventory, including what breaks when each
+is lost, in [Persistent data](persistent-data.md)):
 - The `db-data` volume (metadata: users, repo records, issues, MRs, comments;
   also each avatar's content type and update timestamp — the bytes are not
   here).
@@ -381,5 +384,6 @@ docker compose logs -f app
 | Boot fails on OIDC discovery | `QUARKUS_OIDC_AUTH_SERVER_URL` wrong/unreachable, or IdP demands HTTPS the app can't reach. |
 | App exits complaining about secret length | `*_STATE_SECRET` shorter than 32 chars. Regenerate with `openssl rand -hex 16`. |
 | SSH host key changed after redeploy | The `ssh` volume wasn't persisted — confirm it's a named volume, not a throwaway mount. |
+| Profile pictures disappear after redeploy / render as broken images | The `avatars` volume wasn't mounted, so uploads landed in the container layer. Add the volume and `GITSHARK_AVATAR_ROOT` as in Step 5 — retrofit steps in [Persistent data](persistent-data.md#upgrading-a-deployment-created-before-profile-pictures). |
 | `git push` over HTTP rejected | Use a personal access token (from *Access tokens*) as the Basic-auth password, not your OIDC password. |
 | Schema validation error at start | DB not empty / migrated by a different tool. git-shark's Flyway owns the schema; start from an empty database. |
