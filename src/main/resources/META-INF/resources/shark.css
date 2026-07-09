@@ -307,6 +307,12 @@ main {
     padding: 0 var(--s5);
 }
 
+/* repo pages use the full viewport width: sidebar pinned far left, content fills the rest */
+main:has(.repo-layout) {
+    max-width: none;
+    margin: var(--s6) 0;
+}
+
 /* in-app repo hero */
 
 .hero {
