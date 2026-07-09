@@ -30,7 +30,6 @@
         <a class="{#if active == 'merge-requests'}active{/if}" href="/repos/{nav.repo.ownerHandle}/{nav.repo.name}/merge-requests"><span class="g">⇄</span> Merge requests <span class="ct">{nav.openMrCount}</span></a>
         {#if nav.isOwner}
         <a class="{#if active == 'settings'}active{/if}" href="/repos/{nav.repo.ownerHandle}/{nav.repo.name}/settings"><span class="g">⚙</span> Settings</a>
-        <a class="{#if active == 'collaborators'}active{/if}" href="/repos/{nav.repo.ownerHandle}/{nav.repo.name}/settings/collaborators"><span class="g">⚇</span> Collaborators</a>
         {/if}
     </nav>
 </aside>

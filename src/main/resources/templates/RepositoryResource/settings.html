@@ -42,6 +42,70 @@
             <button class="btn btn-danger">Remove image</button>
         </form>
         {/if}
+
+        <h2>Collaborators</h2>
+        <p class="muted">Grant other users read and write access to this repository, including when it is private.</p>
+        <p><a class="btn btn-secondary" href="/repos/{repo.ownerHandle}/{repo.name}/settings/collaborators">Manage collaborators</a></p>
+
+        <div class="panel mirrors">
+            <div class="mirrors-head">Push mirrors</div>
+            {#if mirrors}
+            <ul class="mirror-list">
+                {#for m in mirrors}
+                <li class="mirror-row">
+                    <div class="mirror-url"><code>{m.remoteUrl}</code> <span class="tag">{m.authType.name()}</span></div>
+                    <div class="mirror-status meta">
+                        {#if m.lastError}
+                        <span class="mirror-error">Last attempt failed: {m.lastError}</span>
+                        {#else if m.lastSuccessAt}
+                        <span>Last synced {m.lastSuccessAt}</span>
+                        {#else}
+                        <span>Not synced yet</span>
+                        {/if}
+                        {#if m.lastAttemptAt}<span> · last attempt {m.lastAttemptAt}</span>{/if}
+                    </div>
+                    {#if m.publicKey}
+                    <div class="mirror-key">
+                        <p class="meta">Add this deploy key (with write access) at the remote:</p>
+                        <div class="mirror-deploy-key">
+                            <code>{m.publicKey}</code>
+                            <button type="button" class="btn-icon copy-btn" data-copy="{m.publicKey}" aria-label="Copy deploy key" title="Copy">⧉</button>
+                        </div>
+                    </div>
+                    {/if}
+                    <div class="mirror-actions">
+                        <form class="inline" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/mirrors/{m.id}/push">
+                            <button class="btn">Push now</button>
+                        </form>
+                        <form class="inline" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/mirrors/{m.id}/delete">
+                            <button class="btn btn-danger">Delete</button>
+                        </form>
+                    </div>
+                </li>
+                {/for}
+            </ul>
+            {/if}
+            <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/mirrors" class="mirror-add">
+                <p><label>Remote URL <input name="url" placeholder="https://host/owner/repo.git or ssh://git@host/owner/repo.git" required></label></p>
+                <p><label>Authentication
+                    <select name="authType">
+                        <option value="HTTPS">HTTPS — username + password/token</option>
+                        <option value="SSH">SSH — generated deploy key</option>
+                    </select>
+                </label></p>
+                <p><label>Username (HTTPS only) <input name="username" autocomplete="off"></label></p>
+                <p><label>Password / token (HTTPS only) <input type="password" name="secret" autocomplete="new-password"></label></p>
+                <button class="btn">Add mirror</button>
+            </form>
+        </div>
+
+        <div class="danger-zone">
+            <h2>Danger zone</h2>
+            <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/delete">
+                <p><label>Type the repository name to confirm deletion <input name="confirm"></label></p>
+                <button class="btn btn-danger">Delete repository</button>
+            </form>
+        </div>
     </section>
 
 </div>

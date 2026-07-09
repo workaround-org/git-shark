@@ -65,7 +65,7 @@ public class MirrorResource
 		{
 			return badRequest(e.getMessage());
 		}
-		return backToRepository(owner, name);
+		return backToSettings(owner, name);
 	}
 
 	@POST
@@ -75,7 +75,7 @@ public class MirrorResource
 	{
 		Owned owned = requireOwned(owner, name);
 		mirrorService.delete(owned.user(), owned.repository(), mirrorId);
-		return backToRepository(owner, name);
+		return backToSettings(owner, name);
 	}
 
 	@POST
@@ -85,7 +85,7 @@ public class MirrorResource
 	{
 		Owned owned = requireOwned(owner, name);
 		mirrorService.pushNow(owned.user(), owned.repository(), mirrorId);
-		return backToRepository(owner, name);
+		return backToSettings(owner, name);
 	}
 
 	private record Owned(User user, Repository repository)
@@ -104,9 +104,9 @@ public class MirrorResource
 		return new Owned(user, repository);
 	}
 
-	private static Response backToRepository(String owner, String name)
+	private static Response backToSettings(String owner, String name)
 	{
-		return Response.seeOther(URI.create("/repos/" + owner + "/" + name)).build();
+		return Response.seeOther(URI.create("/repos/" + owner + "/" + name + "/settings")).build();
 	}
 
 	private static Response badRequest(String message)

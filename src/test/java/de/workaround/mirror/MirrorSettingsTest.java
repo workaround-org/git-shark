@@ -68,7 +68,7 @@ class MirrorSettingsTest
 		assertEquals(PushMirror.AuthType.HTTPS, created.get(0).authType);
 
 		String page = given()
-			.when().get("/repos/" + OWNER + "/" + repo.name)
+			.when().get("/repos/" + OWNER + "/" + repo.name + "/settings")
 			.then().statusCode(200)
 			.extract().asString();
 		assertTrue(page.contains("https://mirror-target.example/owner/repo.git"), "mirror must be listed");
@@ -111,7 +111,7 @@ class MirrorSettingsTest
 		assertTrue(mirror.publicKey.startsWith("ssh-ed25519 "), "public key must be OpenSSH Ed25519");
 
 		given()
-			.when().get("/repos/" + OWNER + "/" + repo.name)
+			.when().get("/repos/" + OWNER + "/" + repo.name + "/settings")
 			.then().statusCode(200)
 			.body(containsString("ssh-ed25519 "))
 			.body(not(containsString("BEGIN PRIVATE KEY")));
@@ -214,10 +214,35 @@ class MirrorSettingsTest
 		Repository repo = repoOwnedBy(OWNER, "settings-hidden");
 		createMirror(repo);
 
+		// mirrors live on the owner-only settings page; the repo settings route hides its existence
+		// from non-owners (404), and the public overview shows nothing
 		given()
 			.when().get("/repos/" + OWNER + "/" + repo.name)
 			.then().statusCode(200)
 			.body(not(containsString("Push mirrors")));
+
+		given()
+			.when().get("/repos/" + OWNER + "/" + repo.name + "/settings")
+			.then().statusCode(404);
+	}
+
+	@Test
+	@TestSecurity(user = OWNER)
+	void mirrorsAndDangerZoneLiveUnderSettingsNotOverview()
+	{
+		Repository repo = ownedRepo("settings-relocated");
+
+		given()
+			.when().get("/repos/" + OWNER + "/" + repo.name)
+			.then().statusCode(200)
+			.body(not(containsString("Push mirrors")))
+			.body(not(containsString("Danger zone")));
+
+		given()
+			.when().get("/repos/" + OWNER + "/" + repo.name + "/settings")
+			.then().statusCode(200)
+			.body(containsString("Push mirrors"))
+			.body(containsString("Danger zone"));
 	}
 
 	private Repository ownedRepo(String name)

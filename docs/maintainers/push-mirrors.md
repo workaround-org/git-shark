@@ -13,7 +13,7 @@ How the push-mirror subsystem (issue #11) is built, and why.
 | `MirrorKeys` | `mirror/` | Ed25519 deploy-key generation (BouncyCastle), OpenSSH public-key rendering, PKCS#8 PEM round-trip (public key derives from the private key) |
 | `MirrorUrlValidator` | `mirror/` | SSRF guard for targets (scheme, own-host loop check, non-public address rejection) |
 | `web/MirrorResource` | `web/` | Owner-only form endpoints under `/repos/{owner}/{name}/mirrors`; non-owners get 404 |
-| Overview template | `RepositoryResource/overview.html` | Mirrors panel (owner-only): list + status, deploy-key display, add/push-now/delete forms |
+| Settings template | `RepositoryResource/settings.html` | Mirrors panel (owner-only, under the Settings tab): list + status, deploy-key display, add/push-now/delete forms; `MirrorResource` redirects back to `…/settings` |
 
 ## Trigger flow
 

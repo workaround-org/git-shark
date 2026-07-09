@@ -52,9 +52,9 @@ public class RepositoryResource
 	@CheckedTemplate
 	static class Templates
 	{
-		static native TemplateInstance overview(Repository repo, RepoNav nav, boolean owner,
+		static native TemplateInstance overview(Repository repo, RepoNav nav,
 			List<GitBrowseService.TreeEntry> entries, GitBrowseService.CommitInfo latestCommit, String latestCommitAge,
-			String readmeName, String readmeHtml, List<de.workaround.model.PushMirror> mirrors);
+			String readmeName, String readmeHtml);
 
 		static native TemplateInstance tree(Repository repo, RepoNav nav, String ref, String path,
 			List<GitBrowseService.TreeEntry> entries, List<Crumb> crumbs);
@@ -71,7 +71,8 @@ public class RepositoryResource
 
 		static native TemplateInstance tags(Repository repo, RepoNav nav, List<String> tags);
 
-		static native TemplateInstance settings(Repository repo, RepoNav nav, String error);
+		static native TemplateInstance settings(Repository repo, RepoNav nav, String error,
+			List<de.workaround.model.PushMirror> mirrors);
 	}
 
 	@Inject
@@ -110,8 +111,6 @@ public class RepositoryResource
 		List<GitBrowseService.TreeEntry> entries = nav.empty()
 			? List.of()
 			: browse.listTree(path, nav.defaultBranch(), "").orElse(List.of());
-		User user = currentUser.get();
-		boolean isOwner = accessPolicy.canAdmin(user, repo);
 		GitBrowseService.CommitInfo latestCommit = nav.empty() ? null
 			: browse.commits(path, nav.defaultBranch(), 0, 1)
 				.filter(commitPage -> !commitPage.commits().isEmpty())
@@ -124,9 +123,7 @@ public class RepositoryResource
 			.filter(blob -> !blob.binary())
 			.map(blob -> Markdown.render(new String(blob.content(), StandardCharsets.UTF_8)))
 			.orElse(null);
-		List<de.workaround.model.PushMirror> mirrors = isOwner ? mirrorService.list(repo) : List.of();
-		return Templates.overview(repo, nav, isOwner, entries, latestCommit, latestCommitAge, readmeName, readmeHtml,
-			mirrors);
+		return Templates.overview(repo, nav, entries, latestCommit, latestCommitAge, readmeName, readmeHtml);
 	}
 
 	// README file names the overview looks for, in order of preference (matched case-insensitively).
@@ -263,7 +260,7 @@ public class RepositoryResource
 	public TemplateInstance settings(@PathParam("owner") String owner, @PathParam("name") String name)
 	{
 		Repository repo = requireOwner(owner, name);
-		return Templates.settings(repo, repoNav.build(repo, uriInfo), null);
+		return Templates.settings(repo, repoNav.build(repo, uriInfo), null, mirrorService.list(repo));
 	}
 
 	@POST
@@ -276,7 +273,9 @@ public class RepositoryResource
 		if (image == null)
 		{
 			return Response.status(Response.Status.BAD_REQUEST)
-				.entity(Templates.settings(repo, repoNav.build(repo, uriInfo), "No image was uploaded.")).build();
+				.entity(Templates.settings(repo, repoNav.build(repo, uriInfo), "No image was uploaded.",
+					mirrorService.list(repo)))
+				.build();
 		}
 		try
 		{
@@ -286,7 +285,9 @@ public class RepositoryResource
 		catch (InvalidImageException e)
 		{
 			return Response.status(Response.Status.BAD_REQUEST)
-				.entity(Templates.settings(repo, repoNav.build(repo, uriInfo), e.getMessage())).build();
+				.entity(Templates.settings(repo, repoNav.build(repo, uriInfo), e.getMessage(),
+					mirrorService.list(repo)))
+				.build();
 		}
 		catch (IOException e)
 		{
@@ -310,7 +311,7 @@ public class RepositoryResource
 		{
 			return Response.status(Response.Status.BAD_REQUEST)
 				.entity(Templates.settings(repo, repoNav.build(repo, uriInfo),
-					"Unknown visibility \"" + visibility + "\"."))
+					"Unknown visibility \"" + visibility + "\".", mirrorService.list(repo)))
 				.build();
 		}
 		service.changeVisibility(currentUser.require(), repo, parsed);

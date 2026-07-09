@@ -8,8 +8,9 @@ Only the **repository owner** can see and manage a repository's mirrors.
 
 ## Adding a mirror
 
-Open your repository's overview page. As the owner you'll find a **Push mirrors** panel
-above the danger zone. Enter the remote URL and pick how git-shark should authenticate:
+Open your repository's **Settings** page (the ⚙ Settings tab in the left sidebar, owner
+only). You'll find a **Push mirrors** panel above the danger zone. Enter the remote URL
+and pick how git-shark should authenticate:
 
 ### HTTPS remote (`https://…`)
 

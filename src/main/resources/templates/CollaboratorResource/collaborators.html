@@ -1,8 +1,9 @@
 {#include layout}
 {#title}Collaborators – {repo.name}{/title}
 <div class="repo-layout">
-    {#include RepositoryResource/sidebar nav=nav active='collaborators' /}
+    {#include RepositoryResource/sidebar nav=nav active='settings' /}
     <section class="repo-main">
+        <p><a href="/repos/{repo.ownerHandle}/{repo.name}/settings">← Settings</a></p>
         <h2>Collaborators</h2>
         <p>Collaborators can read and push to this repository, including when it is private. Only you can manage them.</p>
         {#if error}

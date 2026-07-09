@@ -219,12 +219,19 @@ class CollaboratorSettingsTest
 
 	@Test
 	@TestSecurity(user = OWNER)
-	void ownerSeesSettingsLinkInSidebar()
+	void collaboratorsAreHiddenBehindSettingsTabNotTheSidebar()
 	{
 		Repository repo = repoOwnedBy(OWNER, "collab-nav", Repository.Visibility.PUBLIC);
 
+		// the sidebar only offers the Settings tab; collaborators is reached from the settings page
 		given()
 			.when().get("/repos/" + OWNER + "/" + repo.name)
+			.then().statusCode(200)
+			.body(containsString("/settings\""))
+			.body(not(containsString("settings/collaborators")));
+
+		given()
+			.when().get("/repos/" + OWNER + "/" + repo.name + "/settings")
 			.then().statusCode(200)
 			.body(containsString("settings/collaborators"));
 	}

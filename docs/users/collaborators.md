@@ -23,8 +23,8 @@ A collaborator can **not**:
 
 ## Adding a collaborator
 
-1. Open your repository. As the owner you'll find a **Collaborators** entry in the left
-   sidebar (it links to `…/settings/collaborators`).
+1. Open your repository's **Settings** page (the ⚙ Settings tab in the left sidebar,
+   owner only) and click **Manage collaborators** (it opens `…/settings/collaborators`).
 2. Enter the user's exact **username** (the handle used in their profile URLs — there is
    no search or autocomplete) and click **Add**.
 
