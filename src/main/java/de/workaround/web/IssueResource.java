@@ -95,16 +95,16 @@ public class IssueResource
 		Repository repo = requireReadable(owner, name);
 		// title validation lives in IssueService (InvalidIssueException -> 400 via InvalidIssueExceptionMapper)
 		Issue issue = issueService.create(currentUser.require(), repo, title, description);
-		return Response.seeOther(issueUri(repo, issue.id)).build();
+		return Response.seeOther(issueUri(repo, issue.number)).build();
 	}
 
 	@GET
-	@jakarta.ws.rs.Path("{id}")
+	@jakarta.ws.rs.Path("{number:\\d+}")
 	public TemplateInstance detail(@PathParam("owner") String owner, @PathParam("name") String name,
-		@PathParam("id") String id)
+		@PathParam("number") int number)
 	{
 		Repository repo = requireReadable(owner, name);
-		Issue issue = issueService.find(repo, parseId(id)).orElseThrow(NotFoundException::new);
+		Issue issue = issueService.find(repo, number).orElseThrow(NotFoundException::new);
 		User user = currentUser.get();
 		boolean isOwner = user != null && user.id.equals(repo.owner.id);
 		String descriptionHtml = issue.description == null ? null : Markdown.render(issue.description);
@@ -112,45 +112,44 @@ public class IssueResource
 			List.of(Issue.Status.values()));
 	}
 
-	@POST
-	@jakarta.ws.rs.Path("{id}/status")
-	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-	public Response updateStatus(@PathParam("owner") String owner, @PathParam("name") String name,
-		@PathParam("id") String id, @FormParam("status") String status)
+	/** Issues were originally addressed by UUID; keep old bookmarks and federated links working. */
+	@GET
+	@jakarta.ws.rs.Path("{id:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}")
+	public Response legacyDetail(@PathParam("owner") String owner, @PathParam("name") String name,
+		@PathParam("id") UUID id)
 	{
 		Repository repo = requireReadable(owner, name);
-		Issue issue = issueService.find(repo, parseId(id)).orElseThrow(NotFoundException::new);
-		issueService.updateStatus(currentUser.require(), issue, parseStatus(status));
-		return Response.seeOther(issueUri(repo, issue.id)).build();
+		Issue issue = issueService.find(repo, id).orElseThrow(NotFoundException::new);
+		return Response.status(Response.Status.MOVED_PERMANENTLY).location(issueUri(repo, issue.number)).build();
 	}
 
 	@POST
-	@jakarta.ws.rs.Path("{id}/delete")
+	@jakarta.ws.rs.Path("{number:\\d+}/status")
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-	public Response delete(@PathParam("owner") String owner, @PathParam("name") String name,
-		@PathParam("id") String id)
+	public Response updateStatus(@PathParam("owner") String owner, @PathParam("name") String name,
+		@PathParam("number") int number, @FormParam("status") String status)
 	{
 		Repository repo = requireReadable(owner, name);
-		Issue issue = issueService.find(repo, parseId(id)).orElseThrow(NotFoundException::new);
+		Issue issue = issueService.find(repo, number).orElseThrow(NotFoundException::new);
+		issueService.updateStatus(currentUser.require(), issue, parseStatus(status));
+		return Response.seeOther(issueUri(repo, issue.number)).build();
+	}
+
+	@POST
+	@jakarta.ws.rs.Path("{number:\\d+}/delete")
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	public Response delete(@PathParam("owner") String owner, @PathParam("name") String name,
+		@PathParam("number") int number)
+	{
+		Repository repo = requireReadable(owner, name);
+		Issue issue = issueService.find(repo, number).orElseThrow(NotFoundException::new);
 		issueService.delete(currentUser.require(), issue);
 		return Response.seeOther(URI.create("/repos/" + repo.owner.username + "/" + repo.name + "/issues")).build();
 	}
 
-	private URI issueUri(Repository repo, UUID id)
+	private URI issueUri(Repository repo, int number)
 	{
-		return URI.create("/repos/" + repo.owner.username + "/" + repo.name + "/issues/" + id);
-	}
-
-	private static UUID parseId(String id)
-	{
-		try
-		{
-			return UUID.fromString(id);
-		}
-		catch (IllegalArgumentException malformed)
-		{
-			throw new NotFoundException();
-		}
+		return URI.create("/repos/" + repo.owner.username + "/" + repo.name + "/issues/" + number);
 	}
 
 	private static Issue.Status parseStatus(String status)

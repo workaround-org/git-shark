@@ -14,7 +14,7 @@
         {#else}
         <div class="panel">
             {#for issue in open}
-            <a class="frow" href="/repos/{repo.owner.username}/{repo.name}/issues/{issue.id}">
+            <a class="frow" href="/repos/{repo.owner.username}/{repo.name}/issues/{issue.number}">
                 <span class="fname">
                     <span class="badge status-{issue.status}">{issue.status.label}</span>
                     <span class="n">{issue.title}</span>
@@ -29,7 +29,7 @@
             <summary>Archive <span class="ct">{done.size}</span></summary>
             <div class="panel">
                 {#for issue in done}
-                <a class="frow" href="/repos/{repo.owner.username}/{repo.name}/issues/{issue.id}">
+                <a class="frow" href="/repos/{repo.owner.username}/{repo.name}/issues/{issue.number}">
                     <span class="fname">
                         <span class="badge status-{issue.status}">{issue.status.label}</span>
                         <span class="n">{issue.title}</span>

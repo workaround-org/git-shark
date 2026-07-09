@@ -83,7 +83,7 @@ class IssueUiTest
 			"Some **bold** text\n\n<script>alert('xss')</script>");
 
 		// markdown is rendered to HTML; embedded raw HTML stays escaped
-		given().when().get("/repos/" + owner.username + "/mdesc/issues/" + issue.id)
+		given().when().get("/repos/" + owner.username + "/mdesc/issues/" + issue.number)
 			.then().statusCode(200)
 			.body(containsString("<strong>bold</strong>"))
 			.body(not(containsString("<script>alert('xss')</script>")));
@@ -173,10 +173,46 @@ class IssueUiTest
 
 		given().when().get(base + "/issues")
 			.then().statusCode(200).body(containsString("class=\"repo-nav\""));
-		given().when().get(base + "/issues/" + issue.id)
+		given().when().get(base + "/issues/" + issue.number)
 			.then().statusCode(200).body(containsString("class=\"repo-nav\""));
 		given().when().get(base + "/issues/new")
 			.then().statusCode(200).body(containsString("class=\"repo-nav\""));
+	}
+
+	@Test
+	@TestSecurity(user = "iss-num")
+	void issuePagesAreAddressedByPerRepoNumberAndOldUuidUrlsRedirect()
+	{
+		User owner = persistUser("iss-num");
+		Repository repo = service.create(owner, "numbered", Repository.Visibility.PUBLIC, null);
+		String base = "/repos/" + owner.username + "/numbered/issues";
+		Issue issue = issueService.create(owner, repo, "First", null);
+
+		// creating via the form redirects to the number URL, not the UUID
+		String location = given().redirects().follow(false)
+			.contentType("application/x-www-form-urlencoded").formParam("title", "Second")
+			.when().post(base)
+			.then().statusCode(303)
+			.extract().header("Location");
+		org.junit.jupiter.api.Assertions.assertTrue(location.endsWith(base + "/2"),
+			"expected redirect to number URL, got: " + location);
+
+		// the detail page is served under the number
+		given().when().get(base + "/" + issue.number)
+			.then().statusCode(200).body(containsString("First"));
+
+		// the list links issues by number
+		given().when().get(base)
+			.then().statusCode(200).body(containsString(base + "/" + issue.number + "\""));
+
+		// old UUID links redirect permanently to the number URL
+		given().redirects().follow(false).when().get(base + "/" + issue.id)
+			.then().statusCode(301)
+			.header("Location", org.hamcrest.Matchers.endsWith(base + "/" + issue.number));
+
+		// unknown numbers and malformed ids are 404
+		given().when().get(base + "/999").then().statusCode(404);
+		given().when().get(base + "/not-a-number").then().statusCode(404);
 	}
 
 	@Test

@@ -15,13 +15,13 @@
         <p class="muted">No description provided.</p>
         {/if}
         {#if owner}
-        <form class="issue-actions" method="post" action="/repos/{repo.owner.username}/{repo.name}/issues/{issue.id}/status">
+        <form class="issue-actions" method="post" action="/repos/{repo.owner.username}/{repo.name}/issues/{issue.number}/status">
             <span class="lbl">Move to</span>
             {#for status in statuses}
             <button type="submit" class="btn btn-secondary btn-sm" name="status" value="{status}"{#if status == issue.status} disabled{/if}>{status.label}</button>
             {/for}
         </form>
-        <form method="post" action="/repos/{repo.owner.username}/{repo.name}/issues/{issue.id}/delete"
+        <form method="post" action="/repos/{repo.owner.username}/{repo.name}/issues/{issue.number}/delete"
               onsubmit="return confirm('Delete this issue? This cannot be undone.')">
             <button type="submit" class="btn btn-danger">Delete issue</button>
         </form>
