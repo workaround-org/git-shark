@@ -46,6 +46,9 @@ public class GitHttpServlet extends GitServlet
 	@Inject
 	IssueCommitCloser issueCloser;
 
+	@Inject
+	de.workaround.mirror.MirrorService mirrorService;
+
 	@Override
 	public void init(ServletConfig config) throws ServletException
 	{
@@ -112,6 +115,7 @@ public class GitHttpServlet extends GitServlet
 		receivePack.setPostReceiveHook((rp, commands) -> {
 			pushService.onPush(ownerName, repoName, pusherId, rp.getRepository(), commands);
 			issueCloser.onPush(ownerName, repoName, pusherId, rp.getRepository(), commands);
+			mirrorService.onPush(ownerName, repoName, commands);
 		});
 		return receivePack;
 	}

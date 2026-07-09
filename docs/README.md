@@ -12,6 +12,9 @@ OIDC login, and PostgreSQL metadata.
   name, upload or remove a profile picture.
 - **[Federation](users/federation.md)** — follow public repositories on other
   instances, the push feed, your federated identity.
+- **[Push mirrors](users/mirrors.md)** — replicate a repository to an external
+  remote on every push: HTTPS vs SSH setup, deploy keys, status and
+  troubleshooting.
 
 ### For admins
 
@@ -20,6 +23,8 @@ OIDC login, and PostgreSQL metadata.
   access.
 - **[Federation](admins/federation.md)** — enable and operate ForgeFed federation:
   configuration, allowlist, reverse-proxy requirements, delivery queue, monitoring.
+- **[Push mirrors](admins/mirrors.md)** — the secret key, outbound network and
+  SSRF behavior, the sync queue, and the tables involved.
 
 ### For maintainers
 
@@ -27,6 +32,8 @@ OIDC login, and PostgreSQL metadata.
   and rendering, plus what's covered and what's out of scope.
 - **[ForgeFed architecture](maintainers/forgefed.md)** — how federation is
   implemented, the decisions behind it, what works and what is still missing.
+- **[Push mirrors architecture](maintainers/push-mirrors.md)** — trigger flow,
+  queue design, credential encryption, and SSH decisions behind push mirroring.
 
 ## Where else to look
 

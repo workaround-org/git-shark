@@ -1752,6 +1752,69 @@ dialog#hotkey-help kbd {
     margin-top: var(--s6);
 }
 
+/* push mirrors */
+
+.mirrors {
+    margin-top: var(--s6);
+    padding: var(--s4);
+}
+
+.mirrors-head {
+    font-weight: 600;
+    margin-bottom: var(--s3);
+}
+
+.mirror-list {
+    list-style: none;
+    margin: 0 0 var(--s4);
+    padding: 0;
+}
+
+.mirror-row {
+    padding: var(--s3) 0;
+    border-bottom: 1px solid var(--border-soft);
+    display: grid;
+    gap: var(--s2);
+}
+
+.mirror-url code {
+    word-break: break-all;
+}
+
+.mirror-error {
+    color: var(--danger);
+}
+
+.mirror-deploy-key {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    font: 500 12.5px/1.4 var(--mono);
+    background: var(--canvas);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 8px 8px 14px;
+}
+
+.mirror-deploy-key code {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    white-space: nowrap;
+    background: none;
+    color: var(--ink);
+    padding: 0;
+}
+
+.mirror-actions {
+    display: flex;
+    gap: var(--s2);
+}
+
+.mirror-add p {
+    margin: 0 0 var(--s2);
+}
+
 @media (max-width: 760px) {
     .repo-layout {
         grid-template-columns: 1fr;
