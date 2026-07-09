@@ -659,6 +659,30 @@ textarea {
     resize: vertical;
 }
 
+/* replace the ugly native "Browse…" button with a design-system secondary button */
+input[type="file"] {
+    padding: var(--s2) var(--s3);
+    cursor: pointer;
+}
+
+input[type="file"]::file-selector-button {
+    margin-right: var(--s3);
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--ink);
+    font: 600 14px/1 var(--font);
+    cursor: pointer;
+    transition: background .12s, border-color .12s, color .12s;
+}
+
+input[type="file"]::file-selector-button:hover {
+    background: var(--canvas);
+    border-color: var(--border-strong);
+    color: var(--accent-deep);
+}
+
 form.inline {
     display: inline;
 }
