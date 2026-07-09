@@ -39,6 +39,11 @@ docker pull ghcr.io/workaround-org/git-shark:latest
 Pin a specific release instead of `latest` for reproducible deploys (e.g.
 `ghcr.io/workaround-org/git-shark:1.0.0`).
 
+The JVM image is published as a multi-arch manifest for **linux/amd64** and
+**linux/arm64** — `docker pull` picks the right variant automatically, so it runs
+natively on x86 servers and ARM hosts (Raspberry Pi 4/5, AWS Graviton, Apple
+Silicon) alike.
+
 The image listens on **8080** (HTTP) and, once configured, **2222** (SSH). It runs as
 UID `185` and reads all production settings from environment variables.
 
