@@ -6,7 +6,7 @@ How the push-mirror subsystem (issue #11) is built, and why.
 
 | Piece | Where | Role |
 |---|---|---|
-| `PushMirror`, `MirrorSync` | `model/` | Mirror record (secret encrypted via `@Convert`) and queue row; tables `push_mirror`, `mirror_sync` (migration `V10__push_mirror.sql`) |
+| `PushMirror`, `MirrorSync` | `model/` | Mirror record (secret encrypted via `@Convert`) and queue row; tables `push_mirror`, `mirror_sync` (migration `V11__push_mirror.sql`) |
 | `MirrorService` | `mirror/` | Owner-facing CRUD, enqueue-on-push, scheduled drain (`@Scheduled every 10s`), retry/backoff/dead-letter bookkeeping |
 | `MirrorPusher` | `mirror/` | One JGit push attempt: ref-advertisement read, mirror update set, HTTPS credentials or per-mirror SSH session factory |
 | `SecretCrypto`, `EncryptedStringConverter` | `mirror/` | AES-256-GCM at-rest encryption keyed from `gitshark.secret-key` (SHA-256-derived); converter resolves the bean lazily via ArC |
