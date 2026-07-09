@@ -10,22 +10,26 @@
             <span class="muted">opened by {#avatar user=issue.author /} {issue.author.username}</span>
         </p>
         {#if descriptionHtml}
-        <div class="issue-desc readme-body">{descriptionHtml.raw}</div>
+        <div class="panel issue-desc">
+            <div class="readme-body">{descriptionHtml.raw}</div>
+        </div>
         {#else}
         <p class="muted">No description provided.</p>
         {/if}
         {#if owner}
-        <p><a class="btn btn-secondary btn-sm" href="/repos/{repo.owner.username}/{repo.name}/issues/{issue.number}/edit">Edit issue</a></p>
-        <form class="issue-actions" method="post" action="/repos/{repo.owner.username}/{repo.name}/issues/{issue.number}/status">
-            <span class="lbl">Move to</span>
-            {#for status in statuses}
-            <button type="submit" class="btn btn-secondary btn-sm" name="status" value="{status}"{#if status == issue.status} disabled{/if}>{status.label}</button>
-            {/for}
-        </form>
-        <form method="post" action="/repos/{repo.owner.username}/{repo.name}/issues/{issue.number}/delete"
-              onsubmit="return confirm('Delete this issue? This cannot be undone.')">
-            <button type="submit" class="btn btn-danger">Delete issue</button>
-        </form>
+        <div class="issue-manage">
+            <a class="btn btn-secondary btn-sm" href="/repos/{repo.owner.username}/{repo.name}/issues/{issue.number}/edit">Edit issue</a>
+            <form class="issue-actions" method="post" action="/repos/{repo.owner.username}/{repo.name}/issues/{issue.number}/status">
+                <span class="lbl">Move to</span>
+                {#for status in statuses}
+                <button type="submit" class="btn btn-secondary btn-sm" name="status" value="{status}"{#if status == issue.status} disabled{/if}>{status.label}</button>
+                {/for}
+            </form>
+            <form class="issue-remove" method="post" action="/repos/{repo.owner.username}/{repo.name}/issues/{issue.number}/delete"
+                  onsubmit="return confirm('Delete this issue? This cannot be undone.')">
+                <button type="submit" class="btn btn-danger btn-sm">Delete issue</button>
+            </form>
+        </div>
         {/if}
     </section>
 </div>

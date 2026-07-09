@@ -82,9 +82,10 @@ class IssueUiTest
 		Issue issue = issueService.create(owner, repo, "Styled",
 			"Some **bold** text\n\n<script>alert('xss')</script>");
 
-		// markdown is rendered to HTML; embedded raw HTML stays escaped
+		// markdown is rendered to HTML inside a surface card; embedded raw HTML stays escaped
 		given().when().get("/repos/" + owner.username + "/mdesc/issues/" + issue.number)
 			.then().statusCode(200)
+			.body(containsString("class=\"panel issue-desc\""))
 			.body(containsString("<strong>bold</strong>"))
 			.body(not(containsString("<script>alert('xss')</script>")));
 	}
@@ -225,10 +226,11 @@ class IssueUiTest
 		String base = "/repos/" + owner.username + "/editable/issues";
 		String editUrl = base + "/" + issue.number + "/edit";
 
-		// the detail page links to the edit form
+		// the detail page links to the edit form from a single management bar
 		given().when().get(base + "/" + issue.number)
 			.then().statusCode(200)
-			.body(containsString(editUrl));
+			.body(containsString(editUrl))
+			.body(containsString("class=\"issue-manage\""));
 
 		// the edit form is pre-filled with the current title and description
 		given().when().get(editUrl)

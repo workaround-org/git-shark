@@ -837,14 +837,30 @@ details.archive > .panel {
     font-size: 13px;
 }
 
-.issue-desc {
-    margin: var(--s3) 0 var(--s5);
-    word-break: break-word;
+/* single management bar under the issue body: edit, status transitions, delete pushed right */
+.issue-manage {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--s3);
+    margin-top: var(--s5);
+    padding-top: var(--s4);
+    border-top: 1px solid var(--border-soft);
 }
 
-/* rendered markdown reuses .readme-body typography; undo its card padding outside the README card */
-.issue-desc.readme-body {
-    padding: 0;
+.issue-manage .issue-actions {
+    margin: 0;
+}
+
+.issue-manage .issue-remove {
+    margin-left: auto;
+}
+
+/* the issue description sits in its own surface card (same look as the README card) so the
+   content stands out from the page background */
+.issue-desc {
+    margin: var(--s4) 0 var(--s5);
+    word-break: break-word;
 }
 
 .md-toggle {
