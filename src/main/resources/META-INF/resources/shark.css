@@ -1783,6 +1783,12 @@ dialog#hotkey-help kbd {
     margin: 0 0 .9em;
 }
 
+/* GFM tables: the global table style sizes to the container; inside prose only be as wide as the content */
+.readme-body table {
+    margin: 0 0 .9em;
+    width: auto;
+}
+
 .readme-body ul,
 .readme-body ol {
     padding-left: 1.6em;
