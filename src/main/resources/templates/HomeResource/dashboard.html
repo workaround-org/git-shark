@@ -11,7 +11,7 @@
         <tr><th>Repository</th><th>Visibility</th><th></th></tr>
         {#for repo in pinned}
         <tr>
-            <td><a class="mono" href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></td>
+            <td>{#avatar user=repo.owner /} <a class="mono" href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></td>
             <td><span class="badge badge-{repo.visibility.name().toLowerCase()}">{repo.visibility.name().toLowerCase()}</span></td>
             <td class="actions">
                 <form class="inline" method="post" action="/repos/{repo.owner.username}/{repo.name}/unpin">
@@ -50,7 +50,7 @@
         <tr><th>Repository</th><th>Visibility</th><th>Description</th><th></th></tr>
         {#for row in repositories}
         <tr>
-            <td><a class="mono" href="/repos/{row.repo.owner.username}/{row.repo.name}">{row.repo.owner.username}/{row.repo.name}</a></td>
+            <td>{#avatar user=row.repo.owner /} <a class="mono" href="/repos/{row.repo.owner.username}/{row.repo.name}">{row.repo.owner.username}/{row.repo.name}</a></td>
             <td><span class="badge badge-{row.repo.visibility.name().toLowerCase()}">{row.repo.visibility.name().toLowerCase()}</span></td>
             <td class="muted">{row.repo.description ?: ''}</td>
             <td class="actions">

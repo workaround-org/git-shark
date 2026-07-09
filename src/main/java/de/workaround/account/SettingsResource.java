@@ -1,8 +1,14 @@
 package de.workaround.account;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.UUID;
+
+import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.multipart.FileUpload;
 
 import de.workaround.http.AccessTokenService;
 import de.workaround.model.AccessToken;
@@ -33,7 +39,8 @@ public class SettingsResource
 
 		static native TemplateInstance tokenCreated(String plaintext);
 
-		static native TemplateInstance profile(String username, String displayName, String error);
+		static native TemplateInstance profile(String username, String displayName, boolean hasAvatar,
+			String error);
 	}
 
 	@Inject
@@ -48,12 +55,15 @@ public class SettingsResource
 	@Inject
 	UsernameService usernames;
 
+	@Inject
+	AvatarService avatars;
+
 	@GET
 	@Path("/profile")
 	public TemplateInstance profile()
 	{
 		de.workaround.model.User user = currentUser.require();
-		return Templates.profile(user.username, user.displayName, null);
+		return Templates.profile(user.username, user.displayName, user.hasAvatar(), null);
 	}
 
 	@POST
@@ -71,9 +81,47 @@ public class SettingsResource
 		catch (InvalidUsernameException | UsernameTakenException e)
 		{
 			return Response.status(Response.Status.BAD_REQUEST)
-				.entity(Templates.profile(username, displayName, e.getMessage()))
+				.entity(Templates.profile(username, displayName, user.hasAvatar(), e.getMessage()))
 				.build();
 		}
+	}
+
+	@POST
+	@Path("/profile/avatar")
+	@Consumes(MediaType.MULTIPART_FORM_DATA)
+	public Response uploadAvatar(@RestForm("avatar") FileUpload avatar)
+	{
+		de.workaround.model.User user = currentUser.require();
+		if (avatar == null)
+		{
+			return Response.status(Response.Status.BAD_REQUEST)
+				.entity(Templates.profile(user.username, user.displayName, user.hasAvatar(),
+					"No image was uploaded."))
+				.build();
+		}
+		try
+		{
+			avatars.store(user, Files.readAllBytes(avatar.uploadedFile()), avatar.contentType());
+			return Response.seeOther(URI.create("/settings/profile")).build();
+		}
+		catch (InvalidAvatarException e)
+		{
+			return Response.status(Response.Status.BAD_REQUEST)
+				.entity(Templates.profile(user.username, user.displayName, user.hasAvatar(), e.getMessage()))
+				.build();
+		}
+		catch (IOException e)
+		{
+			throw new UncheckedIOException("Failed to read uploaded avatar", e);
+		}
+	}
+
+	@POST
+	@Path("/profile/avatar/delete")
+	public Response deleteAvatar()
+	{
+		avatars.remove(currentUser.require());
+		return Response.seeOther(URI.create("/settings/profile")).build();
 	}
 
 	@GET

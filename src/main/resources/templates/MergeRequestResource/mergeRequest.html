@@ -8,7 +8,7 @@
 <p>
     <span class="badge status-{mr.status}">{mr.status.label}</span>
     <span class="mr-branches"><code>{mr.sourceBranch}</code> &rarr; <code>{mr.targetBranch}</code></span>
-    <span class="muted">opened by {mr.author.username}</span>
+    <span class="muted">opened by {#avatar user=mr.author /} {mr.author.username}</span>
 </p>
 {#if mr.description}
 <pre class="issue-desc">{mr.description}</pre>
@@ -74,7 +74,7 @@
         <div class="dl-comment-row">
             <div class="comment">
                 <div class="comment-head">
-                    <span class="who">{c.author.username}</span>
+                    <span class="who">{#avatar user=c.author /} {c.author.username}</span>
                 </div>
                 <div class="comment-body">{c.body}</div>
             </div>

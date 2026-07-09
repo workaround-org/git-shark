@@ -94,3 +94,7 @@ automatically. Followers of a repository are public at
 
 Signing keys for your actors are generated and managed by the server — there is
 nothing for you to configure.
+
+Remote federated users and repositories are identified by their remote handle
+only — unlike local accounts, they don't carry a profile picture (see
+[Profile settings](profile.md)).

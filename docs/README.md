@@ -8,6 +8,8 @@ OIDC login, and PostgreSQL metadata.
 
 ### For users
 
+- **[Profile settings](users/profile.md)** — change your username and display
+  name, upload or remove a profile picture.
 - **[Federation](users/federation.md)** — follow public repositories on other
   instances, the push feed, your federated identity.
 
@@ -21,6 +23,8 @@ OIDC login, and PostgreSQL metadata.
 
 ### For maintainers
 
+- **[Avatars](maintainers/avatars.md)** — profile-picture storage, validation,
+  and rendering, plus what's covered and what's out of scope.
 - **[ForgeFed architecture](maintainers/forgefed.md)** — how federation is
   implemented, the decisions behind it, what works and what is still missing.
 

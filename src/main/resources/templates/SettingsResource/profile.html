@@ -11,4 +11,20 @@
     <p><label>Display name <input name="displayName" value="{displayName ?: ''}"></label></p>
     <button class="btn btn-primary">Save</button>
 </form>
+
+<h2>Profile picture</h2>
+{#if hasAvatar}
+<img class="avatar-preview" src="/users/{username}/avatar" alt="Current profile picture">
+{/if}
+<form method="post" action="/settings/profile/avatar" enctype="multipart/form-data">
+    <p><input type="file" name="avatar" accept="image/png,image/jpeg,image/gif,image/webp" required></p>
+    <p class="muted">PNG, JPEG, GIF or WebP, up to 2 MB.</p>
+    <button class="btn btn-primary">Upload</button>
+</form>
+{#if hasAvatar}
+<form method="post" action="/settings/profile/avatar/delete"
+      onsubmit="return confirm('Remove your profile picture?')">
+    <button class="btn btn-danger">Remove picture</button>
+</form>
+{/if}
 {/include}

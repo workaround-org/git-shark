@@ -1,0 +1,1 @@
+{#if user.hasAvatar}<img class="avatar" src="/users/{user.username}/avatar?v={user.avatarUpdatedAt.toEpochMilli}" alt="{user.username}">{#else}<span class="av-fallback">{user.username.charAt(0)}</span>{/if}

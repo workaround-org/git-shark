@@ -15,7 +15,7 @@
         {#insert nav}
         {#if cdi:currentUser.loggedIn}
         <a href="/following">Following</a>
-        <a href="/settings/profile">Profile</a>
+        <a href="/settings/profile">{#avatar user=cdi:currentUser.get /} Profile</a>
         <a href="/settings/keys">SSH keys</a>
         <a href="/settings/tokens">Access tokens</a>
         <form class="logout" method="post" action="/logout"><button type="submit">Logout</button></form>

@@ -1555,6 +1555,41 @@ dialog#hotkey-help kbd {
     white-space: nowrap;
 }
 
+/* Inline user avatars (tags/avatar.html): an uploaded image or an initials fallback. */
+.avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    object-fit: cover;
+    vertical-align: middle;
+    flex: none;
+}
+
+.av-fallback {
+    display: inline-flex;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    background: var(--accent);
+    color: #fff;
+    align-items: center;
+    justify-content: center;
+    font: 700 11px/1 var(--font);
+    text-transform: uppercase;
+    vertical-align: middle;
+    flex: none;
+}
+
+/* Settings profile: larger current-avatar preview. */
+.avatar-preview {
+    width: 96px;
+    height: 96px;
+    border-radius: 12px;
+    object-fit: cover;
+    display: block;
+    margin-bottom: 8px;
+}
+
 .files {
     display: flex;
     flex-direction: column;

@@ -36,6 +36,17 @@ public class User implements PanacheEntity.Managed
 
 	public Instant createdAt = Instant.now();
 
+	// Profile picture: the bytes live on the filesystem (see AvatarService); only the content type
+	// and last-update timestamp are stored here. Null content type means the user has no avatar.
+	public String avatarContentType;
+
+	public Instant avatarUpdatedAt;
+
+	public boolean hasAvatar()
+	{
+		return avatarContentType != null;
+	}
+
 	public interface Repo extends PanacheRepository.Managed<User, UUID>
 	{
 		@Find

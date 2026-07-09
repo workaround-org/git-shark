@@ -7,7 +7,7 @@
         <h2>{issue.title} <span class="issue-no">#{issue.number}</span></h2>
         <p>
             <span class="badge status-{issue.status}">{issue.status.label}</span>
-            <span class="muted">opened by {issue.author.username}</span>
+            <span class="muted">opened by {#avatar user=issue.author /} {issue.author.username}</span>
         </p>
         {#if issue.description}
         <pre class="issue-desc">{issue.description}</pre>

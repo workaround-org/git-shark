@@ -165,12 +165,14 @@ services:
       QUARKUS_OIDC_TOKEN_STATE_ENCRYPTION_SECRET: ${OIDC_TOKEN_STATE_SECRET}
       # --- Storage & SSH ---
       GITSHARK_STORAGE_ROOT: /data/repositories
+      GITSHARK_AVATAR_ROOT: /data/avatars
       GITSHARK_SSH_HOST_KEY: /data/ssh/host-key
       GITSHARK_SSH_PORT: "2222"
     ports:
       - "2222:2222"                 # SSH git access, published directly
     volumes:
       - repos:/data/repositories    # bare git repositories
+      - avatars:/data/avatars       # user profile pictures
       - ssh:/data/ssh               # persistent SSH host key
     healthcheck:
       test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080 && echo ok >&3"]
@@ -182,15 +184,16 @@ services:
 volumes:
   db-data:
   repos:
+  avatars:
   ssh:
 ```
 
 Notes:
 
-- **Separate volumes for `/data/repositories` and `/data/ssh`** so Docker creates both
-  mount points with the right ownership — no init container or `mkdir` needed. The SSH
-  host key is generated on first boot and persists across restarts (so client
-  `known_hosts` entries stay valid).
+- **Separate volumes for `/data/repositories`, `/data/avatars`, and `/data/ssh`** so
+  Docker creates each mount point with the right ownership — no init container or
+  `mkdir` needed. The SSH host key is generated on first boot and persists across
+  restarts (so client `known_hosts` entries stay valid).
 - **HTTP port 8080 is not published** — it's reached through the reverse proxy on the
   Compose network (Step 6). Only SSH (2222) is exposed directly.
 - **Single app replica.** git-shark keeps git state on a `ReadWriteOnce`-style filesystem
@@ -289,6 +292,7 @@ Every value below is an environment variable on the `app` service. Defaults come
 | `QUARKUS_OIDC_AUTHENTICATION_STATE_SECRET` | ✅ | — | Encrypts PKCE state cookie (≥ 32 chars) |
 | `QUARKUS_OIDC_TOKEN_STATE_ENCRYPTION_SECRET` | ✅ | — | Encrypts session/token cookie (≥ 32 chars) |
 | `GITSHARK_STORAGE_ROOT` | — | `data/repositories` | On-disk bare-repo root |
+| `GITSHARK_AVATAR_ROOT` | — | `data/avatars` | On-disk profile-picture (avatar) storage root |
 | `GITSHARK_SSH_HOST_KEY` | — | `data/ssh/host-key` | Persistent SSH host key path |
 | `GITSHARK_SSH_PORT` | — | `2222` | Embedded SSH server port |
 | `GITSHARK_FEDERATION_ENABLED` | — | `false` | Turn on ForgeFed/ActivityPub |
@@ -317,18 +321,22 @@ fetches are HTTPS-only, allowlist-bound, and SSRF-guarded. Never set
 
 ## Operations
 
-**Backups** — two things hold state:
-- The `db-data` volume (metadata: users, repo records, issues, MRs, comments).
+**Backups** — three things hold state:
+- The `db-data` volume (metadata: users, repo records, issues, MRs, comments;
+  also each avatar's content type and update timestamp — the bytes are not
+  here).
 - The `repos` volume (the actual git objects).
+- The `avatars` volume (uploaded profile-picture bytes, one file per user).
 
-Back both up together and consistently. A logical DB dump:
+Back all three up together and consistently. A logical DB dump:
 
 ```bash
 docker compose exec db pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > gitshark-db.sql
 ```
 
-Snapshot the `repos` volume with your host's volume/snapshot tooling while the app is
-quiesced (or accept crash-consistent snapshots — bare repos tolerate them well).
+Snapshot the `repos` and `avatars` volumes with your host's volume/snapshot tooling
+while the app is quiesced (or accept crash-consistent snapshots — bare repos and
+avatar files both tolerate them well).
 
 **Upgrades** — pull the new image and recreate the app:
 

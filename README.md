@@ -24,6 +24,7 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
 - The owner can Merge or Close an open merge request from the detail page; merging runs entirely in-core against the bare repository (no working tree), fast-forwarding when possible or else recording a two-parent merge commit authored by the acting user and advancing the target branch ref. An automatic merge that would conflict is rejected; a source branch already contained in the target is treated as already merged
 - Line-level review comments on a merge request's diff: any authenticated user who can read the repository can comment on a specific diff line (added, deleted, or context) from the merge-request detail page; comments render inline beneath the line they anchor to. A comment can be deleted by its author or by the repository owner. Comments are anchored to a file plus the diff line's old/new line numbers and must land on a line that's part of the current diff. Hovering a commentable line reveals a comment icon on the right; clicking it opens the form inline — a progressive-enhancement disclosure that works without JavaScript
 - OIDC login (authorization code flow) via `GET /login`; on first login the user account is created without a username and the browser is redirected to `/onboarding`, where the user picks a URL-safe handle (`^[a-z0-9][a-z0-9-]{0,38}$`, unique). The chosen handle — not the OIDC `preferred_username` claim (which is an SPN form in kanidm and not URL-safe) — is used in all repo, SSH, ActivityPub, and webfinger URLs. The `name` claim becomes an editable display name; both can be changed later at `/settings/profile`. A request filter blocks all app pages until a handle is chosen. Logout is local-session only via `POST /logout` (the kanidm provider advertises no `end_session_endpoint`, so RP-Initiated Logout is disabled)
+- Profile pictures: users can upload a PNG/JPEG/GIF/WebP avatar (≤ 2 MB, content-type and magic bytes both validated) at `/settings/profile`, stored on the filesystem keyed by user UUID and served publicly at `GET /users/{username}/avatar`; shown wherever a local user is rendered (header nav, repo lists, repo sidebar, issue/MR/comment authors) via a reusable Qute avatar tag, removable, and falling back to an initials badge when absent. Git commit authors and remote federation actors are not local users and keep their existing pseudo-avatars
 - Single access policy on all paths: owner read/write, public world-readable, private owner-only
 - **JSON REST API** under `/api/v1`, authenticated with the same personal access tokens as
   git-over-HTTP (`Authorization: Bearer <token>`), auto-documented via OpenAPI/Swagger UI (see below)
@@ -130,6 +131,7 @@ MCP tools.
 | Property / Env var | Default | Purpose |
 |---|---|---|
 | `GITSHARK_STORAGE_ROOT` | `data/repositories` | Root directory for bare repositories (persistent volume) |
+| `GITSHARK_AVATAR_ROOT` | `data/avatars` | Root directory for uploaded profile pictures (persistent volume) |
 | `GITSHARK_SSH_PORT` | `2222` | Embedded SSH server port |
 | `GITSHARK_SSH_HOST_KEY` | `data/ssh/host-key` | Persisted SSH host key file |
 | `QUARKUS_DATASOURCE_JDBC_URL` / `_USERNAME` / `_PASSWORD` | — (Dev Services in dev/test) | PostgreSQL connection |
@@ -185,6 +187,7 @@ Two `%dev`-only flags are set in `application.properties` (both default `false` 
 |---|---|
 | PostgreSQL | `users`, `repositories` (metadata), `repository_pins` (per-user pinned repositories), `ssh_keys` (public keys + fingerprints), `access_tokens` (SHA-256 hashes, labels, last-used), federation tables (`federation_keys`, `remote_actors`, `repository_followers`, `federation_outbox`, `federation_inbox`, `federation_delivery`) |
 | Filesystem (`GITSHARK_STORAGE_ROOT`) | Bare Git repositories |
+| Filesystem (`GITSHARK_AVATAR_ROOT`) | Uploaded profile pictures, one file per user (UUID-named) |
 | Filesystem (`GITSHARK_SSH_HOST_KEY`) | SSH host key |
 
 ## CI
