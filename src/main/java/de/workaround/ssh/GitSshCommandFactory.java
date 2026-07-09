@@ -36,6 +36,9 @@ public class GitSshCommandFactory implements CommandFactory
 	@Inject
 	de.workaround.git.IssueCommitCloser issueCloser;
 
+	@Inject
+	de.workaround.mirror.MirrorService mirrorService;
+
 	@Override
 	public Command createCommand(ChannelSession channel, String command)
 	{
@@ -148,6 +151,7 @@ public class GitSshCommandFactory implements CommandFactory
 							receivePack.setPostReceiveHook((rp, commands) -> {
 								pushService.onPush(ownerName, repoName, userId, rp.getRepository(), commands);
 								issueCloser.onPush(ownerName, repoName, userId, rp.getRepository(), commands);
+								mirrorService.onPush(ownerName, repoName, commands);
 							});
 						}
 						receivePack.receive(in, out, err);

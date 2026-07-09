@@ -47,7 +47,7 @@ public class RepositoryResource
 	{
 		static native TemplateInstance overview(Repository repo, RepoNav nav, boolean owner,
 			List<GitBrowseService.TreeEntry> entries, GitBrowseService.CommitInfo latestCommit, String latestCommitAge,
-			String readmeName, String readmeHtml);
+			String readmeName, String readmeHtml, List<de.workaround.model.PushMirror> mirrors);
 
 		static native TemplateInstance tree(Repository repo, RepoNav nav, String ref, String path,
 			List<GitBrowseService.TreeEntry> entries, List<Crumb> crumbs);
@@ -83,6 +83,9 @@ public class RepositoryResource
 	@Inject
 	RepoNavService repoNav;
 
+	@Inject
+	de.workaround.mirror.MirrorService mirrorService;
+
 	@Context
 	UriInfo uriInfo;
 
@@ -109,7 +112,9 @@ public class RepositoryResource
 			.filter(blob -> !blob.binary())
 			.map(blob -> renderMarkdown(new String(blob.content(), StandardCharsets.UTF_8)))
 			.orElse(null);
-		return Templates.overview(repo, nav, isOwner, entries, latestCommit, latestCommitAge, readmeName, readmeHtml);
+		List<de.workaround.model.PushMirror> mirrors = isOwner ? mirrorService.list(repo) : List.of();
+		return Templates.overview(repo, nav, isOwner, entries, latestCommit, latestCommitAge, readmeName, readmeHtml,
+			mirrors);
 	}
 
 	// README file names the overview looks for, in order of preference (matched case-insensitively).

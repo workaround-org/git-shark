@@ -31,6 +31,14 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
 - **MCP server** at `/mcp` (Streamable HTTP), exposing the same feature set as the REST API as
   MCP tools so an AI client can manage repositories, issues, merge requests, and MR line-comments
   (see below)
+- **Push mirrors** — the repository owner can replicate a repository to external remotes on
+  every push (`git push --mirror` semantics, all refs including deletions), over HTTPS with
+  stored credentials or over SSH with a server-generated Ed25519 deploy key. Syncs run
+  asynchronously (the incoming push never waits or fails because of a mirror), coalesce under
+  rapid pushes, retry with exponential backoff, and dead-letter with the error visible in the
+  UI; secrets are encrypted at rest (`GITSHARK_SECRET_KEY`). Guides:
+  [for users](docs/users/mirrors.md), [for admins](docs/admins/mirrors.md),
+  [architecture](docs/maintainers/push-mirrors.md)
 - **Federation (ForgeFed / ActivityPub)** — *opt-in, off by default.* Public repositories are
   exposed as ForgeFed `Repository` actors that remote instances can follow and receive `Push`
   activities from (see below)
@@ -138,6 +146,9 @@ MCP tools.
 | `QUARKUS_OIDC_AUTH_SERVER_URL` / `_CLIENT_ID` / `_CREDENTIALS_SECRET` | — (Keycloak Dev Services in dev/test) | OIDC provider |
 | `QUARKUS_OIDC_AUTHENTICATION_STATE_SECRET` | — (dev/test use a fixed dev secret) | Encrypts the OIDC state cookie carrying the PKCE `code_verifier`; ≥ 32 chars, stable across pods |
 | `QUARKUS_OIDC_TOKEN_STATE_ENCRYPTION_SECRET` | — (falls back to credentials secret) | Encrypts the post-login session cookie holding the tokens; ≥ 32 chars, set explicitly for multi-pod |
+| `GITSHARK_SECRET_KEY` | — | Symmetric key encrypting push-mirror secrets at rest (AES-256-GCM); required to create mirrors, keep it stable |
+| `GITSHARK_MIRROR_MAX_ATTEMPTS` | `8` | Max attempts per mirror sync before it is dead-lettered |
+| `GITSHARK_MIRROR_ALLOW_INSECURE` | `false` | **Dev/local only.** Allow `http://` and loopback/private mirror targets. Never enable in production. |
 | `GITSHARK_FEDERATION_ENABLED` | `false` | Master switch for ForgeFed federation |
 | `GITSHARK_FEDERATION_BASE_URL` | — | Public HTTPS origin (e.g. `https://shark.example`); actor IDs derive from it and are permanent |
 | `GITSHARK_FEDERATION_PEER_ALLOWLIST` | — (empty = deny all) | Comma-separated peer hosts allowed to send/receive federation traffic |
@@ -185,7 +196,7 @@ Two `%dev`-only flags are set in `application.properties` (both default `false` 
 
 | Store | What |
 |---|---|
-| PostgreSQL | `users`, `repositories` (metadata), `repository_pins` (per-user pinned repositories), `ssh_keys` (public keys + fingerprints), `access_tokens` (SHA-256 hashes, labels, last-used), federation tables (`federation_keys`, `remote_actors`, `repository_followers`, `federation_outbox`, `federation_inbox`, `federation_delivery`) |
+| PostgreSQL | `users`, `repositories` (metadata), `repository_pins` (per-user pinned repositories), `ssh_keys` (public keys + fingerprints), `access_tokens` (SHA-256 hashes, labels, last-used), push-mirror tables (`push_mirror` with AES-GCM-encrypted secrets, `mirror_sync` queue), federation tables (`federation_keys`, `remote_actors`, `repository_followers`, `federation_outbox`, `federation_inbox`, `federation_delivery`) |
 | Filesystem (`GITSHARK_STORAGE_ROOT`) | Bare Git repositories |
 | Filesystem (`GITSHARK_AVATAR_ROOT`) | Uploaded profile pictures, one file per user (UUID-named) |
 | Filesystem (`GITSHARK_SSH_HOST_KEY`) | SSH host key |

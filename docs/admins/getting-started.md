@@ -295,11 +295,27 @@ Every value below is an environment variable on the `app` service. Defaults come
 | `GITSHARK_AVATAR_ROOT` | — | `data/avatars` | On-disk profile-picture (avatar) storage root |
 | `GITSHARK_SSH_HOST_KEY` | — | `data/ssh/host-key` | Persistent SSH host key path |
 | `GITSHARK_SSH_PORT` | — | `2222` | Embedded SSH server port |
+| `GITSHARK_SECRET_KEY` | — | — | Encrypts push-mirror secrets at rest; required to create mirrors (see [Push mirrors](mirrors.md)) |
+| `GITSHARK_MIRROR_MAX_ATTEMPTS` | — | `8` | Mirror-sync retry cap before dead-letter |
+| `GITSHARK_MIRROR_ALLOW_INSECURE` | — | `false` | Dev only: allow http/loopback mirror targets |
 | `GITSHARK_FEDERATION_ENABLED` | — | `false` | Turn on ForgeFed/ActivityPub |
 | `GITSHARK_FEDERATION_BASE_URL` | — | — | Public HTTPS origin; permanent actor-ID base |
 | `GITSHARK_FEDERATION_PEER_ALLOWLIST` | — | — | Comma-separated peer hosts (empty denies all) |
 | `GITSHARK_FEDERATION_MAX_ATTEMPTS` | — | `8` | Outbound delivery retry cap |
 | `GITSHARK_FEDERATION_DEV_ALLOW_INSECURE` | — | `false` | Dev only: allow http/loopback peers |
+
+### Optional: push mirrors
+
+Repository owners can mirror their repositories to external remotes on every push. The
+only prerequisite is a stable secret key for encrypting the mirror credentials at rest:
+
+```yaml
+      GITSHARK_SECRET_KEY: <openssl rand -base64 32>
+```
+
+Without it, creating a mirror fails (secrets are never stored unencrypted). Operational
+details — outbound network requirements, queue behavior, tables — in
+[Push mirrors](mirrors.md).
 
 ### Optional: federation (ForgeFed)
 
