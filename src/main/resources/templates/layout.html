@@ -15,10 +15,15 @@
         {#insert nav}
         {#if cdi:currentUser.loggedIn}
         <a href="/following">Following</a>
-        <a href="/settings/profile">{#avatar user=cdi:currentUser.get /} Profile</a>
-        <a href="/settings/keys">SSH keys</a>
-        <a href="/settings/tokens">Access tokens</a>
-        <form class="logout" method="post" action="/logout"><button type="submit">Logout</button></form>
+        <details class="user-menu">
+            <summary>Account</summary>
+            <div class="user-menu-items">
+                <a href="/settings/profile">{#avatar user=cdi:currentUser.get /} Profile</a>
+                <a href="/settings/keys">SSH keys</a>
+                <a href="/settings/tokens">Access tokens</a>
+                <form class="logout" method="post" action="/logout"><button type="submit">Logout</button></form>
+            </div>
+        </details>
         {#else}
         <a class="btn btn-primary" href="/login">Log in</a>
         {/if}

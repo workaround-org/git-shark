@@ -522,8 +522,12 @@ class WebUiTest
 			.when().get("/explore")
 			.then()
 			.statusCode(200)
+			// account links are collapsed into a single dropdown menu...
+			.body(containsString("class=\"user-menu\""))
 			.body(containsString("Access tokens"))
 			.body(containsString("Logout"))
+			// ...while Following stays a top-level nav link outside the menu
+			.body(containsString("href=\"/following\""))
 			.body(not(containsString("href=\"/login\"")));
 	}
 
