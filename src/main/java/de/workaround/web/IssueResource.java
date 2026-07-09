@@ -79,10 +79,10 @@ public class IssueResource
 	public TemplateInstance newForm(@PathParam("owner") String owner, @PathParam("name") String name)
 	{
 		Repository repo = requireReadable(owner, name);
-		// only the owner may open an issue, so only the owner sees the form
+		// only users with write access (owner or collaborator) may open an issue
 		if (!accessPolicy.canWrite(currentUser.get(), repo))
 		{
-			throw new de.workaround.git.ForbiddenOperationException("Only the repository owner can open issues");
+			throw new de.workaround.git.ForbiddenOperationException("Only the repository owner or a collaborator can open issues");
 		}
 		return Templates.newIssue(repo, repoNav.build(repo, uriInfo));
 	}

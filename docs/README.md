@@ -15,6 +15,8 @@ OIDC login, and PostgreSQL metadata.
 - **[Push mirrors](users/mirrors.md)** — replicate a repository to an external
   remote on every push: HTTPS vs SSH setup, deploy keys, status and
   troubleshooting.
+- **[Collaborators](users/collaborators.md)** — grant other users read and
+  write access to your repository, what collaborators can and cannot do.
 
 ### For admins
 
@@ -25,6 +27,8 @@ OIDC login, and PostgreSQL metadata.
   configuration, allowlist, reverse-proxy requirements, delivery queue, monitoring.
 - **[Push mirrors](admins/mirrors.md)** — the secret key, outbound network and
   SSRF behavior, the sync queue, and the tables involved.
+- **[Collaborators](admins/collaborators.md)** — access semantics, endpoints,
+  and the `repository_collaborators` table (no configuration needed).
 
 ### For maintainers
 

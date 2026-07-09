@@ -22,6 +22,7 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -116,6 +117,40 @@ public class GitSmartHttpTest
 		}
 
 		assertEquals(before, mainRef(service.repositoryPath(repo)), "refs must not change on forbidden push");
+	}
+
+	@Inject
+	de.workaround.git.CollaboratorService collaboratorService;
+
+	@Test
+	void collaboratorClonesAndPushesPrivateRepository() throws Exception
+	{
+		User owner = persistUser();
+		User collaborator = persistUser();
+		Repository repo = createRepo(owner, "collab-push", Repository.Visibility.PRIVATE);
+		seedCommit(service.repositoryPath(repo));
+		addCollaborator(repo, collaborator);
+		ObjectId before = mainRef(service.repositoryPath(repo));
+		String token = createToken(collaborator);
+		var credentials = new UsernamePasswordCredentialsProvider(collaborator.username, token);
+
+		Path work = Files.createTempDirectory("collab-push");
+		try (Git git = cloneOver(httpUrl(owner, "collab-push"), work, credentials))
+		{
+			commitFile(git, work, "collab.txt");
+			git.push()
+				.setCredentialsProvider(credentials)
+				.setRefSpecs(new RefSpec("HEAD:refs/heads/main"))
+				.call();
+		}
+
+		assertNotEquals(before, mainRef(service.repositoryPath(repo)), "collaborator push must advance main");
+	}
+
+	@Transactional
+	void addCollaborator(Repository repo, User user)
+	{
+		collaboratorService.add(repo.owner, repo, user.username);
 	}
 
 	@Test

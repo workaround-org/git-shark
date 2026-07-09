@@ -161,6 +161,43 @@ class SshGitAccessTest
 		assertEquals(before, mainRef(service.repositoryPath(repo)), "refs must not change on denied push");
 	}
 
+	@Inject
+	de.workaround.git.CollaboratorService collaboratorService;
+
+	@Test
+	void collaboratorClonesAndPushesPrivateRepositoryOverSsh() throws Exception
+	{
+		KeyPair ownerKey = generateKeyPair();
+		User owner = persistUserWithKey(ownerKey);
+		KeyPair collaboratorKey = generateKeyPair();
+		User collaborator = persistUserWithKey(collaboratorKey);
+		Repository repo = service.create(owner, "ssh-collab", Repository.Visibility.PRIVATE, null);
+		GitSmartHttpTest.seedCommit(service.repositoryPath(repo));
+		addCollaborator(repo, collaborator);
+		ObjectId before = mainRef(service.repositoryPath(repo));
+
+		Path work = Files.createTempDirectory("ssh-collab");
+		try (Git git = cloneOverSsh(sshUrl(owner, "ssh-collab"), work, collaboratorKey))
+		{
+			Files.writeString(work.resolve("collab.txt"), "via collaborator\n");
+			git.add().addFilepattern(".").call();
+			git.commit().setMessage("collaborator push").setSign(false)
+				.setAuthor("t", "t@example.com").setCommitter("t", "t@example.com").call();
+			git.push()
+				.setTransportConfigCallback(SshGitAccessTest::configureTransport)
+				.setRefSpecs(new RefSpec("HEAD:refs/heads/main"))
+				.call();
+		}
+
+		assertNotEquals(before, mainRef(service.repositoryPath(repo)), "collaborator push must advance main");
+	}
+
+	@Transactional
+	void addCollaborator(Repository repo, User user)
+	{
+		collaboratorService.add(repo.owner, repo, user.username);
+	}
+
 	@Test
 	void hostKeyIsPersistedAndStable() throws Exception
 	{

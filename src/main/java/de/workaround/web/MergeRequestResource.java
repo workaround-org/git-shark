@@ -109,7 +109,7 @@ public class MergeRequestResource
 		Repository repo = requireReadable(owner, name);
 		if (!accessPolicy.canWrite(currentUser.get(), repo))
 		{
-			throw new ForbiddenOperationException("Only the repository owner can open merge requests");
+			throw new ForbiddenOperationException("Only the repository owner or a collaborator can open merge requests");
 		}
 		Path path = service.repositoryPath(repo);
 		List<String> branches = browse.branches(path).stream().map(GitBrowseService.BranchInfo::name).toList();
