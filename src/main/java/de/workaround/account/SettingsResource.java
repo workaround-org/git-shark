@@ -104,7 +104,7 @@ public class SettingsResource
 			avatars.store(user, Files.readAllBytes(avatar.uploadedFile()), avatar.contentType());
 			return Response.seeOther(URI.create("/settings/profile")).build();
 		}
-		catch (InvalidAvatarException e)
+		catch (InvalidImageException e)
 		{
 			return Response.status(Response.Status.BAD_REQUEST)
 				.entity(Templates.profile(user.username, user.displayName, user.hasAvatar(), e.getMessage()))

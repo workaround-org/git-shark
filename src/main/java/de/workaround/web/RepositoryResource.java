@@ -1,7 +1,10 @@
 package de.workaround.web;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -12,10 +15,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.multipart.FileUpload;
+
 import de.workaround.account.CurrentUser;
+import de.workaround.account.InvalidImageException;
 import de.workaround.git.AccessPolicy;
 import de.workaround.git.GitBrowseService;
 import de.workaround.git.GitRepositoryService;
+import de.workaround.git.RepositoryImageService;
 import de.workaround.git.RepositoryPinService;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
@@ -63,6 +71,8 @@ public class RepositoryResource
 			List<GitBrowseService.BranchInfo> branches);
 
 		static native TemplateInstance tags(Repository repo, RepoNav nav, List<String> tags);
+
+		static native TemplateInstance settings(Repository repo, RepoNav nav, String error);
 	}
 
 	@Inject
@@ -85,6 +95,9 @@ public class RepositoryResource
 
 	@Inject
 	de.workaround.mirror.MirrorService mirrorService;
+
+	@Inject
+	RepositoryImageService images;
 
 	@Context
 	UriInfo uriInfo;
@@ -260,6 +273,71 @@ public class RepositoryResource
 		return Templates.tags(repo, nav, browse.tags(path));
 	}
 
+	@GET
+	@jakarta.ws.rs.Path("settings")
+	public TemplateInstance settings(@PathParam("owner") String owner, @PathParam("name") String name)
+	{
+		Repository repo = requireOwner(owner, name);
+		return Templates.settings(repo, repoNav.build(repo, uriInfo), null);
+	}
+
+	@POST
+	@jakarta.ws.rs.Path("image")
+	@Consumes(MediaType.MULTIPART_FORM_DATA)
+	public Response uploadImage(@PathParam("owner") String owner, @PathParam("name") String name,
+		@RestForm("image") FileUpload image)
+	{
+		Repository repo = requireOwner(owner, name);
+		if (image == null)
+		{
+			return Response.status(Response.Status.BAD_REQUEST)
+				.entity(Templates.settings(repo, repoNav.build(repo, uriInfo), "No image was uploaded.")).build();
+		}
+		try
+		{
+			images.store(currentUser.require(), repo, Files.readAllBytes(image.uploadedFile()), image.contentType());
+			return Response.seeOther(settingsUri(repo)).build();
+		}
+		catch (InvalidImageException e)
+		{
+			return Response.status(Response.Status.BAD_REQUEST)
+				.entity(Templates.settings(repo, repoNav.build(repo, uriInfo), e.getMessage())).build();
+		}
+		catch (IOException e)
+		{
+			throw new UncheckedIOException("Failed to read uploaded repository image", e);
+		}
+	}
+
+	@POST
+	@jakarta.ws.rs.Path("image/delete")
+	public Response deleteImage(@PathParam("owner") String owner, @PathParam("name") String name)
+	{
+		Repository repo = requireOwner(owner, name);
+		images.remove(currentUser.require(), repo);
+		return Response.seeOther(settingsUri(repo)).build();
+	}
+
+	@GET
+	@jakarta.ws.rs.Path("image")
+	@Produces(MediaType.APPLICATION_OCTET_STREAM)
+	public Response image(@PathParam("owner") String owner, @PathParam("name") String name)
+	{
+		// Visibility-guarded (unlike the public user avatar): a private repo's image must not leak.
+		Repository repo = requireReadable(owner, name);
+		if (!repo.hasImage())
+		{
+			throw new NotFoundException();
+		}
+		byte[] bytes = images.read(repo).orElseThrow(NotFoundException::new);
+		return Response.ok(bytes).type(repo.imageContentType).build();
+	}
+
+	private static URI settingsUri(Repository repo)
+	{
+		return URI.create("/repos/" + repo.owner.username + "/" + repo.name + "/settings");
+	}
+
 	@POST
 	@jakarta.ws.rs.Path("delete")
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
@@ -423,6 +501,18 @@ public class RepositoryResource
 		if (!accessPolicy.canRead(currentUser.get(), repo))
 		{
 			// hide existence of private repositories
+			throw new NotFoundException();
+		}
+		return repo;
+	}
+
+	private Repository requireOwner(String owner, String name)
+	{
+		Repository repo = requireReadable(owner, name);
+		User user = currentUser.get();
+		if (user == null || !user.id.equals(repo.owner.id))
+		{
+			// hide existence from non-owners rather than signalling 403
 			throw new NotFoundException();
 		}
 		return repo;

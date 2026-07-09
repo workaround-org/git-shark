@@ -1,0 +1,33 @@
+{#include layout}
+{#title}Settings · {repo.owner.username}/{repo.name} – git-shark{/title}
+
+<div class="repo-layout">
+
+    {#include RepositoryResource/sidebar nav=nav active='settings' /}
+
+    <section class="repo-main">
+        <h1>Settings</h1>
+        {#if error}
+        <p class="error">{error}</p>
+        {/if}
+
+        <h2>Repository image</h2>
+        <p class="muted">Shown next to this repository across git-shark. Without one, the owner's profile picture is used.</p>
+        {#if repo.hasImage}
+        <img class="avatar-preview" src="/repos/{repo.owner.username}/{repo.name}/image?v={repo.imageUpdatedAt.toEpochMilli}" alt="Current repository image">
+        {/if}
+        <form method="post" action="/repos/{repo.owner.username}/{repo.name}/image" enctype="multipart/form-data">
+            <p><input type="file" name="image" accept="image/png,image/jpeg,image/gif,image/webp" required></p>
+            <p class="muted">PNG, JPEG, GIF or WebP, up to 2 MB.</p>
+            <button class="btn btn-primary">Upload</button>
+        </form>
+        {#if repo.hasImage}
+        <form method="post" action="/repos/{repo.owner.username}/{repo.name}/image/delete"
+              onsubmit="return confirm('Remove this repository image?')">
+            <button class="btn btn-danger">Remove image</button>
+        </form>
+        {/if}
+    </section>
+
+</div>
+{/include}

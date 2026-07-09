@@ -34,19 +34,21 @@ commit is attempted, consistent with how bare-repo writes are handled).
 
 ## Validation
 
-All validation happens in `AvatarService.validate`, called from
-`SettingsResource.uploadAvatar`:
+All validation happens in `ImageValidation.validate` — a shared helper used by
+both `AvatarService` (called from `SettingsResource.uploadAvatar`) and the
+per-repository image feature (see [Repository images](repo-images.md)), so the
+rules stay identical in one place:
 
-- **Size cap**: 2 MB (`AvatarService.MAX_BYTES`).
+- **Size cap**: 2 MB (`ImageValidation.MAX_BYTES`).
 - **Type allowlist**: PNG, JPEG, GIF, WebP (`image/png`, `image/jpeg`,
   `image/gif`, `image/webp`).
 - **Magic-byte check**: the declared content type must match the file's
-  actual leading bytes (`AvatarService.ALLOWED`, e.g. PNG's `\x89PNG\r\n\x1a\n`
+  actual leading bytes (`ImageValidation.ALLOWED`, e.g. PNG's `\x89PNG\r\n\x1a\n`
   signature). This rejects a file that lies about its type — declaring
   `image/png` but uploading something else fails validation rather than being
   stored and served back with a wrong/dangerous content type.
 
-Validation failures throw `InvalidAvatarException`, caught in
+Validation failures throw `InvalidImageException`, caught in
 `SettingsResource` and re-rendered as a form error on `/settings/profile`.
 
 ## Rendering: one Qute tag, one render point

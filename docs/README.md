@@ -10,6 +10,8 @@ OIDC login, and PostgreSQL metadata.
 
 - **[Profile settings](users/profile.md)** — change your username and display
   name, upload or remove a profile picture.
+- **[Repository image](users/repository-image.md)** — give a repository its own
+  picture instead of your avatar, from its owner-only Settings page.
 - **[Federation](users/federation.md)** — follow public repositories on other
   instances, the push feed, your federated identity.
 - **[Push mirrors](users/mirrors.md)** — replicate a repository to an external
@@ -37,6 +39,9 @@ OIDC login, and PostgreSQL metadata.
 
 - **[Avatars](maintainers/avatars.md)** — profile-picture storage, validation,
   and rendering, plus what's covered and what's out of scope.
+- **[Repository images](maintainers/repo-images.md)** — per-repository image
+  storage, how it reuses the avatar machinery, owner-avatar fallback, and the
+  visibility-guarded serving endpoint.
 - **[ForgeFed architecture](maintainers/forgefed.md)** — how federation is
   implemented, the decisions behind it, what works and what is still missing.
 - **[Push mirrors architecture](maintainers/push-mirrors.md)** — trigger flow,

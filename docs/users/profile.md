@@ -43,6 +43,10 @@ user:
 - The owner in a repository's left sidebar.
 - As the author of issues, merge requests, and merge-request review comments.
 
+On repository surfaces (the lists and the sidebar), a repository that has its own
+[repository image](repository-image.md) shows that image instead of your avatar;
+your avatar is the fallback when the repository has none.
+
 **Not covered:** git commit authors (shown on a repository's overview page and
 in the commit log) come from the commit's git identity, not your account, so
 they always show an initials badge regardless of your uploaded picture.

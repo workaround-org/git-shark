@@ -34,6 +34,9 @@ public class GitRepositoryService
 	@Inject
 	User.Repo users;
 
+	@Inject
+	RepositoryImageService images;
+
 	@ConfigProperty(name = "gitshark.storage.root")
 	Path storageRoot;
 
@@ -84,6 +87,7 @@ public class GitRepositoryService
 			throw new ForbiddenOperationException("Only the owner may delete a repository");
 		}
 		Path path = repositoryPath(repository);
+		images.deleteFileFor(repository);
 		repositories.deleteById(repository.id);
 		try
 		{

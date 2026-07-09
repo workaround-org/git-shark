@@ -31,6 +31,7 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
   on private repositories, and manage issues and merge requests; deleting the repository,
   managing mirrors, and managing collaborators stay owner-only. Guides:
   [for users](docs/users/collaborators.md), [for admins](docs/admins/collaborators.md)
+- Per-repository images: the repo owner can upload a custom image (same PNG/JPEG/GIF/WebP, ≤ 2 MB, validated rules as avatars) on a dedicated owner-only repository **Settings** page (`/repos/{owner}/{name}/settings`), stored on the filesystem keyed by repo UUID. It replaces the owner's avatar wherever the repository is shown (repo lists, repo sidebar); a repository with no custom image falls back to its owner's avatar. Served at `GET /repos/{owner}/{name}/image`, visibility-guarded so a private repo's image never leaks (`404` for non-viewers), and removable back to the fallback
 - Single access policy on all paths: owner read/write, collaborators read/write, public
   world-readable, private repositories visible to the owner and collaborators only
 - **JSON REST API** under `/api/v1`, authenticated with the same personal access tokens as
@@ -148,6 +149,7 @@ MCP tools.
 |---|---|---|
 | `GITSHARK_STORAGE_ROOT` | `data/repositories` | Root directory for bare repositories (persistent volume) |
 | `GITSHARK_AVATAR_ROOT` | `data/avatars` | Root directory for uploaded profile pictures (persistent volume) |
+| `GITSHARK_REPO_IMAGE_ROOT` | `data/repo-images` | Root directory for uploaded per-repository images (persistent volume) |
 | `GITSHARK_SSH_PORT` | `2222` | Embedded SSH server port |
 | `GITSHARK_SSH_HOST_KEY` | `data/ssh/host-key` | Persisted SSH host key file |
 | `QUARKUS_DATASOURCE_JDBC_URL` / `_USERNAME` / `_PASSWORD` | — (Dev Services in dev/test) | PostgreSQL connection |

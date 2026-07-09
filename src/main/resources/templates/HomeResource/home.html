@@ -22,7 +22,7 @@
     <tr><th>Repository</th><th>Visibility</th><th>Description</th></tr>
     {#for repo in repositories}
     <tr>
-        <td>{#avatar user=repo.owner /} <a class="mono" href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></td>
+        <td>{#repoAvatar repo=repo /} <a class="mono" href="/repos/{repo.owner.username}/{repo.name}">{repo.owner.username}/{repo.name}</a></td>
         <td><span class="badge badge-{repo.visibility.name().toLowerCase()}">{repo.visibility.name().toLowerCase()}</span></td>
         <td class="muted">{repo.description ?: ''}</td>
     </tr>

@@ -37,7 +37,18 @@ public class Repository implements PanacheEntity.Managed
 
 	public String description;
 
+	// Custom repository image: bytes live on the filesystem (gitshark.storage.repo-images) keyed by id.
+	// A null content type means no custom image, in which case the repo falls back to the owner's avatar.
+	public String imageContentType;
+
+	public Instant imageUpdatedAt;
+
 	public Instant createdAt = Instant.now();
+
+	public boolean hasImage()
+	{
+		return imageContentType != null;
+	}
 
 	public enum Visibility
 	{

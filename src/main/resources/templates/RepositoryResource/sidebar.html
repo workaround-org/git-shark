@@ -1,5 +1,5 @@
 <aside class="repo-side">
-    <div class="owner">{#avatar user=nav.repo.owner /} {nav.repo.owner.username} /</div>
+    <div class="owner">{#repoAvatar repo=nav.repo /} {nav.repo.owner.username} /</div>
     <div class="repo-name"><a href="/repos/{nav.repo.owner.username}/{nav.repo.name}">{nav.repo.name}</a></div>
     <span class="tag{#if nav.repo.visibility.name() == 'PRIVATE'} tag-private{/if}"><span class="dot"></span> {nav.repo.visibility.name()}</span>
     {#if nav.repo.description}
@@ -29,6 +29,7 @@
         <a class="{#if active == 'issues'}active{/if}" href="/repos/{nav.repo.owner.username}/{nav.repo.name}/issues"><span class="g">◇</span> Issues <span class="ct">{nav.openIssueCount}</span></a>
         <a class="{#if active == 'merge-requests'}active{/if}" href="/repos/{nav.repo.owner.username}/{nav.repo.name}/merge-requests"><span class="g">⇄</span> Merge requests <span class="ct">{nav.openMrCount}</span></a>
         {#if nav.isOwner}
+        <a class="{#if active == 'settings'}active{/if}" href="/repos/{nav.repo.owner.username}/{nav.repo.name}/settings"><span class="g">⚙</span> Settings</a>
         <a class="{#if active == 'collaborators'}active{/if}" href="/repos/{nav.repo.owner.username}/{nav.repo.name}/settings/collaborators"><span class="g">⚇</span> Collaborators</a>
         {/if}
     </nav>

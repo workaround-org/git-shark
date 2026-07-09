@@ -166,6 +166,7 @@ services:
       # --- Storage & SSH ---
       GITSHARK_STORAGE_ROOT: /data/repositories
       GITSHARK_AVATAR_ROOT: /data/avatars
+      GITSHARK_REPO_IMAGE_ROOT: /data/repo-images
       GITSHARK_SSH_HOST_KEY: /data/ssh/host-key
       GITSHARK_SSH_PORT: "2222"
     ports:
@@ -173,6 +174,7 @@ services:
     volumes:
       - repos:/data/repositories    # bare git repositories
       - avatars:/data/avatars       # user profile pictures
+      - repo-images:/data/repo-images   # per-repository images
       - ssh:/data/ssh               # persistent SSH host key
     healthcheck:
       test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080 && echo ok >&3"]
@@ -185,16 +187,17 @@ volumes:
   db-data:
   repos:
   avatars:
+  repo-images:
   ssh:
 ```
 
 Notes:
 
-- **Separate volumes for `/data/repositories`, `/data/avatars`, and `/data/ssh`** so
-  Docker creates each mount point with the right ownership — no init container or
-  `mkdir` needed. The SSH host key is generated on first boot and persists across
-  restarts (so client `known_hosts` entries stay valid). All three mounts (plus the
-  database) are mandatory for a stateful deployment — see
+- **Separate volumes for `/data/repositories`, `/data/avatars`, `/data/repo-images`,
+  and `/data/ssh`** so Docker creates each mount point with the right ownership — no
+  init container or `mkdir` needed. The SSH host key is generated on first boot and
+  persists across restarts (so client `known_hosts` entries stay valid). All four mounts
+  (plus the database) are mandatory for a stateful deployment — see
   [Persistent data](persistent-data.md) for what each holds and what breaks without it.
 - **HTTP port 8080 is not published** — it's reached through the reverse proxy on the
   Compose network (Step 6). Only SSH (2222) is exposed directly.
@@ -295,6 +298,7 @@ Every value below is an environment variable on the `app` service. Defaults come
 | `QUARKUS_OIDC_TOKEN_STATE_ENCRYPTION_SECRET` | ✅ | — | Encrypts session/token cookie (≥ 32 chars) |
 | `GITSHARK_STORAGE_ROOT` | — | `data/repositories` | On-disk bare-repo root |
 | `GITSHARK_AVATAR_ROOT` | — | `data/avatars` | On-disk profile-picture (avatar) storage root |
+| `GITSHARK_REPO_IMAGE_ROOT` | — | `data/repo-images` | On-disk per-repository image storage root |
 | `GITSHARK_SSH_HOST_KEY` | — | `data/ssh/host-key` | Persistent SSH host key path |
 | `GITSHARK_SSH_PORT` | — | `2222` | Embedded SSH server port |
 | `GITSHARK_SECRET_KEY` | — | — | Encrypts push-mirror secrets at rest; required to create mirrors (see [Push mirrors](mirrors.md)) |
@@ -339,23 +343,24 @@ fetches are HTTPS-only, allowlist-bound, and SSRF-guarded. Never set
 
 ## Operations
 
-**Backups** — three things hold state (full inventory, including what breaks when each
+**Backups** — four things hold state (full inventory, including what breaks when each
 is lost, in [Persistent data](persistent-data.md)):
 - The `db-data` volume (metadata: users, repo records, issues, MRs, comments;
-  also each avatar's content type and update timestamp — the bytes are not
-  here).
+  also each avatar's and repository image's content type and update timestamp —
+  the bytes are not here).
 - The `repos` volume (the actual git objects).
 - The `avatars` volume (uploaded profile-picture bytes, one file per user).
+- The `repo-images` volume (uploaded per-repository image bytes, one file per repo).
 
-Back all three up together and consistently. A logical DB dump:
+Back all four up together and consistently. A logical DB dump:
 
 ```bash
 docker compose exec db pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > gitshark-db.sql
 ```
 
-Snapshot the `repos` and `avatars` volumes with your host's volume/snapshot tooling
-while the app is quiesced (or accept crash-consistent snapshots — bare repos and
-avatar files both tolerate them well).
+Snapshot the `repos`, `avatars`, and `repo-images` volumes with your host's
+volume/snapshot tooling while the app is quiesced (or accept crash-consistent
+snapshots — bare repos, avatar, and repository-image files all tolerate them well).
 
 **Upgrades** — pull the new image and recreate the app:
 
