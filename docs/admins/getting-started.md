@@ -44,6 +44,18 @@ The JVM image is published as a multi-arch manifest for **linux/amd64** and
 natively on x86 servers and ARM hosts (Raspberry Pi 4/5, AWS Graviton, Apple
 Silicon) alike.
 
+A **native image** (GraalVM native executable, no JVM) is also published with a
+`-native` tag suffix:
+
+```bash
+docker pull ghcr.io/workaround-org/git-shark:latest-native
+```
+
+It starts faster and uses less memory than the JVM image, but is currently built
+for **linux/amd64 only** and runs as UID `1001` (the JVM image uses `185` —
+adjust `securityContext`/volume ownership accordingly if you switch). Ports and
+environment variables are identical to the JVM image.
+
 The image listens on **8080** (HTTP) and, once configured, **2222** (SSH). It runs as
 UID `185` and reads all production settings from environment variables.
 

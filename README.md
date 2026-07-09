@@ -216,4 +216,6 @@ Two `%dev`-only flags are set in `application.properties` (both default `false` 
 - `.github/workflows/jvm.yml` — JVM tests on every push/PR; on main, builds and pushes the
   JVM container image to GHCR as a multi-arch manifest (linux/amd64 + linux/arm64, via
   Buildx/QEMU).
-- `.github/workflows/native.yml` — native build + integration tests on every push/PR.
+- `.github/workflows/native.yml` — native build + integration tests on every push/PR; on
+  main, builds and pushes the native container image to GHCR with a `-native` tag suffix
+  (linux/amd64 only).
