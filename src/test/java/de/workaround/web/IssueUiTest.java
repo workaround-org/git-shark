@@ -254,6 +254,34 @@ class IssueUiTest
 	}
 
 	@Test
+	@TestSecurity(user = "iss-long")
+	void longDescriptionsSurviveCreateAndEdit()
+	{
+		User owner = persistUser("iss-long");
+		Repository repo = service.create(owner, "longdesc", Repository.Visibility.PUBLIC, null);
+		String base = "/repos/" + owner.username + "/longdesc/issues";
+		// well past the 2 KB Vert.x default form-attribute limit that used to answer 413
+		String longBody = "A meaningful line of markdown text.\n".repeat(300);
+
+		String location = given().redirects().follow(false)
+			.contentType("application/x-www-form-urlencoded")
+			.formParam("title", "Long story").formParam("description", longBody)
+			.when().post(base)
+			.then().statusCode(303)
+			.extract().header("Location");
+
+		given().redirects().follow(false)
+			.contentType("application/x-www-form-urlencoded")
+			.formParam("title", "Long story").formParam("description", longBody + "\nEdited.")
+			.when().post(location + "/edit")
+			.then().statusCode(303);
+
+		given().when().get(location)
+			.then().statusCode(200)
+			.body(containsString("Edited."));
+	}
+
+	@Test
 	void anonymousCannotEditIssues()
 	{
 		User owner = persistUser("iss-edit2-" + UUID.randomUUID().toString().substring(0, 8));
