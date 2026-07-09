@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.Files;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,7 +41,7 @@ public class SettingsResource
 		static native TemplateInstance tokenCreated(String plaintext);
 
 		static native TemplateInstance profile(String username, String displayName, boolean hasAvatar,
-			String error);
+			Instant avatarUpdatedAt, String error);
 	}
 
 	@Inject
@@ -63,7 +64,7 @@ public class SettingsResource
 	public TemplateInstance profile()
 	{
 		de.workaround.model.User user = currentUser.require();
-		return Templates.profile(user.username, user.displayName, user.hasAvatar(), null);
+		return Templates.profile(user.username, user.displayName, user.hasAvatar(), user.avatarUpdatedAt, null);
 	}
 
 	@POST
@@ -81,7 +82,8 @@ public class SettingsResource
 		catch (InvalidUsernameException | UsernameTakenException e)
 		{
 			return Response.status(Response.Status.BAD_REQUEST)
-				.entity(Templates.profile(username, displayName, user.hasAvatar(), e.getMessage()))
+				.entity(Templates.profile(username, displayName, user.hasAvatar(), user.avatarUpdatedAt,
+					e.getMessage()))
 				.build();
 		}
 	}
@@ -96,7 +98,7 @@ public class SettingsResource
 		{
 			return Response.status(Response.Status.BAD_REQUEST)
 				.entity(Templates.profile(user.username, user.displayName, user.hasAvatar(),
-					"No image was uploaded."))
+					user.avatarUpdatedAt, "No image was uploaded."))
 				.build();
 		}
 		try
@@ -107,7 +109,8 @@ public class SettingsResource
 		catch (InvalidImageException e)
 		{
 			return Response.status(Response.Status.BAD_REQUEST)
-				.entity(Templates.profile(user.username, user.displayName, user.hasAvatar(), e.getMessage()))
+				.entity(Templates.profile(user.username, user.displayName, user.hasAvatar(),
+					user.avatarUpdatedAt, e.getMessage()))
 				.build();
 		}
 		catch (IOException e)

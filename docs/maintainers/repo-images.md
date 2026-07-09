@@ -64,7 +64,12 @@ unlike the user avatar endpoint. It goes through `requireReadable`, so a private
 repository's image is `404` for anyone who can't read the repo — the image must
 not leak repository existence or content. It returns `404` when the repo has no
 image (`hasImage()` false) or the file is missing, otherwise streams the bytes
-with the stored `image_content_type`.
+with the stored `image_content_type` and a `Cache-Control` header of
+`max-age=31536000, immutable` — scoped `public` for public repositories but
+`private` for private ones, so a shared cache (reverse proxy, CDN) never
+stores a private repository's image and serves it to someone the visibility
+guard would have rejected. Immutable caching is safe because rendered image
+URLs carry the `?v=<epoch millis>` cache-buster.
 
 Upload and delete are owner-only, guarded by `RepositoryResource.requireOwner`
 (which returns `404` — not `403` — to non-owners, consistent with how private

@@ -122,6 +122,40 @@ class RepositoryImageTest
 	}
 
 	@Test
+	@TestSecurity(user = "img-cache-pub")
+	void publicRepoImageIsPubliclyCacheable()
+	{
+		User owner = persistUser("img-cache-pub");
+		service.create(owner, "cached", Repository.Visibility.PUBLIC, null);
+
+		given().redirects().follow(false)
+			.multiPart("image", "logo.png", png(), "image/png")
+			.when().post("/repos/img-cache-pub/cached/image")
+			.then().statusCode(anyOf(is(302), is(303)));
+
+		given().when().get("/repos/img-cache-pub/cached/image")
+			.then().statusCode(200)
+			.header("Cache-Control", "public, max-age=31536000, immutable");
+	}
+
+	@Test
+	@TestSecurity(user = "img-cache-priv")
+	void privateRepoImageIsOnlyPrivatelyCacheable()
+	{
+		User owner = persistUser("img-cache-priv");
+		service.create(owner, "hidden", Repository.Visibility.PRIVATE, null);
+
+		given().redirects().follow(false)
+			.multiPart("image", "logo.png", png(), "image/png")
+			.when().post("/repos/img-cache-priv/hidden/image")
+			.then().statusCode(anyOf(is(302), is(303)));
+
+		given().when().get("/repos/img-cache-priv/hidden/image")
+			.then().statusCode(200)
+			.header("Cache-Control", "private, max-age=31536000, immutable");
+	}
+
+	@Test
 	@TestSecurity(user = "img-stranger")
 	void nonOwnerCannotUpload()
 	{

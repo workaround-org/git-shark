@@ -21,6 +21,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,6 +64,39 @@ class SettingsAvatarTest
 			.contentType("image/png")
 			.extract().asByteArray();
 		assertArrayEquals(png, served);
+	}
+
+	@Test
+	@TestSecurity(user = "avatar-cache")
+	void servesAvatarWithImmutableCacheHeader()
+	{
+		given().redirects().follow(false)
+			.multiPart("avatar", "me.png", png(), "image/png")
+			.when().post("/settings/profile/avatar")
+			.then().statusCode(anyOf(is(302), is(303)));
+
+		given()
+			.when().get("/users/avatar-cache/avatar")
+			.then().statusCode(200)
+			.header("Cache-Control", "public, max-age=31536000, immutable");
+	}
+
+	@Test
+	@TestSecurity(user = "avatar-prev")
+	void settingsPreviewUrlIsVersioned()
+	{
+		given().redirects().follow(false)
+			.multiPart("avatar", "me.png", png(), "image/png")
+			.when().post("/settings/profile/avatar")
+			.then().statusCode(anyOf(is(302), is(303)));
+
+		long version = bySub("avatar-prev").avatarUpdatedAt.toEpochMilli();
+		// Target the preview element specifically: the layout's nav avatar is versioned already,
+		// so a bare URL match would pass even while the preview stays unversioned.
+		given()
+			.when().get("/settings/profile")
+			.then().statusCode(200)
+			.body(containsString("avatar-preview\" src=\"/users/avatar-prev/avatar?v=" + version));
 	}
 
 	@Test

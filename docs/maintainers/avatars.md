@@ -77,7 +77,12 @@ no authentication — unlike the upload/delete endpoints under `/settings/*`.
 This is what lets avatars embed on public repository pages for anonymous
 visitors. It returns `404` when the user has no avatar (`hasAvatar()` false)
 or the file is missing from disk, and otherwise streams the bytes with the
-stored `avatar_content_type`.
+stored `avatar_content_type` and
+`Cache-Control: public, max-age=31536000, immutable`. Immutable caching is
+safe because every rendered avatar URL carries the `?v=<epoch millis>`
+cache-buster — replacing the picture changes the URL, so browsers never
+serve a stale cached response for the new URL. This includes the settings
+preview on `/settings/profile`, which is versioned like the avatar tag.
 
 Upload and delete are authenticated, under `/settings/profile/avatar`
 (`POST`, multipart, field `avatar`) and `/settings/profile/avatar/delete`

@@ -14,7 +14,7 @@
 
 <h2>Profile picture</h2>
 {#if hasAvatar}
-<img class="avatar-preview" src="/users/{username}/avatar" alt="Current profile picture">
+<img class="avatar-preview" src="/users/{username}/avatar?v={avatarUpdatedAt.toEpochMilli}" alt="Current profile picture">
 {/if}
 <form method="post" action="/settings/profile/avatar" enctype="multipart/form-data">
     <p><input type="file" name="avatar" accept="image/png,image/jpeg,image/gif,image/webp" required></p>

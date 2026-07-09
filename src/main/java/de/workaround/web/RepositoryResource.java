@@ -40,6 +40,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
@@ -314,7 +315,12 @@ public class RepositoryResource
 			throw new NotFoundException();
 		}
 		byte[] bytes = images.read(repo).orElseThrow(NotFoundException::new);
-		return Response.ok(bytes).type(repo.imageContentType).build();
+		// Immutable is safe: rendered image URLs carry ?v=<imageUpdatedAt>. Private repos must not
+		// land in shared caches (the URL leaks to proxies even though the response is guarded).
+		String cacheScope = repo.visibility == Repository.Visibility.PUBLIC ? "public" : "private";
+		return Response.ok(bytes).type(repo.imageContentType)
+			.header(HttpHeaders.CACHE_CONTROL, cacheScope + ", max-age=31536000, immutable")
+			.build();
 	}
 
 	private static URI settingsUri(Repository repo)

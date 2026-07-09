@@ -6,6 +6,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 
 /**
@@ -29,7 +30,11 @@ public class AvatarResource
 			.filter(User::hasAvatar)
 			.orElseThrow(NotFoundException::new);
 		byte[] bytes = avatars.read(user).orElseThrow(NotFoundException::new);
-		return Response.ok(bytes).type(user.avatarContentType).build();
+		// Immutable is safe: every rendered avatar URL carries ?v=<avatarUpdatedAt>, so a new
+		// upload changes the URL and the old cached response is never served for it.
+		return Response.ok(bytes).type(user.avatarContentType)
+			.header(HttpHeaders.CACHE_CONTROL, "public, max-age=31536000, immutable")
+			.build();
 	}
 
 }
