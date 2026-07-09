@@ -839,8 +839,23 @@ details.archive > .panel {
 
 .issue-desc {
     margin: var(--s3) 0 var(--s5);
-    white-space: pre-wrap;
     word-break: break-word;
+}
+
+/* rendered markdown reuses .readme-body typography; undo its card padding outside the README card */
+.issue-desc.readme-body {
+    padding: 0;
+}
+
+.md-toggle {
+    display: flex;
+    gap: var(--s2);
+    margin-bottom: var(--s3);
+}
+
+.md-toggle .btn.active {
+    border-color: var(--border-strong);
+    font-weight: 600;
 }
 
 .issue-no {

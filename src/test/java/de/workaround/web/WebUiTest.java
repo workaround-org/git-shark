@@ -125,6 +125,31 @@ class WebUiTest
 	}
 
 	@Test
+	void markdownBlobRendersWithCodeToggle() throws Exception
+	{
+		User owner = persistUser("ui-md-" + unique());
+		Repository repo = service.create(owner, "mdview", Repository.Visibility.PUBLIC, null);
+		GitTestSeeder.seed(service.repositoryPath(repo), Map.of(
+			"GUIDE.md", "# Guide Heading\n\n<script>alert('xss')</script>\n".getBytes(StandardCharsets.UTF_8),
+			"notes.txt", "plain\n".getBytes(StandardCharsets.UTF_8)));
+
+		String base = "/repos/" + owner.username + "/mdview";
+
+		// markdown blobs render to HTML by default, with a toggle to the raw code view; raw HTML stays escaped
+		given().when().get(base + "/tree/main/GUIDE.md")
+			.then().statusCode(200)
+			.body(containsString("<h1>Guide Heading</h1>"))
+			.body(containsString("md-toggle"))
+			.body(containsString("language-markdown"))
+			.body(not(containsString("<script>alert('xss')</script>")));
+
+		// non-markdown blobs get no toggle
+		given().when().get(base + "/tree/main/notes.txt")
+			.then().statusCode(200)
+			.body(not(containsString("md-toggle")));
+	}
+
+	@Test
 	void blobViewHighlightsSourceCodeByLanguage() throws Exception
 	{
 		User owner = persistUser("ui-hank-" + unique());

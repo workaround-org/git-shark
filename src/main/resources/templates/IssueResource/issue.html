@@ -9,8 +9,8 @@
             <span class="badge status-{issue.status}">{issue.status.label}</span>
             <span class="muted">opened by {#avatar user=issue.author /} {issue.author.username}</span>
         </p>
-        {#if issue.description}
-        <pre class="issue-desc">{issue.description}</pre>
+        {#if descriptionHtml}
+        <div class="issue-desc readme-body">{descriptionHtml.raw}</div>
         {#else}
         <p class="muted">No description provided.</p>
         {/if}

@@ -43,8 +43,6 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
-import org.commonmark.parser.Parser;
-import org.commonmark.renderer.html.HtmlRenderer;
 
 @jakarta.ws.rs.Path("/repos/{owner}/{name}")
 @Produces(MediaType.TEXT_HTML)
@@ -61,7 +59,7 @@ public class RepositoryResource
 			List<GitBrowseService.TreeEntry> entries, List<Crumb> crumbs);
 
 		static native TemplateInstance blob(Repository repo, RepoNav nav, String ref, String path, boolean binary,
-			String content, String language, List<Crumb> crumbs);
+			String content, String language, String markdownHtml, List<Crumb> crumbs);
 
 		static native TemplateInstance commits(Repository repo, RepoNav nav, String ref,
 			List<GitBrowseService.CommitInfo> commits, int page, int prevPage, int nextPage, int size,
@@ -123,7 +121,7 @@ public class RepositoryResource
 		String readmeName = readmeEntry == null ? null : readmeEntry.name();
 		String readmeHtml = readmeEntry == null ? null : browse.blob(path, nav.defaultBranch(), readmeEntry.path())
 			.filter(blob -> !blob.binary())
-			.map(blob -> renderMarkdown(new String(blob.content(), StandardCharsets.UTF_8)))
+			.map(blob -> Markdown.render(new String(blob.content(), StandardCharsets.UTF_8)))
 			.orElse(null);
 		List<de.workaround.model.PushMirror> mirrors = isOwner ? mirrorService.list(repo) : List.of();
 		return Templates.overview(repo, nav, isOwner, entries, latestCommit, latestCommitAge, readmeName, readmeHtml,
@@ -132,15 +130,6 @@ public class RepositoryResource
 
 	// README file names the overview looks for, in order of preference (matched case-insensitively).
 	private static final List<String> README_NAMES = List.of("readme.md", "readme.markdown", "readme", "readme.txt");
-
-	private static final Parser MARKDOWN_PARSER = Parser.builder().build();
-
-	// escapeHtml + sanitizeUrls: README content is untrusted user input rendered into our page,
-	// so raw HTML blocks are escaped and javascript:/data: link targets are stripped.
-	private static final HtmlRenderer MARKDOWN_RENDERER = HtmlRenderer.builder()
-		.escapeHtml(true)
-		.sanitizeUrls(true)
-		.build();
 
 	private static GitBrowseService.TreeEntry findReadme(List<GitBrowseService.TreeEntry> entries)
 	{
@@ -155,11 +144,6 @@ public class RepositoryResource
 			}
 		}
 		return null;
-	}
-
-	static String renderMarkdown(String markdown)
-	{
-		return MARKDOWN_RENDERER.render(MARKDOWN_PARSER.parse(markdown));
 	}
 
 	private static String relativeAge(Instant when)
@@ -391,7 +375,9 @@ public class RepositoryResource
 		GitBrowseService.BlobView blob = browse.blob(repoPath, ref, path).orElseThrow(NotFoundException::new);
 		String content = blob.binary() ? null : new String(blob.content(), StandardCharsets.UTF_8);
 		String language = blob.binary() ? null : highlightLanguage(path);
-		return Templates.blob(repo, nav, ref, path, blob.binary(), content, language, breadcrumbs(repo, ref, path));
+		String markdownHtml = "markdown".equals(language) ? Markdown.render(content) : null;
+		return Templates.blob(repo, nav, ref, path, blob.binary(), content, language, markdownHtml,
+			breadcrumbs(repo, ref, path));
 	}
 
 	// Extension → highlight.js language id. Every value here MUST have a grammar in the bundled highlight assets

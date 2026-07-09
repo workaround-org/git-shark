@@ -74,6 +74,22 @@ class IssueUiTest
 	}
 
 	@Test
+	@TestSecurity(user = "iss-md")
+	void issueDescriptionRendersMarkdown()
+	{
+		User owner = persistUser("iss-md");
+		Repository repo = service.create(owner, "mdesc", Repository.Visibility.PUBLIC, null);
+		Issue issue = issueService.create(owner, repo, "Styled",
+			"Some **bold** text\n\n<script>alert('xss')</script>");
+
+		// markdown is rendered to HTML; embedded raw HTML stays escaped
+		given().when().get("/repos/" + owner.username + "/mdesc/issues/" + issue.id)
+			.then().statusCode(200)
+			.body(containsString("<strong>bold</strong>"))
+			.body(not(containsString("<script>alert('xss')</script>")));
+	}
+
+	@Test
 	@TestSecurity(user = "iss-owner4")
 	void createIssueIsADedicatedPageLinkedFromTheList()
 	{

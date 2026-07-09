@@ -11,6 +11,13 @@
         </nav>
         {#if binary}
         <p>Binary file. <a class="btn btn-secondary" href="/repos/{repo.owner.username}/{repo.name}/raw/{ref}/{path}">Download</a></p>
+        {#else if markdownHtml}
+        <div class="md-toggle" role="group" aria-label="View mode">
+            <button type="button" class="btn btn-secondary btn-sm active" data-md-view="rendered">Rendered</button>
+            <button type="button" class="btn btn-secondary btn-sm" data-md-view="code">Code</button>
+        </div>
+        <div class="readme-body" data-md-pane="rendered">{markdownHtml.raw}</div>
+        <pre hidden data-md-pane="code"><code class="language-{language}">{content}</code></pre>
         {#else if language}
         <pre><code class="language-{language}">{content}</code></pre>
         {#else}
@@ -23,6 +30,20 @@
 <script src="/highlight.min.js"></script>
 <script src="/highlight-extra.min.js"></script>
 <script>hljs.highlightAll();</script>
+{/if}
+{#if markdownHtml}
+<script>
+document.querySelectorAll('[data-md-view]').forEach(function (button) {
+    button.addEventListener('click', function () {
+        document.querySelectorAll('[data-md-view]').forEach(function (b) {
+            b.classList.toggle('active', b === button);
+        });
+        document.querySelectorAll('[data-md-pane]').forEach(function (pane) {
+            pane.hidden = pane.dataset.mdPane !== button.dataset.mdView;
+        });
+    });
+});
+</script>
 {/if}
 {/scripts}
 {/include}

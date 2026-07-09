@@ -40,7 +40,7 @@ public class IssueResource
 		static native TemplateInstance newIssue(Repository repo, RepoNav nav);
 
 		static native TemplateInstance issue(Repository repo, RepoNav nav, boolean owner, Issue issue,
-			List<Issue.Status> statuses);
+			String descriptionHtml, List<Issue.Status> statuses);
 	}
 
 	@Inject
@@ -107,7 +107,9 @@ public class IssueResource
 		Issue issue = issueService.find(repo, parseId(id)).orElseThrow(NotFoundException::new);
 		User user = currentUser.get();
 		boolean isOwner = user != null && user.id.equals(repo.owner.id);
-		return Templates.issue(repo, repoNav.build(repo, uriInfo), isOwner, issue, List.of(Issue.Status.values()));
+		String descriptionHtml = issue.description == null ? null : Markdown.render(issue.description);
+		return Templates.issue(repo, repoNav.build(repo, uriInfo), isOwner, issue, descriptionHtml,
+			List.of(Issue.Status.values()));
 	}
 
 	@POST
