@@ -14,6 +14,7 @@ import org.jboss.resteasy.reactive.multipart.FileUpload;
 import de.workaround.http.AccessTokenService;
 import de.workaround.model.AccessToken;
 import de.workaround.model.SshKey;
+import de.workaround.model.User;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateInstance;
 import jakarta.inject.Inject;
@@ -41,7 +42,7 @@ public class SettingsResource
 		static native TemplateInstance tokenCreated(String plaintext);
 
 		static native TemplateInstance profile(String username, String displayName, boolean hasAvatar,
-			Instant avatarUpdatedAt, String error);
+			Instant avatarUpdatedAt, User.ContentWidth contentWidth, String error);
 	}
 
 	@Inject
@@ -59,12 +60,16 @@ public class SettingsResource
 	@Inject
 	AvatarService avatars;
 
+	@Inject
+	AppearanceService appearance;
+
 	@GET
 	@Path("/profile")
 	public TemplateInstance profile()
 	{
 		de.workaround.model.User user = currentUser.require();
-		return Templates.profile(user.username, user.displayName, user.hasAvatar(), user.avatarUpdatedAt, null);
+		return Templates.profile(user.username, user.displayName, user.hasAvatar(), user.avatarUpdatedAt,
+			user.contentWidth, null);
 	}
 
 	@POST
@@ -83,7 +88,27 @@ public class SettingsResource
 		{
 			return Response.status(Response.Status.BAD_REQUEST)
 				.entity(Templates.profile(username, displayName, user.hasAvatar(), user.avatarUpdatedAt,
-					e.getMessage()))
+					user.contentWidth, e.getMessage()))
+				.build();
+		}
+	}
+
+	@POST
+	@Path("/profile/appearance")
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	public Response updateAppearance(@FormParam("contentWidth") String contentWidth)
+	{
+		de.workaround.model.User user = currentUser.require();
+		try
+		{
+			appearance.setContentWidth(user, contentWidth);
+			return Response.seeOther(URI.create("/settings/profile")).build();
+		}
+		catch (InvalidContentWidthException e)
+		{
+			return Response.status(Response.Status.BAD_REQUEST)
+				.entity(Templates.profile(user.username, user.displayName, user.hasAvatar(),
+					user.avatarUpdatedAt, user.contentWidth, e.getMessage()))
 				.build();
 		}
 	}
@@ -98,7 +123,7 @@ public class SettingsResource
 		{
 			return Response.status(Response.Status.BAD_REQUEST)
 				.entity(Templates.profile(user.username, user.displayName, user.hasAvatar(),
-					user.avatarUpdatedAt, "No image was uploaded."))
+					user.avatarUpdatedAt, user.contentWidth, "No image was uploaded."))
 				.build();
 		}
 		try
@@ -110,7 +135,7 @@ public class SettingsResource
 		{
 			return Response.status(Response.Status.BAD_REQUEST)
 				.entity(Templates.profile(user.username, user.displayName, user.hasAvatar(),
-					user.avatarUpdatedAt, e.getMessage()))
+					user.avatarUpdatedAt, user.contentWidth, e.getMessage()))
 				.build();
 		}
 		catch (IOException e)

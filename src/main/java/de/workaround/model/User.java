@@ -9,6 +9,8 @@ import org.hibernate.annotations.processing.Find;
 import io.quarkus.hibernate.panache.PanacheEntity;
 import io.quarkus.hibernate.panache.PanacheRepository;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -42,9 +44,27 @@ public class User implements PanacheEntity.Managed
 
 	public Instant avatarUpdatedAt;
 
+	// Display preference for the main content column; presets scale the layout max-width.
+	@Enumerated(EnumType.STRING)
+	public ContentWidth contentWidth = ContentWidth.FULL;
+
 	public boolean hasAvatar()
 	{
 		return avatarContentType != null;
+	}
+
+	public enum ContentWidth
+	{
+		FULL(""),
+		COMFORTABLE("width-comfortable"),
+		COMPACT("width-compact");
+
+		public final String cssClass;
+
+		ContentWidth(String cssClass)
+		{
+			this.cssClass = cssClass;
+		}
 	}
 
 	public interface Repo extends PanacheRepository.Managed<User, UUID>

@@ -17,6 +17,30 @@ and upload a profile picture.
 
 ---
 
+## Appearance
+
+The **Appearance** section controls how wide pages are rendered for you. Pick
+one of three **Content width** presets and press **Save**:
+
+| Preset | Width | Good for |
+|---|---|---|
+| **Full** (default) | Repository pages (`/repos/<owner>/<name>/…`) span the entire screen; all other pages cap at a comfortable 1400px | Diffs, code browsing, wide tables |
+| **Comfortable** | Fixed 1400px column on every page, centered | Balanced reading width |
+| **Compact** | Fixed 1120px column on every page, centered | Focused reading on large monitors |
+
+Comfortable and Compact are uniform across the whole app: every page uses the
+same fixed pixel column, so the width doesn't shift around when you resize the
+window or navigate. Full is uniform per page type instead — repository pages
+get the entire screen (diffs and file trees benefit most), everything else the
+centered 1400px column. Whatever width the current page uses, the header bar's
+content (logo, navigation, account menu) aligns with the same column while the
+bar's background still spans the full screen; on windows narrower than the cap
+the content simply fills the screen. The setting applies as soon as you save
+and sticks across sessions (it's stored on your account, not in the browser).
+Visitors who aren't logged in always get the Full layout.
+
+---
+
 ## Profile picture
 
 The **Profile picture** section lets you upload an avatar:

@@ -94,11 +94,31 @@
 }
 
 body {
+    /* Per-user content width preset (settings > profile > appearance): one shared width for the
+       header nav content and the page's main column. --preset-w is what the user picked (Full =
+       the whole screen; the other presets are fixed px caps so the column stays put while the
+       window is resized — narrower windows simply fill the viewport). Non-repo pages additionally
+       cap at a comfortable 1400px; repo pages (the :has override below) get the raw preset width,
+       so Full there means the entire screen for diffs and file trees. */
+    --preset-w: 100%;
+    --content-w: min(var(--preset-w), 1400px);
     margin: 0;
     background: var(--canvas);
     color: var(--ink);
     font: 15px/1.55 var(--font);
     -webkit-font-smoothing: antialiased;
+}
+
+body:has(.repo-layout) {
+    --content-w: var(--preset-w);
+}
+
+body.width-comfortable {
+    --preset-w: 1400px;
+}
+
+body.width-compact {
+    --preset-w: 1120px;
 }
 
 h1, h2, h3 {
@@ -160,7 +180,9 @@ header.site {
     display: flex;
     align-items: center;
     gap: var(--s4);
-    padding: var(--s3) var(--s5);
+    /* bar background spans the viewport, its content aligns with the preset content column;
+       max() keeps the normal gutter when the window is narrower than the preset cap */
+    padding: var(--s3) max(var(--s5), calc((100% - var(--content-w)) / 2 + var(--s5)));
     background: var(--surface);
     border-bottom: 1px solid var(--border);
 }
@@ -302,15 +324,9 @@ header.site nav .logout button:focus-visible {
 }
 
 main {
-    max-width: 1120px;
+    max-width: var(--content-w);
     margin: var(--s6) auto;
     padding: 0 var(--s5);
-}
-
-/* repo pages use the full viewport width: sidebar pinned far left, content fills the rest */
-main:has(.repo-layout) {
-    max-width: none;
-    margin: var(--s6) 0;
 }
 
 /* in-app repo hero */

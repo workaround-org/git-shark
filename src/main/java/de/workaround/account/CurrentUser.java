@@ -43,6 +43,16 @@ public class CurrentUser
 		return cached;
 	}
 
+	/**
+	 * CSS class for the user's content-width preset, applied on {@code <body>} by the layout so
+	 * header nav and main column share one width. Empty for anonymous visitors and the FULL default.
+	 */
+	public String contentWidthClass()
+	{
+		User user = get();
+		return user == null ? "" : user.contentWidth.cssClass;
+	}
+
 	public User require()
 	{
 		User user = get();
