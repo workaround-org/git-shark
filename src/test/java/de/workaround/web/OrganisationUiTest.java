@@ -263,6 +263,21 @@ class OrganisationUiTest
 
 	@Test
 	@TestSecurity(user = MEMBER)
+	void dashboardListsOrganisationsTheUserBelongsTo()
+	{
+		User creator = persistUser(CREATOR);
+		User member = persistUser(MEMBER);
+		Organisation org = createOrg(creator);
+		addMember(creator, org, member, OrganisationMember.Role.MEMBER);
+
+		given()
+			.when().get("/")
+			.then().statusCode(200)
+			.body(containsString("/orgs/" + org.name));
+	}
+
+	@Test
+	@TestSecurity(user = MEMBER)
 	void orgRepositoryAppearsOnMemberDashboard()
 	{
 		User creator = persistUser(CREATOR);

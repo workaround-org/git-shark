@@ -41,7 +41,7 @@ public class HomeResource
 		static native TemplateInstance home(List<Repository> repositories, User user);
 
 		static native TemplateInstance dashboard(List<Repository> pinned, List<NotificationItem> notifications,
-			List<DashboardRepo> repositories, User user);
+			List<DashboardRepo> repositories, List<OrganisationMember> orgs, User user);
 
 		static native TemplateInstance landing();
 
@@ -81,7 +81,8 @@ public class HomeResource
 		List<DashboardRepo> rows = service.listVisibleTo(user).stream()
 			.map(repo -> new DashboardRepo(repo, pinnedIds.contains(repo.id)))
 			.toList();
-		return Templates.dashboard(pinned, notifications.notificationsFor(user), rows, user);
+		return Templates.dashboard(pinned, notifications.notificationsFor(user), rows,
+			organisations.membershipsOf(user), user);
 	}
 
 	@GET

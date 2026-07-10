@@ -67,6 +67,9 @@ public class OrganisationMember implements PanacheEntity.Managed
 		@HQL("where organisation = :organisation order by user.username")
 		List<OrganisationMember> findByOrganisation(Organisation organisation);
 
+		@HQL("where user = :user order by organisation.name")
+		List<OrganisationMember> findByUser(User user);
+
 		@HQL("where user = :user and role = OWNER order by organisation.name")
 		List<OrganisationMember> findOwnerships(User user);
 

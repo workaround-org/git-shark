@@ -27,6 +27,21 @@
     {/if}
 </section>
 
+{#if !orgs.isEmpty()}
+<section class="dashboard-section">
+    <h2>Organisations</h2>
+    <table>
+        <tr><th>Organisation</th><th>Your role</th></tr>
+        {#for membership in orgs}
+        <tr>
+            <td><span class="av-fallback">{membership.organisation.name.charAt(0)}</span> <a class="mono" href="/orgs/{membership.organisation.name}">{membership.organisation.name}</a></td>
+            <td><span class="badge">{membership.role.name().toLowerCase()}</span></td>
+        </tr>
+        {/for}
+    </table>
+</section>
+{/if}
+
 <section class="dashboard-section">
     <h2>Notifications</h2>
     {#if notifications.isEmpty()}

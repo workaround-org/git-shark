@@ -18,6 +18,9 @@ existing organisation.
 
 You become the organisation's first **owner**.
 
+Every organisation you belong to (any role) is listed in an **Organisations** section on
+your dashboard (`/`), linking to its page at `/orgs/<name>`.
+
 ## Member levels
 
 | Level | Rights |

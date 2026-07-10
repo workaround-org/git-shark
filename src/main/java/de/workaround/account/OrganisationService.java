@@ -131,6 +131,12 @@ public class OrganisationService implements AccessPolicy.OrganisationRoleLookup
 		return members.findByOrganisation(organisation);
 	}
 
+	/** All memberships of the user, any role — drives the dashboard's organisation list. */
+	public List<OrganisationMember> membershipsOf(User user)
+	{
+		return members.findByUser(user);
+	}
+
 	/** Organisations in which the user holds the OWNER role — the ones they may create repositories in. */
 	public List<Organisation> ownedBy(User user)
 	{
