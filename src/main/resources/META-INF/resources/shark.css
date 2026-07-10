@@ -557,7 +557,10 @@ ul.values li strong {
 }
 
 table {
-    border-collapse: collapse;
+    /* separate, not collapse: collapsed borders void border-radius, leaving the outer
+       border square while the clipped header background still renders rounded */
+    border-collapse: separate;
+    border-spacing: 0;
     width: 100%;
     background: var(--surface);
     border: 1px solid var(--border);
