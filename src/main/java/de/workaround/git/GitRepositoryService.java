@@ -12,6 +12,7 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.util.FileUtils;
 
+import de.workaround.model.Organisation;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -22,6 +23,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 /**
  * Owns the mapping between repository metadata (PostgreSQL) and bare repositories on disk.
  * All transports (HTTP, SSH) and the UI resolve repositories exclusively through this service.
+ * The {@code {owner}} segment resolves to a user first, then an organisation — the shared handle
+ * namespace guarantees the order is only a lookup detail, never an ambiguity.
  */
 @ApplicationScoped
 public class GitRepositoryService
@@ -35,6 +38,12 @@ public class GitRepositoryService
 	User.Repo users;
 
 	@Inject
+	Organisation.Repo organisations;
+
+	@Inject
+	AccessPolicy accessPolicy;
+
+	@Inject
 	RepositoryImageService images;
 
 	@ConfigProperty(name = "gitshark.storage.root")
@@ -44,14 +53,32 @@ public class GitRepositoryService
 	public Repository create(User owner, String name, Repository.Visibility visibility, String description)
 	{
 		validateName(name);
-		if (repositories.findByOwnerAndName(owner, name).isPresent())
+		if (repositories.findByOwnerUserAndName(owner, name).isPresent())
 		{
 			throw new RepositoryAlreadyExistsException(owner.username, name);
 		}
-
 		Repository repository = new Repository();
+		repository.ownerUser = owner;
+		return initialize(repository, name, visibility, description);
+	}
+
+	@Transactional
+	public Repository create(Organisation owner, String name, Repository.Visibility visibility, String description)
+	{
+		validateName(name);
+		if (repositories.findByOwnerOrgAndName(owner, name).isPresent())
+		{
+			throw new RepositoryAlreadyExistsException(owner.name, name);
+		}
+		Repository repository = new Repository();
+		repository.ownerOrg = owner;
+		return initialize(repository, name, visibility, description);
+	}
+
+	private Repository initialize(Repository repository, String name, Repository.Visibility visibility,
+		String description)
+	{
 		repository.name = name;
-		repository.owner = owner;
 		repository.visibility = visibility;
 		repository.description = description;
 		repository.persist();
@@ -70,19 +97,26 @@ public class GitRepositoryService
 
 	public Optional<Repository> find(String ownerName, String repositoryName)
 	{
-		return users.findByUsername(ownerName)
-			.flatMap(owner -> repositories.findByOwnerAndName(owner, stripDotGit(repositoryName)));
+		String name = stripDotGit(repositoryName);
+		Optional<Repository> byUser = users.findByUsername(ownerName)
+			.flatMap(owner -> repositories.findByOwnerUserAndName(owner, name));
+		if (byUser.isPresent())
+		{
+			return byUser;
+		}
+		return organisations.findByName(ownerName)
+			.flatMap(owner -> repositories.findByOwnerOrgAndName(owner, name));
 	}
 
 	public Path repositoryPath(Repository repository)
 	{
-		return storageRoot.resolve(repository.owner.id.toString()).resolve(repository.id.toString() + ".git");
+		return storageRoot.resolve(repository.ownerId().toString()).resolve(repository.id.toString() + ".git");
 	}
 
 	@Transactional
 	public void delete(User actor, Repository repository)
 	{
-		if (actor == null || actor.id == null || !actor.id.equals(repository.owner.id))
+		if (!accessPolicy.canAdmin(actor, repository))
 		{
 			throw new ForbiddenOperationException("Only the owner may delete a repository");
 		}
@@ -102,6 +136,11 @@ public class GitRepositoryService
 	public List<Repository> listVisibleTo(User user)
 	{
 		return user == null ? repositories.findPublic() : repositories.findVisibleTo(user);
+	}
+
+	public List<Repository> listOwnedBy(Organisation organisation)
+	{
+		return repositories.findByOwnerOrg(organisation);
 	}
 
 	private static void validateName(String name)

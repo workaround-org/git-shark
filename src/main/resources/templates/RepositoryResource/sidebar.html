@@ -1,6 +1,6 @@
 <aside class="repo-side">
-    <div class="owner">{#repoAvatar repo=nav.repo /} {nav.repo.owner.username} /</div>
-    <div class="repo-name"><a href="/repos/{nav.repo.owner.username}/{nav.repo.name}">{nav.repo.name}</a></div>
+    <div class="owner">{#repoAvatar repo=nav.repo /} {nav.repo.ownerHandle} /</div>
+    <div class="repo-name"><a href="/repos/{nav.repo.ownerHandle}/{nav.repo.name}">{nav.repo.name}</a></div>
     <span class="tag{#if nav.repo.visibility.name() == 'PRIVATE'} tag-private{/if}"><span class="dot"></span> {nav.repo.visibility.name()}</span>
     {#if nav.repo.description}
     <p class="desc">{nav.repo.description}</p>
@@ -10,7 +10,7 @@
             <span class="g">⤓</span> Clone
         </button>
         {#if nav.loggedIn}
-        <form class="inline" method="post" action="/repos/{nav.repo.owner.username}/{nav.repo.name}/{#if nav.pinned}unpin{#else}pin{/if}">
+        <form class="inline" method="post" action="/repos/{nav.repo.ownerHandle}/{nav.repo.name}/{#if nav.pinned}unpin{#else}pin{/if}">
             <input type="hidden" name="redirect" value="{nav.currentPath}">
             <button class="btn-icon{#if nav.pinned} pinned{/if}" type="submit" title="{#if nav.pinned}Unpin{#else}Pin{/if} repository" aria-label="{#if nav.pinned}Unpin{#else}Pin{/if} repository">
                 <svg viewBox="0 0 24 24" fill="{#if nav.pinned}currentColor{#else}none{/if}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
@@ -20,17 +20,17 @@
     </div>
     <div class="rule"></div>
     <nav class="repo-nav">
-        <a class="{#if active == 'code'}active{/if}" href="/repos/{nav.repo.owner.username}/{nav.repo.name}"><span class="g">⌗</span> Code</a>
+        <a class="{#if active == 'code'}active{/if}" href="/repos/{nav.repo.ownerHandle}/{nav.repo.name}"><span class="g">⌗</span> Code</a>
         {#if !nav.empty}
-        <a class="{#if active == 'commits'}active{/if}" href="/repos/{nav.repo.owner.username}/{nav.repo.name}/commits/{nav.defaultBranch}"><span class="g">◴</span> Commits <span class="ct">{nav.commitCount}</span></a>
+        <a class="{#if active == 'commits'}active{/if}" href="/repos/{nav.repo.ownerHandle}/{nav.repo.name}/commits/{nav.defaultBranch}"><span class="g">◴</span> Commits <span class="ct">{nav.commitCount}</span></a>
         {/if}
-        <a class="{#if active == 'branches'}active{/if}" href="/repos/{nav.repo.owner.username}/{nav.repo.name}/branches"><span class="g">⑂</span> Branches <span class="ct">{nav.branchCount}</span></a>
-        <a class="{#if active == 'tags'}active{/if}" href="/repos/{nav.repo.owner.username}/{nav.repo.name}/tags"><span class="g">⬡</span> Tags <span class="ct">{nav.tagCount}</span></a>
-        <a class="{#if active == 'issues'}active{/if}" href="/repos/{nav.repo.owner.username}/{nav.repo.name}/issues"><span class="g">◇</span> Issues <span class="ct">{nav.openIssueCount}</span></a>
-        <a class="{#if active == 'merge-requests'}active{/if}" href="/repos/{nav.repo.owner.username}/{nav.repo.name}/merge-requests"><span class="g">⇄</span> Merge requests <span class="ct">{nav.openMrCount}</span></a>
+        <a class="{#if active == 'branches'}active{/if}" href="/repos/{nav.repo.ownerHandle}/{nav.repo.name}/branches"><span class="g">⑂</span> Branches <span class="ct">{nav.branchCount}</span></a>
+        <a class="{#if active == 'tags'}active{/if}" href="/repos/{nav.repo.ownerHandle}/{nav.repo.name}/tags"><span class="g">⬡</span> Tags <span class="ct">{nav.tagCount}</span></a>
+        <a class="{#if active == 'issues'}active{/if}" href="/repos/{nav.repo.ownerHandle}/{nav.repo.name}/issues"><span class="g">◇</span> Issues <span class="ct">{nav.openIssueCount}</span></a>
+        <a class="{#if active == 'merge-requests'}active{/if}" href="/repos/{nav.repo.ownerHandle}/{nav.repo.name}/merge-requests"><span class="g">⇄</span> Merge requests <span class="ct">{nav.openMrCount}</span></a>
         {#if nav.isOwner}
-        <a class="{#if active == 'settings'}active{/if}" href="/repos/{nav.repo.owner.username}/{nav.repo.name}/settings"><span class="g">⚙</span> Settings</a>
-        <a class="{#if active == 'collaborators'}active{/if}" href="/repos/{nav.repo.owner.username}/{nav.repo.name}/settings/collaborators"><span class="g">⚇</span> Collaborators</a>
+        <a class="{#if active == 'settings'}active{/if}" href="/repos/{nav.repo.ownerHandle}/{nav.repo.name}/settings"><span class="g">⚙</span> Settings</a>
+        <a class="{#if active == 'collaborators'}active{/if}" href="/repos/{nav.repo.ownerHandle}/{nav.repo.name}/settings/collaborators"><span class="g">⚇</span> Collaborators</a>
         {/if}
     </nav>
 </aside>

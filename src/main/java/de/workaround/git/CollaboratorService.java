@@ -23,13 +23,18 @@ public class CollaboratorService implements AccessPolicy.CollaboratorLookup
 	@Inject
 	User.Repo users;
 
+	// The org-role lookup instead of AccessPolicy itself: the policy already injects THIS service
+	// as its collaborator lookup, so going through the policy would be a circular reference.
+	@Inject
+	AccessPolicy.OrganisationRoleLookup orgRoles;
+
 	@Transactional
 	public RepositoryCollaborator add(User actor, Repository repository, String username)
 	{
 		requireOwner(actor, repository);
 		User user = users.findByUsername(username == null ? "" : username.strip())
 			.orElseThrow(() -> new InvalidCollaboratorException("No user with that username exists."));
-		if (user.id.equals(repository.owner.id))
+		if (repository.isOwnedBy(user))
 		{
 			throw new InvalidCollaboratorException("The owner cannot be added as a collaborator.");
 		}
@@ -64,9 +69,12 @@ public class CollaboratorService implements AccessPolicy.CollaboratorLookup
 		return collaborators.findByRepositoryAndUser(repository, user).isPresent();
 	}
 
-	private static void requireOwner(User actor, Repository repository)
+	private void requireOwner(User actor, Repository repository)
 	{
-		if (actor == null || actor.id == null || !actor.id.equals(repository.owner.id))
+		boolean orgOwner = actor != null && actor.id != null && repository.ownerOrg != null
+			&& orgRoles.roleOf(actor, repository.ownerOrg)
+				.filter(role -> role == de.workaround.model.OrganisationMember.Role.OWNER).isPresent();
+		if (!repository.isOwnedBy(actor) && !orgOwner)
 		{
 			throw new ForbiddenOperationException("Only the repository owner can manage collaborators");
 		}

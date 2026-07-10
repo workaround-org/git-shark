@@ -234,7 +234,7 @@ class MirrorSettingsTest
 
 	private PushMirror createMirror(Repository repo)
 	{
-		return mirrorService.create(repo.owner, repo, "https://mirror-target.example/owner/repo.git",
+		return mirrorService.create(repo.ownerUser, repo, "https://mirror-target.example/owner/repo.git",
 			PushMirror.AuthType.HTTPS, "deploy", "token");
 	}
 

@@ -47,15 +47,15 @@ class EntityPersistenceTest
 
 		Repository repo = new Repository();
 		repo.name = "project";
-		repo.owner = owner;
+		repo.ownerUser = owner;
 		repo.visibility = Repository.Visibility.PUBLIC;
 		repo.description = "demo";
 		repo.persist();
 
 		assertNotNull(repo.id);
-		Repository found = repositories.findByOwnerAndName(owner, "project").orElseThrow();
+		Repository found = repositories.findByOwnerUserAndName(owner, "project").orElseThrow();
 		assertEquals("project", found.name);
-		assertEquals(owner.id, found.owner.id);
+		assertEquals(owner.id, found.ownerUser.id);
 		assertEquals(Repository.Visibility.PUBLIC, found.visibility);
 	}
 

@@ -6,7 +6,7 @@
         <div class="issues-head">
             <h2>Issues</h2>
             {#if owner}
-            <a class="btn btn-primary" href="/repos/{repo.owner.username}/{repo.name}/issues/new">New issue</a>
+            <a class="btn btn-primary" href="/repos/{repo.ownerHandle}/{repo.name}/issues/new">New issue</a>
             {/if}
         </div>
         {#if open.isEmpty()}
@@ -14,7 +14,7 @@
         {#else}
         <div class="panel">
             {#for issue in open}
-            <a class="frow" href="/repos/{repo.owner.username}/{repo.name}/issues/{issue.number}">
+            <a class="frow" href="/repos/{repo.ownerHandle}/{repo.name}/issues/{issue.number}">
                 <span class="fname">
                     <span class="badge status-{issue.status}">{issue.status.label}</span>
                     <span class="n">{issue.title}</span>
@@ -29,7 +29,7 @@
             <summary>Archive <span class="ct">{done.size}</span></summary>
             <div class="panel">
                 {#for issue in done}
-                <a class="frow" href="/repos/{repo.owner.username}/{repo.name}/issues/{issue.number}">
+                <a class="frow" href="/repos/{repo.ownerHandle}/{repo.name}/issues/{issue.number}">
                     <span class="fname">
                         <span class="badge status-{issue.status}">{issue.status.label}</span>
                         <span class="n">{issue.title}</span>

@@ -7,10 +7,14 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import de.workaround.account.CurrentUser;
+import de.workaround.account.OrganisationService;
+import de.workaround.git.ForbiddenOperationException;
 import de.workaround.git.GitRepositoryService;
 import de.workaround.git.InvalidRepositoryNameException;
 import de.workaround.git.RepositoryAlreadyExistsException;
 import de.workaround.git.RepositoryPinService;
+import de.workaround.model.Organisation;
+import de.workaround.model.OrganisationMember;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
 import de.workaround.notify.NotificationItem;
@@ -41,7 +45,7 @@ public class HomeResource
 
 		static native TemplateInstance landing();
 
-		static native TemplateInstance newRepo(String error);
+		static native TemplateInstance newRepo(String error, List<Organisation> orgs);
 	}
 
 	/** A repository row in the dashboard's full list, carrying whether the current user has pinned it. */
@@ -60,6 +64,9 @@ public class HomeResource
 
 	@Inject
 	NotificationService notifications;
+
+	@Inject
+	OrganisationService organisations;
 
 	@GET
 	public TemplateInstance home()
@@ -99,30 +106,53 @@ public class HomeResource
 	@Path("repos/new")
 	public TemplateInstance newRepo()
 	{
-		currentUser.require();
-		return Templates.newRepo(null);
+		User user = currentUser.require();
+		return Templates.newRepo(null, organisations.ownedBy(user));
 	}
 
 	@POST
 	@Path("repos")
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	public Response create(@FormParam("name") String name, @FormParam("visibility") String visibility,
-		@FormParam("description") String description)
+		@FormParam("description") String description, @FormParam("owner") String ownerHandle)
 	{
 		User user = currentUser.require();
 		try
 		{
 			Repository.Visibility parsed = "PRIVATE".equalsIgnoreCase(visibility)
 				? Repository.Visibility.PRIVATE : Repository.Visibility.PUBLIC;
-			service.create(user, name, parsed, description == null || description.isBlank() ? null : description);
-			return Response.seeOther(URI.create("/repos/" + user.username + "/" + name)).build();
+			String trimmedDescription = description == null || description.isBlank() ? null : description;
+			Repository repo;
+			if (ownerHandle == null || ownerHandle.isBlank() || ownerHandle.equals(user.username))
+			{
+				repo = service.create(user, name, parsed, trimmedDescription);
+			}
+			else
+			{
+				repo = createInOrganisation(user, ownerHandle, name, parsed, trimmedDescription);
+			}
+			return Response.seeOther(URI.create("/repos/" + repo.ownerHandle() + "/" + repo.name)).build();
 		}
 		catch (InvalidRepositoryNameException | RepositoryAlreadyExistsException e)
 		{
 			return Response.status(Response.Status.BAD_REQUEST)
-				.entity(Templates.newRepo(e.getMessage()))
+				.entity(Templates.newRepo(e.getMessage(), organisations.ownedBy(user)))
 				.build();
 		}
+	}
+
+	private Repository createInOrganisation(User user, String ownerHandle, String name,
+		Repository.Visibility visibility, String description)
+	{
+		Organisation org = organisations.find(ownerHandle)
+			.orElseThrow(() -> new ForbiddenOperationException("No such organisation"));
+		boolean orgOwner = organisations.roleOf(user, org)
+			.filter(role -> role == OrganisationMember.Role.OWNER).isPresent();
+		if (!orgOwner)
+		{
+			throw new ForbiddenOperationException("Only organisation owners can create repositories there");
+		}
+		return service.create(org, name, visibility, description);
 	}
 
 }

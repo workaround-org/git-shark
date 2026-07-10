@@ -8,7 +8,7 @@
             <tr><th>Branch</th><th></th></tr>
             {#for branch in branches}
             <tr>
-                <td><a href="/repos/{repo.owner.username}/{repo.name}/tree/{branch.name}/">{branch.name}</a></td>
+                <td><a href="/repos/{repo.ownerHandle}/{repo.name}/tree/{branch.name}/">{branch.name}</a></td>
                 <td>{#if branch.defaultBranch}<span class="badge badge-default">default</span>{/if}</td>
             </tr>
             {/for}

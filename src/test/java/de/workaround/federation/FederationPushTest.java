@@ -126,7 +126,7 @@ class FederationPushTest
 	@Transactional
 	void addFollower(Repository repo, String followerActorId, String inbox)
 	{
-		Repository managed = service.find(repo.owner.username, repo.name).orElseThrow();
+		Repository managed = service.find(repo.ownerHandle(), repo.name).orElseThrow();
 		RepositoryFollower follower = new RepositoryFollower();
 		follower.repository = managed;
 		follower.followerActorId = followerActorId;
@@ -143,7 +143,7 @@ class FederationPushTest
 	@Transactional
 	void addFollowerWithoutCache(Repository repo, String followerActorId)
 	{
-		Repository managed = service.find(repo.owner.username, repo.name).orElseThrow();
+		Repository managed = service.find(repo.ownerHandle(), repo.name).orElseThrow();
 		RepositoryFollower follower = new RepositoryFollower();
 		follower.repository = managed;
 		follower.followerActorId = followerActorId;

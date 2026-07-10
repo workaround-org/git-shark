@@ -29,8 +29,13 @@ public class Repository implements PanacheEntity.Managed
 
 	public String name;
 
-	@ManyToOne(optional = false)
-	public User owner;
+	// Exactly one of ownerUser/ownerOrg is set (DB CHECK repositories_exactly_one_owner). Both
+	// owner kinds share one handle namespace, so {owner}/{name} URLs stay unambiguous.
+	@ManyToOne
+	public User ownerUser;
+
+	@ManyToOne
+	public Organisation ownerOrg;
 
 	@Enumerated(EnumType.STRING)
 	public Visibility visibility;
@@ -50,6 +55,23 @@ public class Repository implements PanacheEntity.Managed
 		return imageContentType != null;
 	}
 
+	/** The URL path segment of whoever owns this repository: the user's handle or the org's name. */
+	public String ownerHandle()
+	{
+		return ownerUser != null ? ownerUser.username : ownerOrg.name;
+	}
+
+	/** The owning user's or organisation's id — keys the on-disk storage directory. */
+	public UUID ownerId()
+	{
+		return ownerUser != null ? ownerUser.id : ownerOrg.id;
+	}
+
+	public boolean isOwnedBy(User user)
+	{
+		return user != null && user.id != null && ownerUser != null && user.id.equals(ownerUser.id);
+	}
+
 	public enum Visibility
 	{
 		PUBLIC,
@@ -59,10 +81,21 @@ public class Repository implements PanacheEntity.Managed
 	public interface Repo extends PanacheRepository.Managed<Repository, UUID>
 	{
 		@Find
-		Optional<Repository> findByOwnerAndName(User owner, String name);
+		Optional<Repository> findByOwnerUserAndName(User ownerUser, String name);
 
-		@HQL("where owner = :owner or visibility = PUBLIC order by name")
-		List<Repository> findVisibleTo(User owner);
+		@Find
+		Optional<Repository> findByOwnerOrgAndName(Organisation ownerOrg, String name);
+
+		@HQL("where ownerOrg = :ownerOrg order by name")
+		List<Repository> findByOwnerOrg(Organisation ownerOrg);
+
+		@HQL("select count(r) from Repository r where r.ownerOrg = :ownerOrg")
+		long countByOwnerOrg(Organisation ownerOrg);
+
+		@HQL("where ownerUser = :user or visibility = PUBLIC"
+			+ " or ownerOrg.id in (select m.organisation.id from OrganisationMember m where m.user = :user)"
+			+ " order by name")
+		List<Repository> findVisibleTo(User user);
 
 		@HQL("where visibility = PUBLIC order by name")
 		List<Repository> findPublic();

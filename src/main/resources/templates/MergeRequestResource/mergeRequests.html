@@ -6,7 +6,7 @@
         <div class="issues-head">
             <h2>Merge requests</h2>
             {#if owner}
-            <a class="btn btn-primary" href="/repos/{repo.owner.username}/{repo.name}/merge-requests/new">New merge request</a>
+            <a class="btn btn-primary" href="/repos/{repo.ownerHandle}/{repo.name}/merge-requests/new">New merge request</a>
             {/if}
         </div>
         {#if open.isEmpty()}
@@ -14,7 +14,7 @@
         {#else}
         <div class="panel">
             {#for mr in open}
-            <a class="frow" href="/repos/{repo.owner.username}/{repo.name}/merge-requests/{mr.id}">
+            <a class="frow" href="/repos/{repo.ownerHandle}/{repo.name}/merge-requests/{mr.id}">
                 <span class="fname">
                     <span class="badge status-{mr.status}">{mr.status.label}</span>
                     <span class="n">{mr.title}</span>
@@ -30,7 +30,7 @@
             <summary>Archive <span class="ct">{closed.size}</span></summary>
             <div class="panel">
                 {#for mr in closed}
-                <a class="frow" href="/repos/{repo.owner.username}/{repo.name}/merge-requests/{mr.id}">
+                <a class="frow" href="/repos/{repo.ownerHandle}/{repo.name}/merge-requests/{mr.id}">
                     <span class="fname">
                         <span class="badge status-{mr.status}">{mr.status.label}</span>
                         <span class="n">{mr.title}</span>

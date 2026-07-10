@@ -80,7 +80,7 @@ class FederationEntityPersistenceTest
 
 		Repository repo = new Repository();
 		repo.name = "lib";
-		repo.owner = owner;
+		repo.ownerUser = owner;
 		repo.visibility = Repository.Visibility.PUBLIC;
 		repo.persist();
 

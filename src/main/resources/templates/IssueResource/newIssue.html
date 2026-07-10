@@ -3,14 +3,14 @@
 <div class="repo-layout">
     {#include RepositoryResource/sidebar nav=nav active='issues' /}
     <section class="repo-main">
-        <p><a href="/repos/{repo.owner.username}/{repo.name}/issues">← Issues</a></p>
+        <p><a href="/repos/{repo.ownerHandle}/{repo.name}/issues">← Issues</a></p>
         <h2>New issue</h2>
-        <form class="issue-form" method="post" action="/repos/{repo.owner.username}/{repo.name}/issues">
+        <form class="issue-form" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/issues">
             <input type="text" name="title" placeholder="Issue title" required autocomplete="off">
             <textarea name="description" placeholder="Description (optional)" rows="6"></textarea>
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Create issue</button>
-                <a class="btn btn-secondary" href="/repos/{repo.owner.username}/{repo.name}/issues">Cancel</a>
+                <a class="btn btn-secondary" href="/repos/{repo.ownerHandle}/{repo.name}/issues">Cancel</a>
             </div>
         </form>
     </section>

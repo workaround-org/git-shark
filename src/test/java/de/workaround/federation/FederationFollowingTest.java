@@ -122,7 +122,7 @@ class FederationFollowingTest
 	@Transactional
 	boolean hasFollower(Repository repo, String followerActorId)
 	{
-		Repository managed = service.find(repo.owner.username, repo.name).orElseThrow();
+		Repository managed = service.find(repo.ownerHandle(), repo.name).orElseThrow();
 		return followers.findByRepositoryAndFollowerActorId(managed, followerActorId).isPresent();
 	}
 

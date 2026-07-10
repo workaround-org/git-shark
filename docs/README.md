@@ -19,6 +19,9 @@ OIDC login, and PostgreSQL metadata.
   troubleshooting.
 - **[Collaborators](users/collaborators.md)** — grant other users read and
   write access to your repository, what collaborators can and cannot do.
+- **[Organisations](users/organisations.md)** — shared repository namespaces
+  with guest/member/owner roles: creating an org, managing members, org
+  repositories.
 
 ### For admins
 
@@ -34,6 +37,9 @@ OIDC login, and PostgreSQL metadata.
   SSRF behavior, the sync queue, and the tables involved.
 - **[Collaborators](admins/collaborators.md)** — access semantics, endpoints,
   and the `repository_collaborators` table (no configuration needed).
+- **[Organisations](admins/organisations.md)** — shared handle namespace, owner
+  resolution, role semantics, endpoints, and the `organisations` /
+  `organisation_members` tables (no configuration needed).
 
 ### For maintainers
 

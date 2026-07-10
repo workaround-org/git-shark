@@ -19,7 +19,7 @@ public class ActorUris
 
 	public String repository(Repository repo)
 	{
-		return repository(repo.owner.username, repo.name);
+		return repository(repo.ownerHandle(), repo.name);
 	}
 
 	public String repository(String owner, String name)

@@ -5,6 +5,16 @@
 <p class="error">{error}</p>
 {/if}
 <form method="post" action="/repos">
+    {#if !orgs.isEmpty()}
+    <p><label>Owner
+        <select name="owner">
+            <option value="">{cdi:currentUser.get.username} (personal)</option>
+            {#for org in orgs}
+            <option value="{org.name}">{org.name}</option>
+            {/for}
+        </select>
+    </label></p>
+    {/if}
     <p><label>Name <input class="mono" name="name" required pattern="[a-zA-Z0-9._-]+"></label></p>
     <p><label>Visibility
         <select name="visibility">

@@ -150,7 +150,7 @@ public class GitSmartHttpTest
 	@Transactional
 	void addCollaborator(Repository repo, User user)
 	{
-		collaboratorService.add(repo.owner, repo, user.username);
+		collaboratorService.add(repo.ownerUser, repo, user.username);
 	}
 
 	@Test

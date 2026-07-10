@@ -256,7 +256,7 @@ class CollaboratorSettingsTest
 	@Transactional
 	void addCollaborator(Repository repo, User member)
 	{
-		collaboratorService.add(repo.owner, repo, member.username);
+		collaboratorService.add(repo.ownerUser, repo, member.username);
 	}
 
 	@Transactional

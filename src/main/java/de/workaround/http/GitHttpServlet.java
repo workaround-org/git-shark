@@ -109,7 +109,7 @@ public class GitHttpServlet extends GitServlet
 		ReceivePack receivePack = new ReceivePack(db);
 		receivePack.setRefLogIdent(new org.eclipse.jgit.lib.PersonIdent(user.username, user.email != null ? user.email : user.username + "@git-shark"));
 		// Capture identifiers while the request session is open; the hook fires after receive-pack.
-		String ownerName = repository.owner.username;
+		String ownerName = repository.ownerHandle();
 		String repoName = repository.name;
 		java.util.UUID pusherId = user.id;
 		receivePack.setPostReceiveHook((rp, commands) -> {

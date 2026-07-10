@@ -193,6 +193,13 @@ Protocol gaps:
   offers, `Fork`, stars/watch semantics. Issues, MRs, and comments are
   local-only today.
 - **NodeInfo** endpoint and instance-level metadata for discovery.
+- **Organisation actors** — organisations (shared repo namespaces, see
+  `docs/users/organisations.md`) have no ActivityPub actor or WebFinger entry.
+  Their names are already reserved in the shared user/org handle namespace
+  (cross-table collision check on user onboarding and org creation), so a
+  later `Group`-style actor cannot collide with a `Person` actor. Repositories
+  owned by an org federate like any other repo actor; only the owning actor
+  itself is missing.
 - **RFC 9421 signatures** as the ecosystem migrates (double-knocking).
 
 Operational gaps:

@@ -3,7 +3,7 @@
 <div class="repo-layout">
     {#include RepositoryResource/sidebar nav=nav active='issues' /}
     <section class="repo-main">
-        <p><a href="/repos/{repo.owner.username}/{repo.name}/issues">← Issues</a></p>
+        <p><a href="/repos/{repo.ownerHandle}/{repo.name}/issues">← Issues</a></p>
         <h2>{issue.title} <span class="issue-no">#{issue.number}</span></h2>
         <p>
             <span class="badge status-{issue.status}">{issue.status.label}</span>
@@ -18,14 +18,14 @@
         {/if}
         {#if owner}
         <div class="issue-manage">
-            <a class="btn btn-secondary btn-sm" href="/repos/{repo.owner.username}/{repo.name}/issues/{issue.number}/edit">Edit issue</a>
-            <form class="issue-actions" method="post" action="/repos/{repo.owner.username}/{repo.name}/issues/{issue.number}/status">
+            <a class="btn btn-secondary btn-sm" href="/repos/{repo.ownerHandle}/{repo.name}/issues/{issue.number}/edit">Edit issue</a>
+            <form class="issue-actions" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/issues/{issue.number}/status">
                 <span class="lbl">Move to</span>
                 {#for status in statuses}
                 <button type="submit" class="btn btn-secondary btn-sm" name="status" value="{status}"{#if status == issue.status} disabled{/if}>{status.label}</button>
                 {/for}
             </form>
-            <form class="issue-remove" method="post" action="/repos/{repo.owner.username}/{repo.name}/issues/{issue.number}/delete"
+            <form class="issue-remove" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/issues/{issue.number}/delete"
                   onsubmit="return confirm('Delete this issue? This cannot be undone.')">
                 <button type="submit" class="btn btn-danger btn-sm">Delete issue</button>
             </form>

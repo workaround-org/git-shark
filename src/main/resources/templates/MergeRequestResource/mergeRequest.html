@@ -3,7 +3,7 @@
 <div class="repo-layout">
 {#include RepositoryResource/sidebar nav=nav active='merge-requests' /}
 <section class="repo-main">
-<p><a href="/repos/{repo.owner.username}/{repo.name}/merge-requests">&larr; Merge requests</a></p>
+<p><a href="/repos/{repo.ownerHandle}/{repo.name}/merge-requests">&larr; Merge requests</a></p>
 <h2>{mr.title} <span class="issue-no">!{mr.number}</span></h2>
 <p>
     <span class="badge status-{mr.status}">{mr.status.label}</span>
@@ -15,10 +15,10 @@
 {/if}
 {#if owner && mr.status.name() == 'OPEN'}
 <div class="issue-actions">
-    <form method="post" action="/repos/{repo.owner.username}/{repo.name}/merge-requests/{mr.id}/merge">
+    <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/merge-requests/{mr.id}/merge">
         <button type="submit" class="btn btn-primary">Merge</button>
     </form>
-    <form method="post" action="/repos/{repo.owner.username}/{repo.name}/merge-requests/{mr.id}/close"
+    <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/merge-requests/{mr.id}/close"
           onsubmit="return confirm('Close this merge request without merging?')">
         <button type="submit" class="btn btn-secondary">Close</button>
     </form>
@@ -58,7 +58,7 @@
             </div>
             {#if lv.commentable}
             <div class="dl-comment-form">
-                <form method="post" action="/repos/{repo.owner.username}/{repo.name}/merge-requests/{mr.id}/comments">
+                <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/merge-requests/{mr.id}/comments">
                     <input type="hidden" name="filePath" value="{file.path}">
                     <input type="hidden" name="oldLine" value="{lv.line.oldLine}">
                     <input type="hidden" name="newLine" value="{lv.line.newLine}">
@@ -80,7 +80,7 @@
             </div>
             {#if owner || c.author.id == currentUserId}
             <form class="comment-del-form" method="post"
-                  action="/repos/{repo.owner.username}/{repo.name}/merge-requests/{mr.id}/comments/{c.id}/delete">
+                  action="/repos/{repo.ownerHandle}/{repo.name}/merge-requests/{mr.id}/comments/{c.id}/delete">
                 <button type="submit" class="comment-del" title="Delete comment" aria-label="Delete comment">
                     <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 9Z"/></svg>
                 </button>

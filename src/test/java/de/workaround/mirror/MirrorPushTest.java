@@ -168,8 +168,8 @@ class MirrorPushTest
 
 	private PushMirror createHttpMirror(User actor, Repository src, Repository dst, String dstToken)
 	{
-		String url = gitBase + "/" + dst.owner.username + "/" + dst.name + ".git";
-		return mirrorService.create(actor, src, url, PushMirror.AuthType.HTTPS, dst.owner.username, dstToken);
+		String url = gitBase + "/" + dst.ownerHandle() + "/" + dst.name + ".git";
+		return mirrorService.create(actor, src, url, PushMirror.AuthType.HTTPS, dst.ownerHandle(), dstToken);
 	}
 
 	private void pushBranch(Repository src, String branch) throws Exception

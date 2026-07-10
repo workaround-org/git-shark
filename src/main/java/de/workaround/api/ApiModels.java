@@ -25,7 +25,7 @@ public final class ApiModels
 	{
 		public static RepositoryView of(Repository repo)
 		{
-			return new RepositoryView(repo.owner.username, repo.name, repo.visibility, repo.description,
+			return new RepositoryView(repo.ownerHandle(), repo.name, repo.visibility, repo.description,
 				repo.createdAt);
 		}
 	}

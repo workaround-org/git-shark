@@ -12,7 +12,7 @@
         <div class="panel">
             <div class="files">
                 {#for entry in entries}
-                <a class="frow" href="/repos/{repo.owner.username}/{repo.name}/tree/{ref}/{entry.path}">
+                <a class="frow" href="/repos/{repo.ownerHandle}/{repo.name}/tree/{ref}/{entry.path}">
                     <span class="fname">
                         <span class="g{#if entry.directory} dir{/if}">{#if entry.directory}▸{#else}≡{/if}</span>
                         <span class="n">{entry.name}</span>

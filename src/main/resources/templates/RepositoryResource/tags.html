@@ -10,7 +10,7 @@
         <table>
             <tr><th>Tag</th></tr>
             {#for tag in tags}
-            <tr><td><a href="/repos/{repo.owner.username}/{repo.name}/tree/{tag}/">{tag}</a></td></tr>
+            <tr><td><a href="/repos/{repo.ownerHandle}/{repo.name}/tree/{tag}/">{tag}</a></td></tr>
             {/for}
         </table>
         {/if}

@@ -11,6 +11,7 @@ import java.util.UUID;
 import org.eclipse.jgit.transport.ReceiveCommand;
 
 import de.workaround.federation.FederationConfig;
+import de.workaround.git.AccessPolicy;
 import de.workaround.git.ForbiddenOperationException;
 import de.workaround.git.GitRepositoryService;
 import de.workaround.model.MirrorSync;
@@ -45,6 +46,9 @@ public class MirrorService
 
 	@Inject
 	GitRepositoryService repositories;
+
+	@Inject
+	AccessPolicy accessPolicy;
 
 	@Inject
 	MirrorPusher pusher;
@@ -264,9 +268,9 @@ public class MirrorService
 		return mirror;
 	}
 
-	private static void requireOwner(User actor, Repository repository)
+	private void requireOwner(User actor, Repository repository)
 	{
-		if (actor == null || actor.id == null || !actor.id.equals(repository.owner.id))
+		if (!accessPolicy.canAdmin(actor, repository))
 		{
 			throw new ForbiddenOperationException("Only the repository owner may manage mirrors");
 		}

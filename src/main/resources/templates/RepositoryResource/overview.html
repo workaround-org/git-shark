@@ -1,5 +1,5 @@
 {#include layout}
-{#title}{repo.owner.username}/{repo.name} – git-shark{/title}
+{#title}{repo.ownerHandle}/{repo.name} – git-shark{/title}
 
 <div class="repo-layout">
 
@@ -13,13 +13,13 @@
 git push -u origin main</pre>
         {#else}
         <div class="branchbar">
-            <a class="branchsel" href="/repos/{repo.owner.username}/{repo.name}/branches"><span class="g">⑂</span> {nav.defaultBranch} <span class="car">▾</span></a>
+            <a class="branchsel" href="/repos/{repo.ownerHandle}/{repo.name}/branches"><span class="g">⑂</span> {nav.defaultBranch} <span class="car">▾</span></a>
             <span class="meta"><b>{nav.commitCount}</b> commits · <b>{entries.size()}</b> entries</span>
         </div>
 
         <div class="panel">
             {#if latestCommit}
-            <a class="commitrow" href="/repos/{repo.owner.username}/{repo.name}/commits/{nav.defaultBranch}">
+            <a class="commitrow" href="/repos/{repo.ownerHandle}/{repo.name}/commits/{nav.defaultBranch}">
                 <span class="av">{latestCommit.author.charAt(0)}</span>
                 <span class="who">{latestCommit.author}</span>
                 <span class="msg">{latestCommit.message}</span>
@@ -28,7 +28,7 @@ git push -u origin main</pre>
             {/if}
             <div class="files">
                 {#for entry in entries}
-                <a class="frow" href="/repos/{repo.owner.username}/{repo.name}/tree/{nav.defaultBranch}/{entry.path}">
+                <a class="frow" href="/repos/{repo.ownerHandle}/{repo.name}/tree/{nav.defaultBranch}/{entry.path}">
                     <span class="fname">
                         <span class="g{#if entry.directory} dir{/if}">{#if entry.directory}▸{#else}≡{/if}</span>
                         <span class="n">{entry.name}</span>
@@ -74,10 +74,10 @@ git push -u origin main</pre>
                     </div>
                     {/if}
                     <div class="mirror-actions">
-                        <form class="inline" method="post" action="/repos/{repo.owner.username}/{repo.name}/mirrors/{m.id}/push">
+                        <form class="inline" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/mirrors/{m.id}/push">
                             <button class="btn">Push now</button>
                         </form>
-                        <form class="inline" method="post" action="/repos/{repo.owner.username}/{repo.name}/mirrors/{m.id}/delete">
+                        <form class="inline" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/mirrors/{m.id}/delete">
                             <button class="btn btn-danger">Delete</button>
                         </form>
                     </div>
@@ -85,7 +85,7 @@ git push -u origin main</pre>
                 {/for}
             </ul>
             {/if}
-            <form method="post" action="/repos/{repo.owner.username}/{repo.name}/mirrors" class="mirror-add">
+            <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/mirrors" class="mirror-add">
                 <p><label>Remote URL <input name="url" placeholder="https://host/owner/repo.git or ssh://git@host/owner/repo.git" required></label></p>
                 <p><label>Authentication
                     <select name="authType">
@@ -101,7 +101,7 @@ git push -u origin main</pre>
 
         <div class="danger-zone">
             <h2>Danger zone</h2>
-            <form method="post" action="/repos/{repo.owner.username}/{repo.name}/delete">
+            <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/delete">
                 <p><label>Type the repository name to confirm deletion <input name="confirm"></label></p>
                 <button class="btn btn-danger">Delete repository</button>
             </form>

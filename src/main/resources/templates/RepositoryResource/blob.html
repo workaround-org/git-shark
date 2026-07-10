@@ -10,7 +10,7 @@
             {/for}
         </nav>
         {#if binary}
-        <p>Binary file. <a class="btn btn-secondary" href="/repos/{repo.owner.username}/{repo.name}/raw/{ref}/{path}">Download</a></p>
+        <p>Binary file. <a class="btn btn-secondary" href="/repos/{repo.ownerHandle}/{repo.name}/raw/{ref}/{path}">Download</a></p>
         {#else if markdownHtml}
         <div class="md-toggle" role="group" aria-label="View mode">
             <button type="button" class="btn btn-secondary btn-sm active" data-md-view="rendered">Rendered</button>

@@ -1,8 +1,5 @@
 package de.workaround.account;
 
-import java.util.Optional;
-import java.util.regex.Pattern;
-
 import de.workaround.model.User;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -11,27 +8,28 @@ import jakarta.transaction.Transactional;
 /**
  * Validates and assigns a user's URL-safe handle. Used both during onboarding and when an existing
  * user renames in settings. The handle is the path segment in every repo/SSH/federation URL, so it
- * must match a strict charset and be unique across users.
+ * must match a strict charset and be unique across users AND organisations (shared namespace, see
+ * {@link HandleService}).
  */
 @ApplicationScoped
 public class UsernameService
 {
-	public static final Pattern HANDLE = Pattern.compile("^[a-z0-9][a-z0-9-]{0,38}$");
-
 	@Inject
 	User.Repo users;
+
+	@Inject
+	HandleService handles;
 
 	@Transactional
 	public void choose(User user, String handle)
 	{
 		String candidate = handle == null ? "" : handle.trim();
-		if (!HANDLE.matcher(candidate).matches())
+		if (!HandleService.valid(candidate))
 		{
 			throw new InvalidUsernameException(
 				"Username must be 1-39 characters, lowercase letters, digits or hyphens, and start with a letter or digit.");
 		}
-		Optional<User> existing = users.findByUsername(candidate);
-		if (existing.isPresent() && !existing.get().id.equals(user.id))
+		if (handles.takenByOther(candidate, user.id))
 		{
 			throw new UsernameTakenException("That username is already taken.");
 		}

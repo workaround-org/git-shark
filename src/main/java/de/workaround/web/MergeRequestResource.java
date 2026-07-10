@@ -237,13 +237,13 @@ public class MergeRequestResource
 
 	private URI detailUri(Repository repo, UUID id)
 	{
-		return URI.create("/repos/" + repo.owner.username + "/" + repo.name + "/merge-requests/" + id);
+		return URI.create("/repos/" + repo.ownerHandle() + "/" + repo.name + "/merge-requests/" + id);
 	}
 
 	private boolean isOwner(Repository repo)
 	{
 		User user = currentUser.get();
-		return user != null && user.id.equals(repo.owner.id);
+		return accessPolicy.canAdmin(user, repo);
 	}
 
 	private static UUID parseId(String id)

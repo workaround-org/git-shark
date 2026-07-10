@@ -1,0 +1,28 @@
+{#include layout}
+{#title}{org.name} – git-shark{/title}
+<h1><span class="av-fallback">{org.name.charAt(0)}</span> {org.displayName ?: org.name}</h1>
+<p class="muted mono">{org.name}</p>
+{#if owner}
+<p>
+    <a class="btn btn-secondary" href="/orgs/{org.name}/members">Members</a>
+    <a class="btn btn-secondary" href="/repos/new">New repository</a>
+</p>
+{/if}
+<section class="dashboard-section">
+    <h2>Repositories</h2>
+    {#if repos.isEmpty()}
+    <p class="muted empty-state">No repositories yet.</p>
+    {#else}
+    <table>
+        <tr><th>Repository</th><th>Visibility</th><th>Description</th></tr>
+        {#for repo in repos}
+        <tr>
+            <td>{#repoAvatar repo=repo /} <a class="mono" href="/repos/{repo.ownerHandle}/{repo.name}">{repo.name}</a></td>
+            <td><span class="badge badge-{repo.visibility.name().toLowerCase()}">{repo.visibility.name().toLowerCase()}</span></td>
+            <td class="muted">{repo.description ?: ''}</td>
+        </tr>
+        {/for}
+    </table>
+    {/if}
+</section>
+{/include}

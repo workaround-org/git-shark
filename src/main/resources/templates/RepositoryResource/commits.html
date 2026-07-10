@@ -17,10 +17,10 @@
         </table>
         <p class="pagination">
             {#if page > 0}
-            <a class="btn btn-secondary" href="/repos/{repo.owner.username}/{repo.name}/commits/{ref}?page={prevPage}&size={size}">Newer</a>
+            <a class="btn btn-secondary" href="/repos/{repo.ownerHandle}/{repo.name}/commits/{ref}?page={prevPage}&size={size}">Newer</a>
             {/if}
             {#if hasNext}
-            <a class="btn btn-secondary" href="/repos/{repo.owner.username}/{repo.name}/commits/{ref}?page={nextPage}&size={size}">Older</a>
+            <a class="btn btn-secondary" href="/repos/{repo.ownerHandle}/{repo.name}/commits/{ref}?page={nextPage}&size={size}">Older</a>
             {/if}
         </p>
     </section>

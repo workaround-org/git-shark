@@ -68,7 +68,7 @@ public class IssueResource
 	{
 		Repository repo = requireReadable(owner, name);
 		User user = currentUser.get();
-		boolean isOwner = user != null && user.id.equals(repo.owner.id);
+		boolean isOwner = accessPolicy.canAdmin(user, repo);
 		List<Issue> all = issueService.list(repo);
 		// open issues stay visible; DONE issues are tucked into a collapsible archive on the page
 		List<Issue> open = all.stream().filter(issue -> issue.status != Issue.Status.DONE).toList();
@@ -108,7 +108,7 @@ public class IssueResource
 		Repository repo = requireReadable(owner, name);
 		Issue issue = issueService.find(repo, number).orElseThrow(NotFoundException::new);
 		User user = currentUser.get();
-		boolean isOwner = user != null && user.id.equals(repo.owner.id);
+		boolean isOwner = accessPolicy.canAdmin(user, repo);
 		String descriptionHtml = issue.description == null ? null : Markdown.render(issue.description);
 		return Templates.issue(repo, repoNav.build(repo, uriInfo), isOwner, issue, descriptionHtml,
 			List.of(Issue.Status.values()));
@@ -175,12 +175,12 @@ public class IssueResource
 		Repository repo = requireReadable(owner, name);
 		Issue issue = issueService.find(repo, number).orElseThrow(NotFoundException::new);
 		issueService.delete(currentUser.require(), issue);
-		return Response.seeOther(URI.create("/repos/" + repo.owner.username + "/" + repo.name + "/issues")).build();
+		return Response.seeOther(URI.create("/repos/" + repo.ownerHandle() + "/" + repo.name + "/issues")).build();
 	}
 
 	private URI issueUri(Repository repo, int number)
 	{
-		return URI.create("/repos/" + repo.owner.username + "/" + repo.name + "/issues/" + number);
+		return URI.create("/repos/" + repo.ownerHandle() + "/" + repo.name + "/issues/" + number);
 	}
 
 	private static Issue.Status parseStatus(String status)

@@ -35,7 +35,7 @@ public class ActorDocuments
 	{
 		String id = uris.repository(repo);
 		ObjectNode node = actorBase(id, "Repository", true);
-		node.put("name", repo.owner.username + "/" + repo.name);
+		node.put("name", repo.ownerHandle() + "/" + repo.name);
 		node.put("preferredUsername", repo.name);
 		if (repo.description != null)
 		{

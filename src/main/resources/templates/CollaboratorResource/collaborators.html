@@ -17,7 +17,7 @@
             <tr>
                 <td>{#avatar user=collaborator.user /} {collaborator.user.username}</td>
                 <td class="actions">
-                    <form class="inline" method="post" action="/repos/{repo.owner.username}/{repo.name}/settings/collaborators/{collaborator.user.username}/remove">
+                    <form class="inline" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/settings/collaborators/{collaborator.user.username}/remove">
                         <button class="btn btn-danger btn-sm">Remove</button>
                     </form>
                 </td>
@@ -26,7 +26,7 @@
         </table>
         {/if}
         <h3>Add collaborator</h3>
-        <form method="post" action="/repos/{repo.owner.username}/{repo.name}/settings/collaborators">
+        <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/settings/collaborators">
             <p><label>Username <input name="username" required></label></p>
             <button class="btn btn-primary">Add</button>
         </form>

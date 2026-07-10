@@ -222,7 +222,7 @@ class IssueServiceTest
 	{
 		Repository repo = new Repository();
 		repo.name = name;
-		repo.owner = owner;
+		repo.ownerUser = owner;
 		repo.visibility = Repository.Visibility.PUBLIC;
 		repo.persist();
 		return repo;

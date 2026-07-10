@@ -1,0 +1,13 @@
+{#include layout}
+{#title}New organisation – git-shark{/title}
+<h1>New organisation</h1>
+<p class="muted">An organisation owns repositories just like a user does — its name shares the same namespace as usernames.</p>
+{#if error}
+<p class="error">{error}</p>
+{/if}
+<form method="post" action="/orgs">
+    <p><label>Name <input class="mono" name="name" required pattern="[a-z0-9][a-z0-9-]*"></label></p>
+    <p><label>Display name <input name="displayName"></label></p>
+    <button class="btn btn-primary">Create organisation</button>
+</form>
+{/include}

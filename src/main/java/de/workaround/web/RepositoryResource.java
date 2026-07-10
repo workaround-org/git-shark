@@ -111,7 +111,7 @@ public class RepositoryResource
 			? List.of()
 			: browse.listTree(path, nav.defaultBranch(), "").orElse(List.of());
 		User user = currentUser.get();
-		boolean isOwner = user != null && user.id.equals(repo.owner.id);
+		boolean isOwner = accessPolicy.canAdmin(user, repo);
 		GitBrowseService.CommitInfo latestCommit = nav.empty() ? null
 			: browse.commits(path, nav.defaultBranch(), 0, 1)
 				.filter(commitPage -> !commitPage.commits().isEmpty())
@@ -325,7 +325,7 @@ public class RepositoryResource
 
 	private static URI settingsUri(Repository repo)
 	{
-		return URI.create("/repos/" + repo.owner.username + "/" + repo.name + "/settings");
+		return URI.create("/repos/" + repo.ownerHandle() + "/" + repo.name + "/settings");
 	}
 
 	@POST
@@ -465,7 +465,7 @@ public class RepositoryResource
 	 */
 	private static List<Crumb> breadcrumbs(Repository repo, String ref, String path)
 	{
-		String treeBase = "/repos/" + repo.owner.username + "/" + repo.name + "/tree/" + ref;
+		String treeBase = "/repos/" + repo.ownerHandle() + "/" + repo.name + "/tree/" + ref;
 		List<Crumb> crumbs = new ArrayList<>();
 		crumbs.add(new Crumb(ref, treeBase));
 		if (path != null && !path.isEmpty())
@@ -501,8 +501,7 @@ public class RepositoryResource
 	private Repository requireOwner(String owner, String name)
 	{
 		Repository repo = requireReadable(owner, name);
-		User user = currentUser.get();
-		if (user == null || !user.id.equals(repo.owner.id))
+		if (!accessPolicy.canAdmin(currentUser.get(), repo))
 		{
 			// hide existence from non-owners rather than signalling 403
 			throw new NotFoundException();

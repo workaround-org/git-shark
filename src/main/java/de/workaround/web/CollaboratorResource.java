@@ -108,7 +108,7 @@ public class CollaboratorResource
 			// hide existence of private repositories
 			throw new NotFoundException();
 		}
-		if (user == null || !user.id.equals(repo.owner.id))
+		if (!accessPolicy.canAdmin(user, repo))
 		{
 			throw new ForbiddenOperationException("Only the repository owner can manage collaborators");
 		}

@@ -141,14 +141,14 @@ class FederationHandshakeTest
 	@Transactional
 	boolean hasFollower(Repository repo, String actorId)
 	{
-		Repository managed = service.find(repo.owner.username, repo.name).orElseThrow();
+		Repository managed = service.find(repo.ownerHandle(), repo.name).orElseThrow();
 		return followers.findByRepositoryAndFollowerActorId(managed, actorId).isPresent();
 	}
 
 	@Transactional
 	long followerCount(Repository repo, String actorId)
 	{
-		Repository managed = service.find(repo.owner.username, repo.name).orElseThrow();
+		Repository managed = service.find(repo.ownerHandle(), repo.name).orElseThrow();
 		return followers.findByRepository(managed).stream().filter(f -> f.followerActorId.equals(actorId)).count();
 	}
 

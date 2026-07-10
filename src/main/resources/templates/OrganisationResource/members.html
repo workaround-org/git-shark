@@ -1,0 +1,48 @@
+{#include layout}
+{#title}Members · {org.name} – git-shark{/title}
+<p><a href="/orgs/{org.name}">&larr; {org.displayName ?: org.name}</a></p>
+<h1>Members</h1>
+<p class="muted">Guests read private repositories, members also push, owners manage members and organisation repositories.</p>
+{#if error}
+<p class="error">{error}</p>
+{/if}
+<table>
+    <tr><th>User</th><th>Role</th><th></th></tr>
+    {#for member in members}
+    <tr>
+        <td>{#avatar user=member.user /} <span class="mono">{member.user.username}</span></td>
+        <td>
+            <form class="inline" method="post" action="/orgs/{org.name}/members/{member.user.username}/role">
+                <select name="role" onchange="this.form.submit()">
+                    {#for role in roles}
+                    <option value="{role.name()}" {#if member.role == role}selected{/if}>{role.name().toLowerCase()}</option>
+                    {/for}
+                </select>
+            </form>
+        </td>
+        <td class="actions">
+            <form class="inline" method="post" action="/orgs/{org.name}/members/{member.user.username}/remove">
+                <button class="btn btn-secondary btn-sm" type="submit">Remove</button>
+            </form>
+        </td>
+    </tr>
+    {/for}
+</table>
+<h2>Add member</h2>
+<form method="post" action="/orgs/{org.name}/members">
+    <p><label>Username <input class="mono" name="username" required></label></p>
+    <p><label>Role
+        <select name="role">
+            {#for role in roles}
+            <option value="{role.name()}">{role.name().toLowerCase()}</option>
+            {/for}
+        </select>
+    </label></p>
+    <button class="btn btn-primary">Add member</button>
+</form>
+<h2>Danger zone</h2>
+<form method="post" action="/orgs/{org.name}/delete" onsubmit="return confirm('Delete this organisation?')">
+    <p><label>Type the organisation name to confirm deletion <input class="mono" name="confirm"></label></p>
+    <button class="btn btn-danger">Delete organisation</button>
+</form>
+{/include}

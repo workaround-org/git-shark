@@ -9,6 +9,11 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
 ## Features
 
 - Create, browse, and delete personal repositories (public or private)
+- **Organisations** — shared repository namespaces with guest/member/owner roles. An org owns
+  repositories exactly like a user (`/repos/<org>/<repo>`, same clone URL forms); org and user
+  names share one collision-checked handle namespace. Guests read private org repos, members
+  also push, owners manage members and org repositories. Guides:
+  [for users](docs/users/organisations.md), [for admins](docs/admins/organisations.md)
 - Clone/fetch/push over `https://<host>/git/<owner>/<repo>.git`
   - anonymous read on public repositories
   - push and private read authenticate with **personal access tokens** (HTTP Basic password)
@@ -23,7 +28,7 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
 - The merge request detail page renders the live diff of the source branch relative to the merge base with the target (three-dot diff), file by file with per-line add/delete coloring and a changed-files / +additions / −deletions summary — always computed live from git, never duplicated into the database
 - The owner or a collaborator can Merge or Close an open merge request from the detail page; merging runs entirely in-core against the bare repository (no working tree), fast-forwarding when possible or else recording a two-parent merge commit authored by the acting user and advancing the target branch ref. An automatic merge that would conflict is rejected; a source branch already contained in the target is treated as already merged
 - Line-level review comments on a merge request's diff: any authenticated user who can read the repository can comment on a specific diff line (added, deleted, or context) from the merge-request detail page; comments render inline beneath the line they anchor to. A comment can be deleted by its author, the repository owner, or a collaborator. Comments are anchored to a file plus the diff line's old/new line numbers and must land on a line that's part of the current diff. Hovering a commentable line reveals a comment icon on the right; clicking it opens the form inline — a progressive-enhancement disclosure that works without JavaScript
-- OIDC login (authorization code flow) via `GET /login`; on first login the user account is created without a username and the browser is redirected to `/onboarding`, where the user picks a URL-safe handle (`^[a-z0-9][a-z0-9-]{0,38}$`, unique). The chosen handle — not the OIDC `preferred_username` claim (which is an SPN form in kanidm and not URL-safe) — is used in all repo, SSH, ActivityPub, and webfinger URLs. The `name` claim becomes an editable display name; both can be changed later at `/settings/profile`. A request filter blocks all app pages until a handle is chosen. Logout is local-session only via `POST /logout` (the kanidm provider advertises no `end_session_endpoint`, so RP-Initiated Logout is disabled)
+- OIDC login (authorization code flow) via `GET /login`; on first login the user account is created without a username and the browser is redirected to `/onboarding`, where the user picks a URL-safe handle (`^[a-z0-9][a-z0-9-]{0,38}$`, unique across users and organisations). The chosen handle — not the OIDC `preferred_username` claim (which is an SPN form in kanidm and not URL-safe) — is used in all repo, SSH, ActivityPub, and webfinger URLs. The `name` claim becomes an editable display name; both can be changed later at `/settings/profile`. A request filter blocks all app pages until a handle is chosen. Logout is local-session only via `POST /logout` (the kanidm provider advertises no `end_session_endpoint`, so RP-Initiated Logout is disabled)
 - Profile pictures: users can upload a PNG/JPEG/GIF/WebP avatar (≤ 2 MB, content-type and magic bytes both validated) at `/settings/profile`, stored on the filesystem keyed by user UUID and served publicly at `GET /users/{username}/avatar`; shown wherever a local user is rendered (header nav, repo lists, repo sidebar, issue/MR/comment authors) via a reusable Qute avatar tag, removable, and falling back to an initials badge when absent. Git commit authors and remote federation actors are not local users and keep their existing pseudo-avatars
 - **Collaborators** — the repository owner can grant other local users read+write access
   (one flat role) on a per-repository settings page (`…/settings/collaborators`, linked in the
@@ -32,8 +37,9 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
   managing mirrors, and managing collaborators stay owner-only. Guides:
   [for users](docs/users/collaborators.md), [for admins](docs/admins/collaborators.md)
 - Per-repository images: the repo owner can upload a custom image (same PNG/JPEG/GIF/WebP, ≤ 2 MB, validated rules as avatars) on a dedicated owner-only repository **Settings** page (`/repos/{owner}/{name}/settings`), stored on the filesystem keyed by repo UUID. It replaces the owner's avatar wherever the repository is shown (repo lists, repo sidebar); a repository with no custom image falls back to its owner's avatar. Served at `GET /repos/{owner}/{name}/image`, visibility-guarded so a private repo's image never leaks (`404` for non-viewers), and removable back to the fallback
-- Single access policy on all paths: owner read/write, collaborators read/write, public
-  world-readable, private repositories visible to the owner and collaborators only
+- Single access policy on all paths: owner read/write, collaborators read/write, org roles
+  (guest read / member write / owner admin) on org repositories, public world-readable,
+  private repositories visible only to whoever holds a read grant
 - **JSON REST API** under `/api/v1`, authenticated with the same personal access tokens as
   git-over-HTTP (`Authorization: Bearer <token>`), auto-documented via OpenAPI/Swagger UI (see below)
 - **MCP server** at `/mcp` (Streamable HTTP), exposing the same feature set as the REST API as
