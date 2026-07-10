@@ -37,7 +37,10 @@ class WebUiTest
 			.then()
 			.statusCode(200)
 			.body(containsString("ui-pub"))
-			.body(not(containsString("ui-priv")));
+			.body(not(containsString("ui-priv")))
+			// repo rows are full-row click targets (stretched link)
+			.body(containsString("class=\"row-link\""))
+			.body(containsString("class=\"cell-link\""));
 	}
 
 	@Test

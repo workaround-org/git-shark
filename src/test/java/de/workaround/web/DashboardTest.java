@@ -62,7 +62,10 @@ class DashboardTest
 		given().when().get("/").then().statusCode(200)
 			.body(not(containsString("No pinned repositories yet")))
 			.body(containsString("/repos/dash-pin/pinme/unpin"))
-			.body(containsString("Unpin repository"));
+			.body(containsString("Unpin repository"))
+			// pinned and all-repositories rows are full-row click targets (stretched link)
+			.body(containsString("class=\"row-link\""))
+			.body(containsString("class=\"cell-link\""));
 
 		given().redirects().follow(false)
 			.contentType(ContentType.URLENC).formParam("redirect", "/")

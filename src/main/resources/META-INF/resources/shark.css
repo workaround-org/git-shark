@@ -574,6 +574,35 @@ td, th {
     text-align: left;
 }
 
+/* full-row click target: the name anchor stretches over the whole row via ::after,
+   so clicking anywhere in the row opens the link — not only the name text. Other
+   controls in the row (pin buttons) stack above the stretched link. */
+tr.row-link {
+    position: relative;
+}
+
+td.cell-link {
+    padding: 0;
+}
+
+td.cell-link > a {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    padding: var(--s3) var(--s4);
+}
+
+tr.row-link td.cell-link > a::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+}
+
+tr.row-link .actions form {
+    position: relative;
+    z-index: 1;
+}
+
 th {
     background: var(--accent-soft);
     color: var(--accent-deep);

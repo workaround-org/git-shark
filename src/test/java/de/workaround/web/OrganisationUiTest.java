@@ -103,7 +103,10 @@ class OrganisationUiTest
 			.when().get("/orgs/" + org.name)
 			.then().statusCode(200)
 			.body(containsString("org-public"))
-			.body(not(containsString("org-secret")));
+			.body(not(containsString("org-secret")))
+			// org repo rows are full-row click targets (stretched link)
+			.body(containsString("class=\"row-link\""))
+			.body(containsString("class=\"cell-link\""));
 	}
 
 	@Test
@@ -273,7 +276,10 @@ class OrganisationUiTest
 		given()
 			.when().get("/")
 			.then().statusCode(200)
-			.body(containsString("/orgs/" + org.name));
+			.body(containsString("/orgs/" + org.name))
+			// organisation rows are full-row click targets (stretched link)
+			.body(containsString("class=\"row-link\""))
+			.body(containsString("class=\"cell-link\""));
 	}
 
 	@Test

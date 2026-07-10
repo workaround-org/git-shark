@@ -10,8 +10,8 @@
     <table>
         <tr><th>Repository</th><th>Visibility</th><th></th></tr>
         {#for repo in pinned}
-        <tr>
-            <td>{#repoAvatar repo=repo /} <a class="mono" href="/repos/{repo.ownerHandle}/{repo.name}">{repo.ownerHandle}/{repo.name}</a></td>
+        <tr class="row-link">
+            <td class="cell-link"><a class="mono" href="/repos/{repo.ownerHandle}/{repo.name}">{#repoAvatar repo=repo /} {repo.ownerHandle}/{repo.name}</a></td>
             <td><span class="badge badge-{repo.visibility.name().toLowerCase()}">{repo.visibility.name().toLowerCase()}</span></td>
             <td class="actions">
                 <form class="inline" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/unpin">
@@ -33,8 +33,8 @@
     <table>
         <tr><th>Organisation</th><th>Your role</th></tr>
         {#for membership in orgs}
-        <tr>
-            <td><span class="av-fallback">{membership.organisation.name.charAt(0)}</span> <a class="mono" href="/orgs/{membership.organisation.name}">{membership.organisation.name}</a></td>
+        <tr class="row-link">
+            <td class="cell-link"><a class="mono" href="/orgs/{membership.organisation.name}"><span class="av-fallback">{membership.organisation.name.charAt(0)}</span> {membership.organisation.name}</a></td>
             <td><span class="badge">{membership.role.name().toLowerCase()}</span></td>
         </tr>
         {/for}
@@ -64,8 +64,8 @@
     <table>
         <tr><th>Repository</th><th>Visibility</th><th>Description</th><th></th></tr>
         {#for row in repositories}
-        <tr>
-            <td>{#repoAvatar repo=row.repo /} <a class="mono" href="/repos/{row.repo.ownerHandle}/{row.repo.name}">{row.repo.ownerHandle}/{row.repo.name}</a></td>
+        <tr class="row-link">
+            <td class="cell-link"><a class="mono" href="/repos/{row.repo.ownerHandle}/{row.repo.name}">{#repoAvatar repo=row.repo /} {row.repo.ownerHandle}/{row.repo.name}</a></td>
             <td><span class="badge badge-{row.repo.visibility.name().toLowerCase()}">{row.repo.visibility.name().toLowerCase()}</span></td>
             <td class="muted">{row.repo.description ?: ''}</td>
             <td class="actions">
