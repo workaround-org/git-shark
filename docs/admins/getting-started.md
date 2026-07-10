@@ -76,14 +76,17 @@ UID `185` and reads all production settings from environment variables.
 
 git-shark uses the OIDC **authorization code flow** with **PKCE**. Create a confidential
 client at your IdP and note three things: the **issuer/discovery URL**, the **client ID**,
-and the **client secret**. Set the redirect URI to your public origin with a trailing
-slash: `https://gitshark.example.com/`.
+and the **client secret**. Set the redirect URI to the fixed callback path
+`https://gitshark.example.com/login` (git-shark pins the code-flow callback to `/login`
+via `quarkus.oidc.authentication.redirect-path`, so IdPs with strict `redirect_uri`
+matching — kanidm does this — only need that one URI registered). After the token
+exchange git-shark returns the user to the page they were originally on.
 
 ### kanidm example
 
 ```bash
 kanidm system oauth2 create git-shark "Git Shark" https://gitshark.example.com
-kanidm system oauth2 add-redirect-url git-shark https://gitshark.example.com/
+kanidm system oauth2 add-redirect-url git-shark https://gitshark.example.com/login
 kanidm group create gitshark_users
 kanidm group add-members gitshark_users <your-user>
 kanidm system oauth2 update-scope-map git-shark gitshark_users openid profile email
@@ -96,11 +99,24 @@ The auth-server URL for kanidm is `https://<kanidm-host>/oauth2/openid/git-shark
 
 Create a confidential client with:
 - Standard flow (authorization code) enabled, PKCE `S256` required.
-- Redirect URI `https://gitshark.example.com/`.
+- Redirect URI `https://gitshark.example.com/login`.
 - Scopes `openid profile email`.
 
 The auth-server URL is the realm issuer, e.g.
 `https://keycloak.example.com/realms/<realm>`.
+
+### Session lifetime and silent refresh
+
+The IdP's ID tokens can be short-lived (kanidm issues ~15 min tokens by design); git-shark
+does **not** log the user out when one expires. Instead it refreshes the tokens inline with
+the refresh token stored in the encrypted session cookie
+(`quarkus.oidc.token.refresh-expired=true`, proactively 60 s before expiry) and keeps the
+session cookie usable for up to 12 h past ID-token expiry
+(`quarkus.oidc.authentication.session-age-extension=PT12H`). This requires the IdP to
+actually issue a refresh token to the client — kanidm does for the code flow. kanidm's
+refresh-token lifetime is currently hard-coded to 16 h, so that is the ceiling for a fully
+silent session; past it the code flow simply runs again (still invisible while the IdP's own
+SSO session is alive, otherwise the user logs in once and lands back on the page they were on).
 
 ---
 
@@ -404,6 +420,7 @@ docker compose logs -f app
 |---|---|
 | Login redirects to `http://…` or loops | Proxy not forwarding `X-Forwarded-Proto`, or you hit the app over plain HTTP. Front it with TLS (Step 6). |
 | Boot fails on OIDC discovery | `QUARKUS_OIDC_AUTH_SERVER_URL` wrong/unreachable, or IdP demands HTTPS the app can't reach. |
+| IdP rejects login with a `redirect_uri` error | The client's registered redirect URI doesn't match the fixed callback `https://<host>/login` (Step 2). Deployments set up before the silent-refresh change registered `https://<host>/` — add/replace it with `/login`. |
 | App exits complaining about secret length | `*_STATE_SECRET` shorter than 32 chars. Regenerate with `openssl rand -hex 16`. |
 | SSH host key changed after redeploy | The `ssh` volume wasn't persisted — confirm it's a named volume, not a throwaway mount. |
 | Profile pictures disappear after redeploy / render as broken images | The `avatars` volume wasn't mounted, so uploads landed in the container layer. Add the volume and `GITSHARK_AVATAR_ROOT` as in Step 5 — retrofit steps in [Persistent data](persistent-data.md#upgrading-a-deployment-created-before-profile-pictures). |

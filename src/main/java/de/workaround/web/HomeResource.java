@@ -1,6 +1,7 @@
 package de.workaround.web;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -28,6 +29,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -95,12 +97,39 @@ public class HomeResource
 
 	@GET
 	@Path("login")
-	public Response login()
+	public Response login(@QueryParam("redirect") String redirect)
 	{
-		// Path is protected (authenticated); OIDC intercepts anonymous access and
-		// redirects here after login, then we send the user to their repository list.
+		// Path is protected (authenticated); OIDC intercepts anonymous access, runs the code flow
+		// and restores this URI afterwards (restore-path-after-redirect keeps the redirect
+		// parameter alive). Send the user back to the page they came from — local paths only,
+		// anything else would be an open redirect.
 		currentUser.require();
-		return Response.seeOther(URI.create("/")).build();
+		return Response.seeOther(localRedirectTarget(redirect)).build();
+	}
+
+	static URI localRedirectTarget(String redirect)
+	{
+		// Local paths only: no protocol-relative ("//", "/\") targets and no control characters
+		// (browsers strip e.g. tabs before parsing, which could re-open the protocol-relative hole).
+		if (redirect == null || !redirect.startsWith("/")
+			|| redirect.startsWith("//") || redirect.startsWith("/\\")
+			|| redirect.chars().anyMatch(c -> c < 0x20))
+		{
+			return URI.create("/");
+		}
+		try
+		{
+			// Re-encode path and query: the query parameter arrives decoded, and the multi-arg
+			// URI constructor cannot smuggle in a scheme or authority.
+			int queryStart = redirect.indexOf('?');
+			String path = queryStart < 0 ? redirect : redirect.substring(0, queryStart);
+			String query = queryStart < 0 ? null : redirect.substring(queryStart + 1);
+			return new URI(null, null, path, query, null);
+		}
+		catch (URISyntaxException e)
+		{
+			return URI.create("/");
+		}
 	}
 
 	@GET

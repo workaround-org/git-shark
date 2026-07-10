@@ -534,7 +534,7 @@ class WebUiTest
 			.when().get("/explore")
 			.then()
 			.statusCode(200)
-			.body(containsString("href=\"/login\""))
+			.body(containsString("href=\"/login?redirect="))
 			.body(not(containsString("Logout")))
 			.body(not(containsString("Access tokens")))
 			.body(not(containsString("/settings/profile")));
