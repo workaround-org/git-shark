@@ -8,7 +8,7 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
 
 ## Features
 
-- Create, browse, and delete personal repositories (public or private)
+- Create, browse, and delete personal repositories (public or private); the owner can switch a repository between public and private later on its Settings page
 - **Organisations** — shared repository namespaces with guest/member/owner roles. An org owns
   repositories exactly like a user (`/repos/<org>/<repo>`, same clone URL forms); org and user
   names share one collision-checked handle namespace. Guests read private org repos, members

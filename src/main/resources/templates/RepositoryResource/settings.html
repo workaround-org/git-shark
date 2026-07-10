@@ -11,6 +11,21 @@
         <p class="error">{error}</p>
         {/if}
 
+        <h2>Visibility</h2>
+        <p class="muted">This repository is currently <strong>{repo.visibility.name()}</strong>.
+            Public repositories can be seen and cloned by anyone, including other federated instances;
+            private repositories are visible only to you and your collaborators.</p>
+        <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/visibility"
+              onsubmit="return confirm('Change the visibility of this repository?')">
+            <p>
+                <select name="visibility">
+                    <option value="PUBLIC"{#if repo.visibility.name() == 'PUBLIC'} selected{/if}>Public</option>
+                    <option value="PRIVATE"{#if repo.visibility.name() == 'PRIVATE'} selected{/if}>Private</option>
+                </select>
+            </p>
+            <button class="btn btn-primary">Change visibility</button>
+        </form>
+
         <h2>Repository image</h2>
         <p class="muted">Shown next to this repository across git-shark. Without one, the owner's profile picture is used.</p>
         {#if repo.hasImage}

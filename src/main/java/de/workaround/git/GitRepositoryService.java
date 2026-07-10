@@ -114,6 +114,18 @@ public class GitRepositoryService
 	}
 
 	@Transactional
+	public void changeVisibility(User actor, Repository repository, Repository.Visibility visibility)
+	{
+		if (!accessPolicy.canAdmin(actor, repository))
+		{
+			throw new ForbiddenOperationException("Only the owner may change a repository's visibility");
+		}
+		Repository managed = repositories.findById(repository.id);
+		managed.visibility = visibility;
+		repository.visibility = visibility;
+	}
+
+	@Transactional
 	public void delete(User actor, Repository repository)
 	{
 		if (!accessPolicy.canAdmin(actor, repository))

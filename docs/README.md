@@ -12,6 +12,8 @@ OIDC login, and PostgreSQL metadata.
   name, upload or remove a profile picture.
 - **[Repository image](users/repository-image.md)** — give a repository its own
   picture instead of your avatar, from its owner-only Settings page.
+- **[Repository visibility](users/repository-visibility.md)** — what public and
+  private mean, and how the owner switches between them on the Settings page.
 - **[Federation](users/federation.md)** — follow public repositories on other
   instances, the push feed, your federated identity.
 - **[Push mirrors](users/mirrors.md)** — replicate a repository to an external

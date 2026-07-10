@@ -295,6 +295,29 @@ public class RepositoryResource
 	}
 
 	@POST
+	@jakarta.ws.rs.Path("visibility")
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	public Response changeVisibility(@PathParam("owner") String owner, @PathParam("name") String name,
+		@FormParam("visibility") String visibility)
+	{
+		Repository repo = requireOwner(owner, name);
+		Repository.Visibility parsed;
+		try
+		{
+			parsed = Repository.Visibility.valueOf(visibility == null ? "" : visibility);
+		}
+		catch (IllegalArgumentException e)
+		{
+			return Response.status(Response.Status.BAD_REQUEST)
+				.entity(Templates.settings(repo, repoNav.build(repo, uriInfo),
+					"Unknown visibility \"" + visibility + "\"."))
+				.build();
+		}
+		service.changeVisibility(currentUser.require(), repo, parsed);
+		return Response.seeOther(settingsUri(repo)).build();
+	}
+
+	@POST
 	@jakarta.ws.rs.Path("image/delete")
 	public Response deleteImage(@PathParam("owner") String owner, @PathParam("name") String name)
 	{

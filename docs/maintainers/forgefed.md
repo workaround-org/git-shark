@@ -189,6 +189,12 @@ Protocol gaps:
   masks it briefly, then verification fails until re-fetch).
 - **Shared inbox** — deliveries go per-follower inbox; N followers on one host
   mean N deliveries.
+- **Visibility flips are silent** — switching a public repository to private
+  (owner Settings page) stops actor exposure and push fan-out immediately
+  (`FederationPushService` re-checks visibility per push), but existing remote
+  followers are kept in `repository_followers` and receive no `Reject`/`Delete`;
+  the remote side still lists the follow as accepted. Switching back to public
+  resumes fan-out to those retained followers.
 - **ForgeFed beyond Push**: `Ticket` (federated issues), patches/merge-request
   offers, `Fork`, stars/watch semantics. Issues, MRs, and comments are
   local-only today.
