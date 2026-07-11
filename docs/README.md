@@ -24,6 +24,9 @@ OIDC login, and PostgreSQL metadata.
 - **[Organisations](users/organisations.md)** — shared repository namespaces
   with guest/member/owner roles: creating an org, managing members, org
   repositories.
+- **[AI clients (MCP)](users/mcp.md)** — connect Claude Code, Claude Desktop, or
+  any MCP client to your instance: token setup, client configuration, available
+  tools.
 
 ### For admins
 

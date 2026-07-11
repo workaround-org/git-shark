@@ -125,13 +125,14 @@ A JSON REST API is served under `/api/v1`, auto-documented via the existing
 
 An MCP (Model Context Protocol) server is exposed via the Quarkiverse extension
 `io.quarkiverse.mcp:quarkus-mcp-server-http` (1.13.1), mirroring the REST API's feature set as
-MCP tools.
+MCP tools. Client setup (Claude Code, Claude Desktop, others) is described in
+[docs/users/mcp.md](docs/users/mcp.md).
 
 - **Transport:** Streamable HTTP at `/mcp` (the extension also serves the legacy HTTP/SSE
   variant, but Streamable HTTP is the one git-shark uses)
 - **Auth:** same personal access tokens as the REST API, sent as `Authorization: Bearer <token>`
   on the MCP request; read tools work anonymously for public repos, write tools require a token
-  and repository ownership (commenting only requires read access)
+  and owner or collaborator rights (commenting only requires read access)
 
 | Area | Tools |
 |---|---|
