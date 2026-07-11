@@ -8,8 +8,10 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.jboss.logging.Logger;
 
 import de.workaround.git.GitRepositoryService;
+import de.workaround.git.IssueService;
 import de.workaround.git.MergeRequestCommentService;
 import de.workaround.git.MergeRequestService;
+import de.workaround.model.Issue;
 import de.workaround.model.MergeRequest;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
@@ -48,6 +50,9 @@ public class DevDataSeeder
 
 	@Inject
 	MergeRequest.Repo mergeRequestRepo;
+
+	@Inject
+	IssueService issueService;
 
 	@ConfigProperty(name = "gitshark.dev.seed-data", defaultValue = "false")
 	boolean enabled;
@@ -92,6 +97,59 @@ public class DevDataSeeder
 		}
 
 		seedMergeRequest(alice, demo, bare);
+		seedIssues(alice, demo);
+	}
+
+	/**
+	 * Ensures a handful of demo issues exist so the issue list, status filters and Markdown rendering
+	 * have something to show locally. Idempotent: seeded only while the repository has no issues at all.
+	 */
+	private void seedIssues(User alice, Repository demo)
+	{
+		if (!issueService.list(demo).isEmpty())
+		{
+			return;
+		}
+		issueService.create(alice, demo, "Add a CONTRIBUTING guide",
+			"A short note on how to propose changes would help newcomers.");
+		Issue inDevelopment = issueService.create(alice, demo, "Render Markdown in issue descriptions",
+			"""
+				Issue descriptions support **Markdown**, so this issue shows the common elements in one place.
+
+				## Motivation
+
+				A demo instance should let you see at a glance how formatted text renders:
+
+				- **bold** and *italic* inline styles
+				- [links](https://example.com) and `inline code`
+				- nested lists
+				  - like this one
+
+				## Proposed approach
+
+				1. Parse the description with the same renderer the README uses.
+				2. Sanitize the resulting HTML.
+				3. Cache the rendered fragment alongside the issue.
+
+				> Rendering and sanitizing must stay in sync — an unsanitized renderer would be an XSS hole.
+
+				```java
+				String html = markdown.render(issue.description);
+				```
+
+				This description is intentionally long so list truncation and detail pages are easy to check.""");
+		Issue done = issueService.create(alice, demo, "Seed a demo repository on dev startup",
+			"""
+				Done — a freshly started dev instance seeds `alice/demo` automatically.
+
+				```bash
+				./mvnw quarkus:dev
+				```""");
+		issueService.updateStatus(alice, inDevelopment, Issue.Status.IN_DEVELOPMENT);
+		issueService.updateStatus(alice, done, Issue.Status.DONE);
+		issueService.create(alice, demo, "Show an empty state on the issues page",
+			"When a repository has no issues yet, the list should explain how to create the first one.");
+		LOG.infof("Seeded demo issues on %s/%s", alice.username, demo.name);
 	}
 
 	/**
@@ -179,7 +237,34 @@ public class DevDataSeeder
 			try (Git git = Git.cloneRepository().setURI(barePath.toUri().toString()).setDirectory(work.toFile()).call())
 			{
 				Files.writeString(work.resolve("README.md"),
-					"# demo\n\nDemo repository seeded for local development.\n");
+					"""
+						# demo
+
+						Demo repository seeded for local development. It exists so a freshly started
+						dev instance has something to browse: a README, issues, and an open merge request.
+
+						## What's in here
+
+						- This `README.md` on `main`
+						- An `OVERVIEW.md` waiting on the `feature` branch (see the open merge request)
+						- A few issues in different states with Markdown descriptions
+
+						## Try it
+
+						Clone the repository and push a change:
+
+						```bash
+						git clone http://localhost:8080/alice/demo.git
+						cd demo
+						git commit --allow-empty -m "Test commit"
+						git push
+						```
+
+						## Notes
+
+						Everything in this repository is seeded by `DevDataSeeder` on startup and only
+						when missing, so restarts never duplicate data.
+						""");
 				git.add().addFilepattern(".").call();
 				git.commit().setMessage("Initial commit").setSign(false)
 					.setAuthor(DEMO_USER, DEMO_USER + "@demo.local")

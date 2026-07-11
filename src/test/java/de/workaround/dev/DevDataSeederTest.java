@@ -1,5 +1,6 @@
 package de.workaround.dev;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -7,7 +8,9 @@ import org.junit.jupiter.api.Test;
 
 import de.workaround.git.GitBrowseService;
 import de.workaround.git.GitRepositoryService;
+import de.workaround.git.IssueService;
 import de.workaround.git.MergeRequestCommentService;
+import de.workaround.model.Issue;
 import de.workaround.model.MergeRequest;
 import de.workaround.model.Repository;
 import io.quarkus.test.junit.QuarkusTest;
@@ -34,6 +37,9 @@ class DevDataSeederTest
 
 	@Inject
 	MergeRequestCommentService comments;
+
+	@Inject
+	IssueService issues;
 
 	@Test
 	void seedsAliceWithDemoRepoContainingACommit()
@@ -83,6 +89,43 @@ class DevDataSeederTest
 		assertEquals(1, comments.list(mr).size(), "re-seeding must not add a duplicate comment");
 		assertEquals(featureCommits, browse.commitCount(repositories.repositoryPath(demo), "feature"),
 			"re-seeding must not add duplicate commits to the feature branch");
+	}
+
+	@Test
+	void seedsAReadmeWithRicherMarkdown()
+	{
+		seeder.seed();
+		Repository demo = repositories.find("alice", "demo").orElseThrow();
+
+		GitBrowseService.BlobView readme = browse.blob(repositories.repositoryPath(demo), "main", "README.md")
+			.orElseThrow(() -> new AssertionError("README.md missing on main"));
+		String content = new String(readme.content(), StandardCharsets.UTF_8);
+		assertTrue(content.contains("## "), "README must contain markdown section headings");
+		assertTrue(content.contains("```"), "README must contain a fenced code block");
+		assertTrue(content.contains("- "), "README must contain a list");
+	}
+
+	@Test
+	void seedsIssuesWithVariedMarkdownDescriptionsAndIsIdempotent()
+	{
+		seeder.seed();
+		Repository demo = repositories.find("alice", "demo").orElseThrow();
+
+		List<Issue> seeded = issues.list(demo);
+		assertEquals(4, seeded.size(), "four demo issues must be seeded");
+		assertTrue(seeded.stream().anyMatch(i -> i.description != null && i.description.length() > 400),
+			"one issue must carry a long markdown description");
+		assertTrue(seeded.stream().anyMatch(i -> i.description != null && i.description.length() < 120),
+			"one issue must carry a short description");
+		assertTrue(seeded.stream().anyMatch(i -> i.description != null && i.description.contains("```")),
+			"one issue description must contain a fenced code block");
+		assertTrue(seeded.stream().anyMatch(i -> i.status == Issue.Status.DONE),
+			"one issue must already be done so status filters are demoable");
+		assertTrue(seeded.stream().anyMatch(i -> i.status == Issue.Status.IN_DEVELOPMENT),
+			"one issue must be in development");
+
+		seeder.seed();
+		assertEquals(4, issues.list(demo).size(), "re-seeding must not duplicate issues");
 	}
 
 }

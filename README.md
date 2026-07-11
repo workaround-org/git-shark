@@ -207,8 +207,14 @@ ITs seed demo data (`GITSHARK_DEV_SEED_DATA=true`) and isolate runtime data unde
 
 Two `%dev`-only flags are set in `application.properties` (both default `false` in all other profiles):
 
-- `gitshark.dev.seed-data=true` — on startup, `DevDataSeeder` idempotently creates user `alice` owning a public repository `demo` with one commit (`README.md`, "Initial commit"). A fresh dev instance is never empty.
+- `gitshark.dev.seed-data=true` — on startup, `DevDataSeeder` idempotently creates user `alice` owning a public repository `demo` with a Markdown README on `main`, an open merge request (`feature` → `main`, with a sample review comment) and four issues in different states with short and long Markdown descriptions. A fresh dev instance is never empty.
 - `gitshark.dev.adopt-username=true` — Keycloak Dev Services mint a fresh OIDC subject on every run, so the seeded `alice` row would otherwise collide on login. With this flag, an unknown subject whose username matches an existing account re-keys that account to the new subject instead of rejecting the login. **Never enabled in production** (re-keying from a username claim is an account-takeover vector).
+
+Dev/test Keycloak imports `src/main/resources/quarkus-realm.json` (users `alice`/`alice` and
+`bob`/`bob`, client `quarkus-app` with the `profile` and `email` client scopes). The app requests
+`quarkus.oidc.authentication.scopes=profile,email`, so the ID token carries `preferred_username`,
+`name` and `email` — logging in as `alice` adopts the seeded account directly and skips the
+onboarding page.
 
 ## Persisted data
 
