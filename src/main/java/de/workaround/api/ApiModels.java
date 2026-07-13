@@ -31,12 +31,12 @@ public final class ApiModels
 	}
 
 	public record IssueView(int number, String title, String description, Issue.Status status, String author,
-		Instant createdAt)
+		String assignee, Instant createdAt)
 	{
 		public static IssueView of(Issue issue)
 		{
 			return new IssueView(issue.number, issue.title, issue.description, issue.status,
-				issue.author.username, issue.createdAt);
+				issue.author.username, issue.assignee == null ? null : issue.assignee.username, issue.createdAt);
 		}
 	}
 

@@ -38,6 +38,10 @@ public class Issue implements PanacheEntity.Managed
 	@ManyToOne(optional = false)
 	public User author;
 
+	/** Optional person responsible for the issue; null means nobody is assigned. Cleared (set null) if that user is deleted. */
+	@ManyToOne
+	public User assignee;
+
 	/** Per-repository, human-facing number (#1, #2, ...) assigned on creation; unique within the repository. */
 	public int number;
 
@@ -67,7 +71,7 @@ public class Issue implements PanacheEntity.Managed
 
 	public interface Repo extends PanacheRepository.Managed<Issue, UUID>
 	{
-		@HQL("select i from Issue i join fetch i.author where i.repository = :repository order by i.createdAt desc")
+		@HQL("select i from Issue i join fetch i.author left join fetch i.assignee where i.repository = :repository order by i.createdAt desc")
 		List<Issue> findByRepository(Repository repository);
 
 		@Find

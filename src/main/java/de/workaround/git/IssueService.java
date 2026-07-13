@@ -22,6 +22,9 @@ public class IssueService
 	Issue.Repo issues;
 
 	@Inject
+	User.Repo users;
+
+	@Inject
 	AccessPolicy accessPolicy;
 
 	@Transactional
@@ -95,6 +98,27 @@ public class IssueService
 		if (managed != null)
 		{
 			managed.status = status;
+		}
+	}
+
+	/**
+	 * Assigns the issue to the local user with the given username, or unassigns it when the username is
+	 * blank/null. Any existing user can be named — assignment does not require repository access itself.
+	 */
+	@Transactional
+	public void assign(User actor, Issue issue, String username)
+	{
+		requireWrite(actor, issue.repository);
+		String handle = username == null ? "" : username.strip();
+		User assignee = handle.isEmpty() ? null
+			: users.findByUsername(handle)
+				.orElseThrow(() -> new InvalidIssueException("No user with that username exists."));
+		// re-attach: the issue may have been loaded in a previous request/transaction. It may also have
+		// been deleted concurrently since then, so guard against a missing row (findById returns null).
+		Issue managed = issues.findById(issue.id);
+		if (managed != null)
+		{
+			managed.assignee = assignee;
 		}
 	}
 

@@ -1,11 +1,13 @@
 package de.workaround.web;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import de.workaround.account.CurrentUser;
 import de.workaround.git.AccessPolicy;
+import de.workaround.git.CollaboratorService;
 import de.workaround.git.GitRepositoryService;
 import de.workaround.git.IssueService;
 import de.workaround.model.Issue;
@@ -42,7 +44,7 @@ public class IssueResource
 		static native TemplateInstance editIssue(Repository repo, RepoNav nav, Issue issue);
 
 		static native TemplateInstance issue(Repository repo, RepoNav nav, boolean owner, Issue issue,
-			String descriptionHtml, List<Issue.Status> statuses);
+			String descriptionHtml, List<Issue.Status> statuses, List<User> assignees);
 	}
 
 	@Inject
@@ -56,6 +58,9 @@ public class IssueResource
 
 	@Inject
 	IssueService issueService;
+
+	@Inject
+	CollaboratorService collaboratorService;
 
 	@Inject
 	RepoNavService repoNav;
@@ -111,7 +116,22 @@ public class IssueResource
 		boolean isOwner = accessPolicy.canAdmin(user, repo);
 		String descriptionHtml = issue.description == null ? null : Markdown.render(issue.description);
 		return Templates.issue(repo, repoNav.build(repo, uriInfo), isOwner, issue, descriptionHtml,
-			List.of(Issue.Status.values()));
+			List.of(Issue.Status.values()), assignableUsers(repo));
+	}
+
+	/**
+	 * Suggestions offered by the assignee autocomplete: the repository owner (for personal repos) plus
+	 * every collaborator. Assignment itself accepts any username; this list only powers the datalist.
+	 */
+	private List<User> assignableUsers(Repository repo)
+	{
+		List<User> users = new ArrayList<>();
+		if (repo.ownerUser != null)
+		{
+			users.add(repo.ownerUser);
+		}
+		collaboratorService.list(repo).forEach(collaborator -> users.add(collaborator.user));
+		return users;
 	}
 
 	@GET
@@ -163,6 +183,19 @@ public class IssueResource
 		Repository repo = requireReadable(owner, name);
 		Issue issue = issueService.find(repo, number).orElseThrow(NotFoundException::new);
 		issueService.updateStatus(currentUser.require(), issue, parseStatus(status));
+		return Response.seeOther(issueUri(repo, issue.number)).build();
+	}
+
+	@POST
+	@jakarta.ws.rs.Path("{number:\\d+}/assign")
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	public Response assign(@PathParam("owner") String owner, @PathParam("name") String name,
+		@PathParam("number") int number, @FormParam("assignee") String assignee)
+	{
+		Repository repo = requireReadable(owner, name);
+		Issue issue = issueService.find(repo, number).orElseThrow(NotFoundException::new);
+		// username resolution/validation lives in IssueService (InvalidIssueException -> 400 via mapper)
+		issueService.assign(currentUser.require(), issue, assignee);
 		return Response.seeOther(issueUri(repo, issue.number)).build();
 	}
 

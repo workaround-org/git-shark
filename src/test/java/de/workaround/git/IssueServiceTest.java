@@ -129,6 +129,72 @@ class IssueServiceTest
 
 	@Test
 	@TestTransaction
+	void newIssuesHaveNoAssignee()
+	{
+		User owner = persistUser("iss-omar");
+		Repository repo = persistRepo(owner, "ra0");
+
+		Issue issue = issueService.create(owner, repo, "Unassigned", null);
+
+		assertNull(issue.assignee, "a freshly opened issue is not assigned to anyone");
+	}
+
+	@Test
+	@TestTransaction
+	void assignSetsTheAssigneeByUsername()
+	{
+		User owner = persistUser("iss-pia");
+		User helper = persistUser("iss-quin");
+		Repository repo = persistRepo(owner, "ra1");
+		Issue issue = issueService.create(owner, repo, "Needs an owner", null);
+
+		issueService.assign(owner, issue, helper.username);
+
+		Issue reloaded = issues.findById(issue.id);
+		assertEquals(helper.id, reloaded.assignee.id, "the named user becomes the assignee");
+	}
+
+	@Test
+	@TestTransaction
+	void assignWithBlankUsernameClearsTheAssignee()
+	{
+		User owner = persistUser("iss-rob");
+		User helper = persistUser("iss-sara");
+		Repository repo = persistRepo(owner, "ra2");
+		Issue issue = issueService.create(owner, repo, "Reassign me", null);
+		issueService.assign(owner, issue, helper.username);
+
+		issueService.assign(owner, issue, "  ");
+
+		assertNull(issues.findById(issue.id).assignee, "a blank username unassigns the issue");
+	}
+
+	@Test
+	@TestTransaction
+	void assignRejectsUnknownUsername()
+	{
+		User owner = persistUser("iss-tom");
+		Repository repo = persistRepo(owner, "ra3");
+		Issue issue = issueService.create(owner, repo, "Who?", null);
+
+		assertThrows(InvalidIssueException.class, () -> issueService.assign(owner, issue, "nobody-here"));
+		assertNull(issues.findById(issue.id).assignee, "a rejected assignment must not change the issue");
+	}
+
+	@Test
+	@TestTransaction
+	void nonWriterCannotAssign()
+	{
+		User owner = persistUser("iss-uma");
+		User stranger = persistUser("iss-vic");
+		Repository repo = persistRepo(owner, "ra4");
+		Issue issue = issueService.create(owner, repo, "Guarded", null);
+
+		assertThrows(ForbiddenOperationException.class, () -> issueService.assign(stranger, issue, stranger.username));
+	}
+
+	@Test
+	@TestTransaction
 	void deleteRemovesTheIssue()
 	{
 		User owner = persistUser("iss-erin");

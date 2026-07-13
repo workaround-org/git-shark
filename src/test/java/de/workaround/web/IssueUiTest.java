@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import de.workaround.git.CollaboratorService;
 import de.workaround.git.GitRepositoryService;
 import de.workaround.git.IssueService;
 import de.workaround.model.Issue;
@@ -26,6 +27,9 @@ class IssueUiTest
 
 	@Inject
 	IssueService issueService;
+
+	@Inject
+	CollaboratorService collaboratorService;
 
 	@Inject
 	User.Repo userRepo;
@@ -71,6 +75,113 @@ class IssueUiTest
 			.when().post(location + "/delete")
 			.then().statusCode(303);
 		given().when().get(base).then().statusCode(200).body(not(containsString("Broken pipeline")));
+	}
+
+	@Test
+	@TestSecurity(user = "iss-assign")
+	void assigneeInputSuggestsOwnerAndCollaborators()
+	{
+		User owner = persistUser("iss-assign");
+		User collab = persistUser("iss-collab");
+		Repository repo = service.create(owner, "assignable", Repository.Visibility.PUBLIC, null);
+		collaboratorService.add(owner, repo, collab.username);
+		Issue issue = issueService.create(owner, repo, "Assign me", null);
+
+		// the assign input is backed by a datalist offering the owner and every collaborator
+		given().when().get("/repos/" + owner.username + "/assignable/issues/" + issue.number)
+			.then().statusCode(200)
+			.body(containsString("<datalist id=\"assignees\""))
+			.body(containsString("list=\"assignees\""))
+			.body(containsString("value=\"iss-assign\""))
+			.body(containsString("value=\"iss-collab\""));
+	}
+
+	@Test
+	@TestSecurity(user = "iss-assignee-av")
+	void issueDetailShowsTheAssigneeWithAvatar()
+	{
+		User owner = persistUser("iss-assignee-av");
+		Repository repo = service.create(owner, "avassign", Repository.Visibility.PUBLIC, null);
+		Issue issue = issueService.create(owner, repo, "Has an owner", null);
+		issueService.assign(owner, issue, owner.username);
+
+		// the assignee is named and rendered through the avatar tag (initials fallback here, no uploaded image)
+		given().when().get("/repos/" + owner.username + "/avassign/issues/" + issue.number)
+			.then().statusCode(200)
+			.body(containsString("assigned to"))
+			.body(containsString("class=\"av-fallback\""));
+	}
+
+	@Test
+	@TestSecurity(user = "iss-assign-http")
+	void assigningViaTheFormSetsAndClearsTheAssignee()
+	{
+		User owner = persistUser("iss-assign-http");
+		User helper = persistUser("iss-assign-helper");
+		Repository repo = service.create(owner, "httpassign", Repository.Visibility.PUBLIC, null);
+		Issue issue = issueService.create(owner, repo, "Assign via form", null);
+		String url = "/repos/" + owner.username + "/httpassign/issues/" + issue.number;
+
+		// happy path: posting a valid username assigns and redirects back to the issue
+		given().redirects().follow(false)
+			.contentType("application/x-www-form-urlencoded").formParam("assignee", helper.username)
+			.when().post(url + "/assign")
+			.then().statusCode(303)
+			.header("Location", org.hamcrest.Matchers.endsWith(url));
+		given().when().get(url)
+			.then().statusCode(200)
+			.body(containsString("assigned to"))
+			.body(containsString(helper.username));
+
+		// posting a blank username clears the assignment again
+		given().redirects().follow(false)
+			.contentType("application/x-www-form-urlencoded").formParam("assignee", "")
+			.when().post(url + "/assign")
+			.then().statusCode(303);
+		given().when().get(url).then().statusCode(200).body(containsString("unassigned"));
+	}
+
+	@Test
+	@TestSecurity(user = "iss-assign-bad")
+	void assigningAnUnknownUsernameIsRejected()
+	{
+		User owner = persistUser("iss-assign-bad");
+		Repository repo = service.create(owner, "badassign", Repository.Visibility.PUBLIC, null);
+		Issue issue = issueService.create(owner, repo, "Bad assign", null);
+		String url = "/repos/" + owner.username + "/badassign/issues/" + issue.number + "/assign";
+
+		given().contentType("application/x-www-form-urlencoded").formParam("assignee", "ghost-user")
+			.when().post(url)
+			.then().statusCode(400);
+	}
+
+	@Test
+	void anonymousCannotAssignIssues()
+	{
+		User owner = persistUser("iss-assign-anon-" + UUID.randomUUID().toString().substring(0, 8));
+		Repository repo = service.create(owner, "noassign", Repository.Visibility.PUBLIC, null);
+		Issue issue = issueService.create(owner, repo, "Locked assign", null);
+		String url = "/repos/" + owner.username + "/noassign/issues/" + issue.number + "/assign";
+
+		given().contentType("application/x-www-form-urlencoded").formParam("assignee", owner.username)
+			.when().post(url)
+			.then().statusCode(403);
+	}
+
+	@Test
+	@TestSecurity(user = "iss-list-av")
+	void issueListShowsTheAssigneeAvatarOnEachRow()
+	{
+		User owner = persistUser("iss-list-av");
+		Repository repo = service.create(owner, "listav", Repository.Visibility.PUBLIC, null);
+		Issue issue = issueService.create(owner, repo, "Assigned one", null);
+		issueService.assign(owner, issue, owner.username);
+
+		// assigned issues carry the assignee avatar on the right of their list row
+		given().when().get("/repos/" + owner.username + "/listav/issues")
+			.then().statusCode(200)
+			.body(containsString("class=\"frow-assignee\""))
+			.body(containsString("class=\"av-fallback\""));
 	}
 
 	@Test

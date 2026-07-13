@@ -45,6 +45,7 @@ class IssueApiTest
 			.body("title", equalTo("First bug"))
 			.body("status", equalTo("PLANNED"))
 			.body("author", equalTo(owner.username))
+			.body("assignee", org.hamcrest.Matchers.nullValue())
 			.extract().path("number");
 
 		// list

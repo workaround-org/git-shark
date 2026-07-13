@@ -958,6 +958,49 @@ details.archive > .panel {
     font: 500 12.5px/1 var(--mono);
 }
 
+/* issue detail meta line: status badge plus who opened and who is assigned, each with an avatar */
+.issue-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--s3);
+    margin: var(--s3) 0 var(--s4);
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.issue-person {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* assignee avatar pinned to the right of an issue list row */
+.frow-assignee {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    padding-left: var(--s3);
+    flex: none;
+}
+
+/* assignee autocomplete control inside the management bar */
+.issue-assign {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+}
+
+.issue-assign .lbl {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.issue-assign input {
+    width: 150px;
+    max-width: 40vw;
+}
+
 /* merge requests */
 
 .badge.status-OPEN {

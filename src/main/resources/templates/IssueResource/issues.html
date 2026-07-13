@@ -20,6 +20,9 @@
                     <span class="n">{issue.title}</span>
                     <span class="issue-no">#{issue.number}</span>
                 </span>
+                {#if issue.assignee}
+                <span class="frow-assignee" title="Assigned to {issue.assignee.username}">{#avatar user=issue.assignee /}</span>
+                {/if}
             </a>
             {/for}
         </div>
@@ -35,6 +38,9 @@
                         <span class="n">{issue.title}</span>
                         <span class="issue-no">#{issue.number}</span>
                     </span>
+                    {#if issue.assignee}
+                    <span class="frow-assignee" title="Assigned to {issue.assignee.username}">{#avatar user=issue.assignee /}</span>
+                    {/if}
                 </a>
                 {/for}
             </div>
