@@ -38,6 +38,11 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
   managing mirrors, and managing collaborators stay owner-only. Guides:
   [for users](docs/users/collaborators.md), [for admins](docs/admins/collaborators.md)
 - Per-repository images: the repo owner can upload a custom image (same PNG/JPEG/GIF/WebP, ≤ 2 MB, validated rules as avatars) on a dedicated owner-only repository **Settings** page (`/repos/{owner}/{name}/settings`), stored on the filesystem keyed by repo UUID. It replaces the owner's avatar wherever the repository is shown (repo lists, repo sidebar); a repository with no custom image falls back to its owner's avatar. Served at `GET /repos/{owner}/{name}/image`, visibility-guarded so a private repo's image never leaks (`404` for non-viewers), and removable back to the fallback
+- **Search** — a simple case-insensitive substring search over repositories (owner, name,
+  description) and people (username, display name), from the header search box or `GET /search`,
+  and as JSON at `GET /api/v1/search?q=<term>`. Repository hits obey the same visibility rule as
+  everywhere else, so a private repo never surfaces to someone who cannot already read it. Guides:
+  [for users](docs/users/search.md), [for admins](docs/admins/search.md)
 - Single access policy on all paths: owner read/write, collaborators read/write, org roles
   (guest read / member write / owner admin) on org repositories, public world-readable,
   private repositories visible only to whoever holds a read grant

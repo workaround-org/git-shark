@@ -1,6 +1,7 @@
 package de.workaround.api;
 
 import java.time.Instant;
+import java.util.List;
 
 import de.workaround.model.Issue;
 import de.workaround.model.MergeRequest;
@@ -61,6 +62,10 @@ public final class ApiModels
 	}
 
 	public record UserView(String username, String displayName)
+	{
+	}
+
+	public record SearchView(List<RepositoryView> repositories, List<UserView> persons)
 	{
 	}
 

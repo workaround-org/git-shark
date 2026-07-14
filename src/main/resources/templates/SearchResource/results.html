@@ -1,0 +1,37 @@
+{#include layout}
+{#title}Search – git-shark{/title}
+<h1>Search</h1>
+<form class="search" method="get" action="/search">
+    <input type="search" name="q" value="{query}" placeholder="Search repositories and people" aria-label="Search">
+    <button class="btn btn-primary">Search</button>
+</form>
+{#if query.isBlank()}
+<p class="muted">Type a query to search repositories and people.</p>
+{#else}
+<h2>Repositories</h2>
+{#if repositories.isEmpty()}
+<p class="muted">No repositories match “{query}”.</p>
+{#else}
+<table>
+    <tr><th>Repository</th><th>Visibility</th><th>Description</th></tr>
+    {#for repo in repositories}
+    <tr class="row-link">
+        <td class="cell-link"><a class="mono" href="/repos/{repo.ownerHandle}/{repo.name}">{#repoAvatar repo=repo /} {repo.ownerHandle}/{repo.name}</a></td>
+        <td><span class="badge badge-{repo.visibility.name().toLowerCase()}">{repo.visibility.name().toLowerCase()}</span></td>
+        <td class="muted">{repo.description ?: ''}</td>
+    </tr>
+    {/for}
+</table>
+{/if}
+<h2>People</h2>
+{#if persons.isEmpty()}
+<p class="muted">No people match “{query}”.</p>
+{#else}
+<ul class="person-list">
+    {#for person in persons}
+    <li>{#avatar user=person /} <span class="mono">{person.username}</span>{#if person.displayName} <span class="muted">{person.displayName}</span>{/if}</li>
+    {/for}
+</ul>
+{/if}
+{/if}
+{/include}

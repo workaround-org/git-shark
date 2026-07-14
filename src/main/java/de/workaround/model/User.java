@@ -1,10 +1,12 @@
 package de.workaround.model;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.hibernate.annotations.processing.Find;
+import org.hibernate.annotations.processing.HQL;
 
 import io.quarkus.hibernate.panache.PanacheEntity;
 import io.quarkus.hibernate.panache.PanacheRepository;
@@ -77,6 +79,12 @@ public class User implements PanacheEntity.Managed
 
 		@Find
 		Optional<User> findByUsername(String username);
+
+		// Onboarded users only (username set); case-insensitive LIKE on handle and display name. The
+		// caller supplies the already-lowercased %pattern% so the wildcards live in one place.
+		@HQL("where username is not null and (lower(username) like :pattern or lower(displayName) like :pattern)"
+			+ " order by username")
+		List<User> search(String pattern);
 	}
 
 }

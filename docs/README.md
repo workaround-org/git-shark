@@ -8,6 +8,8 @@ OIDC login, and PostgreSQL metadata.
 
 ### For users
 
+- **[Search](users/search.md)** — the header search box: case-insensitive
+  substring search over repositories and people, and how visibility is honored.
 - **[Profile settings](users/profile.md)** — change your username and display
   name, upload or remove a profile picture.
 - **[Repository image](users/repository-image.md)** — give a repository its own
@@ -33,6 +35,8 @@ OIDC login, and PostgreSQL metadata.
 - **[Getting Started](admins/getting-started.md)** — deploy git-shark with Docker
   Compose, from zero to a running instance behind TLS with OIDC login and SSH git
   access.
+- **[Search](admins/search.md)** — the `/search` and `/api/v1/search` endpoints,
+  JSON shape, matching semantics, visibility enforcement (no configuration).
 - **[Persistent data](admins/persistent-data.md)** — every store that must survive
   container recreation (database, repositories, avatars, SSH host key), what breaks
   when each is lost, and how to retrofit older deployments.
