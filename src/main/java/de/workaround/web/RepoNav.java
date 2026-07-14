@@ -9,6 +9,11 @@ import de.workaround.model.Repository;
  */
 public record RepoNav(Repository repo, boolean loggedIn, boolean isOwner, boolean pinned, boolean empty,
 	String defaultBranch, int commitCount, int branchCount, int tagCount, long openIssueCount, long openMrCount,
-	String httpUrl, String sshUrl, String currentPath)
+	String httpUrl, String sshUrl, String currentPath, boolean parentVisible)
 {
+	/** Whether to reveal the "forked from" link: the repo is a fork and the current viewer may read its parent. */
+	public boolean showParent()
+	{
+		return parentVisible;
+	}
 }

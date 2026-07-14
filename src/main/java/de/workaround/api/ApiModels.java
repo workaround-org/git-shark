@@ -22,12 +22,24 @@ public final class ApiModels
 	// -- responses --
 
 	public record RepositoryView(String owner, String name, Repository.Visibility visibility, String description,
-		Instant createdAt)
+		Instant createdAt, String parentOwner, String parentName)
 	{
+		/** Projection with the parent hidden — safe default for listings where the viewer's read access is unknown. */
 		public static RepositoryView of(Repository repo)
 		{
+			return of(repo, false);
+		}
+
+		/**
+		 * @param showParent whether the caller may see the fork's parent; when false (or the repo is not a
+		 *   fork) {@code parentOwner}/{@code parentName} are null, so a source turned private is never
+		 *   disclosed through its forks.
+		 */
+		public static RepositoryView of(Repository repo, boolean showParent)
+		{
+			boolean parent = showParent && repo.parent != null;
 			return new RepositoryView(repo.ownerHandle(), repo.name, repo.visibility, repo.description,
-				repo.createdAt);
+				repo.createdAt, parent ? repo.parent.ownerHandle() : null, parent ? repo.parent.name : null);
 		}
 	}
 

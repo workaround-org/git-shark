@@ -38,6 +38,13 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
   managing mirrors, and managing collaborators stay owner-only. Guides:
   [for users](docs/users/collaborators.md), [for admins](docs/admins/collaborators.md)
 - Per-repository images: the repo owner can upload a custom image (same PNG/JPEG/GIF/WebP, ≤ 2 MB, validated rules as avatars) on a dedicated owner-only repository **Settings** page (`/repos/{owner}/{name}/settings`), stored on the filesystem keyed by repo UUID. It replaces the owner's avatar wherever the repository is shown (repo lists, repo sidebar); a repository with no custom image falls back to its owner's avatar. Served at `GET /repos/{owner}/{name}/image`, visibility-guarded so a private repo's image never leaks (`404` for non-viewers), and removable back to the fallback
+- **Forks** — any logged-in user can fork a repository they can read into their own namespace with
+  one click (or `POST /api/v1/repos/{owner}/{name}/fork`). The fork carries the source's name,
+  visibility, and description, copies every branch and tag via a local bare clone, and records a
+  `forked from {owner}/{name}` link back to its parent. A private source can only be forked by
+  someone who can already read it, so a fork never exposes it. Guides:
+  [for users](docs/users/forking.md), [for admins](docs/admins/forking.md),
+  [architecture](docs/maintainers/forking.md)
 - **Search** — a simple case-insensitive substring search over repositories (owner, name,
   description) and people (username, display name), from the header search box or `GET /search`,
   and as JSON at `GET /api/v1/search?q=<term>`. Repository hits obey the same visibility rule as
@@ -141,7 +148,7 @@ MCP tools. Client setup (Claude Code, Claude Desktop, others) is described in
 
 | Area | Tools |
 |---|---|
-| Repositories | `listRepositories`, `getRepository`, `createRepository`, `deleteRepository` |
+| Repositories | `listRepositories`, `getRepository`, `createRepository`, `forkRepository`, `deleteRepository` |
 | Issues | `listIssues`, `getIssue`, `createIssue`, `updateIssueStatus`, `deleteIssue` |
 | Merge requests | `listMergeRequests`, `getMergeRequest`, `createMergeRequest`, `mergeMergeRequest`, `closeMergeRequest`, `listMergeRequestComments`, `addMergeRequestComment` |
 | User | `currentUser` |

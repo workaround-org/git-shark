@@ -8,6 +8,8 @@ OIDC login, and PostgreSQL metadata.
 
 ### For users
 
+- **[Forking](users/forking.md)** — make your own copy of any repository you can
+  read, what a fork carries, and the one-fork-per-name rule.
 - **[Search](users/search.md)** — the header search box: case-insensitive
   substring search over repositories and people, and how visibility is honored.
 - **[Profile settings](users/profile.md)** — change your username and display
@@ -35,6 +37,8 @@ OIDC login, and PostgreSQL metadata.
 - **[Getting Started](admins/getting-started.md)** — deploy git-shark with Docker
   Compose, from zero to a running instance behind TLS with OIDC login and SSH git
   access.
+- **[Forks](admins/forking.md)** — the fork endpoints, the `parent_repo_id`
+  column and its `ON DELETE SET NULL` semantics, and storage implications.
 - **[Search](admins/search.md)** — the `/search` and `/api/v1/search` endpoints,
   JSON shape, matching semantics, visibility enforcement (no configuration).
 - **[Persistent data](admins/persistent-data.md)** — every store that must survive
@@ -52,6 +56,8 @@ OIDC login, and PostgreSQL metadata.
 
 ### For maintainers
 
+- **[Forking](maintainers/forking.md)** — how forks are created (clone vs copy),
+  the `parent` model, visibility rules, and what works versus what is still to do.
 - **[Avatars](maintainers/avatars.md)** — profile-picture storage, validation,
   and rendering, plus what's covered and what's out of scope.
 - **[Repository images](maintainers/repo-images.md)** — per-repository image

@@ -134,6 +134,69 @@ class RepositoryApiTest
 	}
 
 	@Test
+	void forkCreatesRepositoryUnderCallerWithParentRecorded()
+	{
+		User owner = persistUser("api-fork-src-" + shortId());
+		service.create(owner, "tocopy", Repository.Visibility.PUBLIC, "original");
+		User forker = persistUser("api-forker-" + shortId());
+		String token = mintToken(forker);
+
+		given().header("Authorization", "Bearer " + token)
+			.when().post("/api/v1/repos/" + owner.username + "/tocopy/fork")
+			.then().statusCode(201)
+			.body("owner", equalTo(forker.username))
+			.body("name", equalTo("tocopy"))
+			.body("parentOwner", equalTo(owner.username))
+			.body("parentName", equalTo("tocopy"));
+	}
+
+	@Test
+	void forkStopsExposingParentAfterSourceTurnsPrivate()
+	{
+		User owner = persistUser("api-flip-owner-" + shortId());
+		Repository source = service.create(owner, "flip", Repository.Visibility.PUBLIC, null);
+		User forker = persistUser("api-flip-forker-" + shortId());
+		String token = mintToken(forker);
+
+		given().header("Authorization", "Bearer " + token)
+			.when().post("/api/v1/repos/" + owner.username + "/flip/fork")
+			.then().statusCode(201)
+			.body("parentOwner", equalTo(owner.username));
+
+		// owner makes the source private; the forker can no longer read it
+		service.changeVisibility(owner, source, Repository.Visibility.PRIVATE);
+
+		given().header("Authorization", "Bearer " + token)
+			.when().get("/api/v1/repos/" + forker.username + "/flip")
+			.then().statusCode(200)
+			.body("parentOwner", org.hamcrest.Matchers.nullValue())
+			.body("parentName", org.hamcrest.Matchers.nullValue());
+	}
+
+	@Test
+	void forkRequiresAuthentication()
+	{
+		User owner = persistUser("api-fork-noauth-" + shortId());
+		service.create(owner, "pub", Repository.Visibility.PUBLIC, null);
+
+		given().when().post("/api/v1/repos/" + owner.username + "/pub/fork")
+			.then().statusCode(401);
+	}
+
+	@Test
+	void forkingAnUnreadablePrivateRepositoryIs404()
+	{
+		User owner = persistUser("api-fork-priv-" + shortId());
+		service.create(owner, "secret", Repository.Visibility.PRIVATE, null);
+		User stranger = persistUser("api-fork-stranger-" + shortId());
+		String token = mintToken(stranger);
+
+		given().header("Authorization", "Bearer " + token)
+			.when().post("/api/v1/repos/" + owner.username + "/secret/fork")
+			.then().statusCode(404);
+	}
+
+	@Test
 	void unknownBearerTokenIsUnauthorized()
 	{
 		given().header("Authorization", "Bearer gs_not-a-real-token")

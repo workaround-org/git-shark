@@ -76,7 +76,27 @@ public class RepositoryApiResource
 	@Path("{owner}/{name}")
 	public ApiModels.RepositoryView get(@PathParam("owner") String owner, @PathParam("name") String name)
 	{
-		return ApiModels.RepositoryView.of(requireReadable(owner, name));
+		Repository repo = requireReadable(owner, name);
+		return ApiModels.RepositoryView.of(repo, canSeeParent(repo));
+	}
+
+	@POST
+	@Path("{owner}/{name}/fork")
+	public Response fork(@PathParam("owner") String owner, @PathParam("name") String name)
+	{
+		User user = principal.require();
+		Repository source = requireReadable(owner, name);
+		try
+		{
+			Repository forked = service.fork(user, source);
+			return Response.created(URI.create("/api/v1/repos/" + user.username + "/" + forked.name))
+				.entity(ApiModels.RepositoryView.of(forked, canSeeParent(forked))).build();
+		}
+		catch (RepositoryAlreadyExistsException e)
+		{
+			return Response.status(Response.Status.CONFLICT).entity(e.getMessage())
+				.type(MediaType.TEXT_PLAIN).build();
+		}
 	}
 
 	@DELETE
@@ -88,6 +108,12 @@ public class RepositoryApiResource
 		// delegate ownership enforcement to the service (throws ForbiddenOperationException -> 403)
 		service.delete(user, repo);
 		return Response.noContent().build();
+	}
+
+	/** Whether the caller may see this repo's fork parent — true only when it is a fork of a repo they can read. */
+	private boolean canSeeParent(Repository repo)
+	{
+		return repo.parent != null && accessPolicy.canRead(principal.orNull(), repo.parent);
 	}
 
 	private Repository requireReadable(String owner, String name)

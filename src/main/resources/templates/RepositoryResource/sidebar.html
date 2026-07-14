@@ -2,6 +2,9 @@
     <div class="owner">{#repoAvatar repo=nav.repo /} {nav.repo.ownerHandle} /</div>
     <div class="repo-name"><a href="/repos/{nav.repo.ownerHandle}/{nav.repo.name}">{nav.repo.name}</a></div>
     <span class="tag{#if nav.repo.visibility.name() == 'PRIVATE'} tag-private{/if}"><span class="dot"></span> {nav.repo.visibility.name()}</span>
+    {#if nav.showParent}
+    <p class="forked-from muted"><span class="g">⑂</span> forked from <a href="/repos/{nav.repo.parent.ownerHandle}/{nav.repo.parent.name}">{nav.repo.parent.ownerHandle}/{nav.repo.parent.name}</a></p>
+    {/if}
     {#if nav.repo.description}
     <p class="desc">{nav.repo.description}</p>
     {/if}
@@ -10,6 +13,11 @@
             <span class="g">⤓</span> Clone
         </button>
         {#if nav.loggedIn}
+        <form class="inline" method="post" action="/repos/{nav.repo.ownerHandle}/{nav.repo.name}/fork">
+            <button class="btn-icon" type="submit" title="Fork repository" aria-label="Fork repository">
+                <span class="g">⑂</span>
+            </button>
+        </form>
         <form class="inline" method="post" action="/repos/{nav.repo.ownerHandle}/{nav.repo.name}/{#if nav.pinned}unpin{#else}pin{/if}">
             <input type="hidden" name="redirect" value="{nav.currentPath}">
             <button class="btn-icon{#if nav.pinned} pinned{/if}" type="submit" title="{#if nav.pinned}Unpin{#else}Pin{/if} repository" aria-label="{#if nav.pinned}Unpin{#else}Pin{/if} repository">

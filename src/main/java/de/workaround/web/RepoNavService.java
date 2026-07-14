@@ -57,6 +57,9 @@ public class RepoNavService
 		boolean loggedIn = user != null;
 		boolean isOwner = loggedIn && accessPolicy.canAdmin(user, repo);
 		boolean pinned = loggedIn && pinService.isPinned(user, repo);
+		// Only reveal the parent to a viewer who could read it directly, so a source that later turned
+		// private is not disclosed through its public forks.
+		boolean parentVisible = repo.parent != null && accessPolicy.canRead(user, repo.parent);
 		int commitCount = empty ? 0 : browse.commitCount(path, defaultBranch);
 		int branchCount = browse.branches(path).size();
 		int tagCount = browse.tags(path).size();
@@ -67,6 +70,6 @@ public class RepoNavService
 		String sshUrl = "ssh://git@" + uriInfo.getBaseUri().getHost() + ":" + sshPort + "/" + repo.ownerHandle()
 			+ "/" + repo.name + ".git";
 		return new RepoNav(repo, loggedIn, isOwner, pinned, empty, defaultBranch, commitCount, branchCount, tagCount,
-			openIssueCount, openMrCount, httpUrl, sshUrl, uriInfo.getRequestUri().getRawPath());
+			openIssueCount, openMrCount, httpUrl, sshUrl, uriInfo.getRequestUri().getRawPath(), parentVisible);
 	}
 }

@@ -28,6 +28,9 @@ public class RepositoryTools
 	@Inject
 	McpPrincipal principal;
 
+	@Inject
+	de.workaround.git.AccessPolicy accessPolicy;
+
 	@Tool(description = "List repositories visible to the caller: all public repositories, plus your own private ones when a valid token is supplied.")
 	public List<ApiModels.RepositoryView> listRepositories()
 	{
@@ -38,7 +41,8 @@ public class RepositoryTools
 	public ApiModels.RepositoryView getRepository(@ToolArg(description = "Owner username") String owner,
 		@ToolArg(description = "Repository name") String name)
 	{
-		return ApiModels.RepositoryView.of(access.requireReadable(principal.orNull(), owner, name));
+		Repository repo = access.requireReadable(principal.orNull(), owner, name);
+		return ApiModels.RepositoryView.of(repo, canSeeParent(repo));
 	}
 
 	@Tool(description = "Create a new repository owned by the authenticated user. Requires a personal access token.")
@@ -54,6 +58,22 @@ public class RepositoryTools
 		Repository repo = service.create(user, name, parsed,
 			description == null || description.isBlank() ? null : description);
 		return ApiModels.RepositoryView.of(repo);
+	}
+
+	@Tool(description = "Fork a repository you can read into your own namespace, copying all branches and tags. Requires a personal access token.")
+	@Transactional
+	public ApiModels.RepositoryView forkRepository(@ToolArg(description = "Owner username of the repository to fork") String owner,
+		@ToolArg(description = "Name of the repository to fork") String name)
+	{
+		User user = principal.require();
+		Repository source = access.requireReadable(user, owner, name);
+		Repository forked = service.fork(user, source);
+		return ApiModels.RepositoryView.of(forked, canSeeParent(forked));
+	}
+
+	private boolean canSeeParent(Repository repo)
+	{
+		return repo.parent != null && accessPolicy.canRead(principal.orNull(), repo.parent);
 	}
 
 	@Tool(description = "Delete a repository you own. Requires a personal access token. This is irreversible.")

@@ -16,6 +16,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
@@ -39,6 +40,13 @@ public class Repository implements PanacheEntity.Managed
 
 	@Enumerated(EnumType.STRING)
 	public Visibility visibility;
+
+	// The repository this one was forked from, or null for a repository created from scratch. Eagerly
+	// loaded (default for @ManyToOne) so the UI and API can show "forked from {owner}/{name}" without
+	// a second query.
+	@ManyToOne
+	@JoinColumn(name = "parent_repo_id")
+	public Repository parent;
 
 	public String description;
 

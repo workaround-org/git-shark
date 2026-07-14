@@ -75,6 +75,49 @@ public class GitRepositoryService
 		return initialize(repository, name, visibility, description);
 	}
 
+	/**
+	 * Forks {@code source} into {@code actor}'s personal namespace: a new repository carrying the source's
+	 * name, visibility and description, its {@code parent} pointing back at the source, with every ref
+	 * (branches and tags) copied on disk via a local bare clone. The actor must be able to read the source,
+	 * so a private repository can never be forked — and thereby exposed — by someone without read access.
+	 */
+	@Transactional
+	public Repository fork(User actor, Repository source)
+	{
+		if (actor == null)
+		{
+			throw new ForbiddenOperationException("Authentication required to fork a repository");
+		}
+		if (!accessPolicy.canRead(actor, source))
+		{
+			throw new ForbiddenOperationException("You cannot fork a repository you cannot read");
+		}
+		if (repositories.findByOwnerUserAndName(actor, source.name).isPresent())
+		{
+			throw new RepositoryAlreadyExistsException(actor.username, source.name);
+		}
+		Repository fork = new Repository();
+		fork.ownerUser = actor;
+		fork.parent = source;
+		fork.name = source.name;
+		fork.visibility = source.visibility;
+		fork.description = source.description;
+		fork.persist();
+
+		Path from = repositoryPath(source);
+		Path to = repositoryPath(fork);
+		try (Git git = Git.cloneRepository().setBare(true).setCloneAllBranches(true)
+			.setURI(from.toUri().toString()).setDirectory(to.toFile()).call())
+		{
+			// clone copies HEAD, all branches and (by default) reachable tags — the full ref set
+		}
+		catch (GitAPIException e)
+		{
+			throw new IllegalStateException("Failed to clone " + from + " into fork " + to, e);
+		}
+		return fork;
+	}
+
 	private Repository initialize(Repository repository, String name, Repository.Visibility visibility,
 		String description)
 	{

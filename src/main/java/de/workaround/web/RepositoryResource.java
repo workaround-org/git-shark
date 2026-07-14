@@ -369,6 +369,25 @@ public class RepositoryResource
 	}
 
 	@POST
+	@jakarta.ws.rs.Path("fork")
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	public Response fork(@PathParam("owner") String owner, @PathParam("name") String name)
+	{
+		Repository source = requireReadable(owner, name);
+		User user = currentUser.require();
+		try
+		{
+			Repository forked = service.fork(user, source);
+			return Response.seeOther(URI.create("/repos/" + forked.ownerHandle() + "/" + forked.name)).build();
+		}
+		catch (de.workaround.git.RepositoryAlreadyExistsException e)
+		{
+			// The user already has a fork (or a repo of that name) — send them to it rather than erroring.
+			return Response.seeOther(URI.create("/repos/" + user.username + "/" + source.name)).build();
+		}
+	}
+
+	@POST
 	@jakarta.ws.rs.Path("pin")
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	public Response pin(@PathParam("owner") String owner, @PathParam("name") String name,

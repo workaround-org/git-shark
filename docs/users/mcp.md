@@ -69,7 +69,7 @@ same way: endpoint `https://<your-instance>/mcp`, header
 | Area | Tools | Token needed? |
 |---|---|---|
 | Repositories | `listRepositories`, `getRepository` | no (public repos) |
-| | `createRepository`, `deleteRepository` | yes (owner) |
+| | `createRepository`, `forkRepository`, `deleteRepository` | yes |
 | Issues | `listIssues`, `getIssue` | no (public repos) |
 | | `createIssue`, `updateIssueStatus`, `deleteIssue` | yes (owner or collaborator) |
 | Merge requests | `listMergeRequests`, `getMergeRequest`, `listMergeRequestComments` | no (public repos) |
