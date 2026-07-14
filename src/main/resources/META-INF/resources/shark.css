@@ -915,25 +915,6 @@ details.archive > .panel {
     font-size: 13px;
 }
 
-/* single management bar under the issue body: edit, status transitions, delete pushed right */
-.issue-manage {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: var(--s3);
-    margin-top: var(--s5);
-    padding-top: var(--s4);
-    border-top: 1px solid var(--border-soft);
-}
-
-.issue-manage .issue-actions {
-    margin: 0;
-}
-
-.issue-manage .issue-remove {
-    margin-left: auto;
-}
-
 /* the issue description sits in its own surface card (same look as the README card) so the
    content stands out from the page background */
 .issue-desc {
@@ -958,8 +939,51 @@ details.archive > .panel {
     font: 500 12.5px/1 var(--mono);
 }
 
-/* issue detail meta line: status badge plus who opened and who is assigned, each with an avatar */
-.issue-meta {
+/* Issue detail: main column + a narrow metadata sidebar (status, assignee), the layout
+   pattern people expect from an issue tracker. Collapses to one column on narrow screens. */
+.issue-back {
+    margin: 0 0 var(--s4);
+}
+
+.issue-detail {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 244px;
+    gap: var(--s6);
+    align-items: start;
+}
+
+.issue-content {
+    min-width: 0;
+}
+
+/* title sits opposite the edit/delete cluster; both share one baseline row */
+.issue-header {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--s4);
+}
+
+.issue-heading {
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.issue-heading .issue-no {
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+.issue-header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    flex: none;
+}
+
+.issue-byline {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -975,6 +999,245 @@ details.archive > .panel {
     gap: 6px;
 }
 
+.issue-person strong {
+    color: var(--ink);
+    font-weight: 600;
+}
+
+.issue-nodesc {
+    margin: var(--s4) 0 var(--s5);
+}
+
+/* metadata sidebar: quiet labelled blocks separated by hairlines */
+.issue-side {
+    display: flex;
+    flex-direction: column;
+}
+
+.issue-side-block {
+    padding: var(--s4) 0;
+    border-bottom: 1px solid var(--border-soft);
+}
+
+.issue-side-block:first-child {
+    padding-top: 0;
+}
+
+.issue-side-block:last-child {
+    border-bottom: none;
+}
+
+.issue-side-label {
+    margin: 0 0 var(--s3);
+    font: 600 11px/1 var(--font);
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--muted);
+}
+
+/* status as a segmented control: the current state reads as pressed, the others as choices */
+.status-picker {
+    display: inline-flex;
+    padding: 3px;
+    gap: 2px;
+    background: var(--canvas);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.status-opt {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    font: 600 12px/1 var(--font);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background .12s, color .12s, box-shadow .12s;
+}
+
+.status-opt:hover {
+    color: var(--accent-deep);
+    background: var(--accent-soft);
+}
+
+.status-opt.is-current {
+    background: var(--surface);
+    color: var(--ink);
+    border-color: var(--border);
+    box-shadow: 0 1px 2px rgba(20, 32, 30, .06);
+    cursor: default;
+}
+
+.status-opt.is-current:hover {
+    background: var(--surface);
+}
+
+.status-opt:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+/* current assignee (avatar + handle, or an empty-state line) — used read-only for non-owners */
+.assignee-current {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    font-size: 14px;
+}
+
+.assignee-name {
+    font-weight: 600;
+    color: var(--ink);
+}
+
+/* Assignee popover (GitHub-style): the row is the trigger; clicking it opens a floating menu of
+   people to pick from. JS-free via <details> — the menu is absolutely positioned so it overlays
+   the page instead of pushing content down. */
+.assignee-pop {
+    position: relative;
+}
+
+.assignee-trigger {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    font-size: 14px;
+    list-style: none;
+    cursor: pointer;
+    padding: 6px 8px;
+    margin: 0 -8px;
+    border-radius: var(--radius-sm);
+    transition: background .12s;
+}
+
+.assignee-trigger::-webkit-details-marker {
+    display: none;
+}
+
+.assignee-trigger:hover {
+    background: var(--accent-soft);
+}
+
+.assignee-trigger:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.assignee-caret {
+    margin-left: auto;
+    color: var(--faint);
+    font-size: 12px;
+    transition: transform .12s, color .12s;
+}
+
+.assignee-trigger:hover .assignee-caret {
+    color: var(--accent-deep);
+}
+
+.assignee-pop[open] .assignee-caret {
+    transform: rotate(180deg);
+    color: var(--accent-deep);
+}
+
+.assignee-menu {
+    position: absolute;
+    z-index: 30;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    min-width: 240px;
+    padding: var(--s2);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 8px 28px rgba(20, 32, 30, .14);
+}
+
+.assignee-menu-head {
+    margin: 4px 8px 8px;
+    font: 600 12px/1 var(--font);
+    color: var(--muted);
+}
+
+.assignee-search {
+    margin-bottom: var(--s2);
+}
+
+.assignee-search input {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--ink);
+    font: 14px/1.2 var(--font);
+}
+
+.assignee-search input:focus-visible {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.assignee-options {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--border-soft);
+    padding-top: var(--s1);
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+/* each person is a full-width click target that assigns on submit */
+.assignee-option {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    width: 100%;
+    padding: 6px 8px;
+    border: none;
+    background: none;
+    border-radius: var(--radius-sm);
+    color: var(--ink);
+    font: 14px/1.2 var(--font);
+    text-align: left;
+    cursor: pointer;
+}
+
+.assignee-option:hover {
+    background: var(--accent-soft);
+}
+
+.assignee-option.is-selected {
+    font-weight: 600;
+}
+
+.assignee-check {
+    width: 14px;
+    flex: none;
+    color: var(--success-deep);
+    font-size: 12px;
+}
+
+/* clear sits below the list, set apart by a hairline and a quiet danger tone */
+.assignee-clear {
+    border-top: 1px solid var(--border-soft);
+    margin-top: var(--s1);
+    padding-top: var(--s1);
+}
+
+.assignee-clear-btn {
+    color: var(--danger);
+}
+
+.assignee-clear-btn:hover {
+    background: var(--danger-bg);
+}
+
 /* assignee avatar pinned to the right of an issue list row */
 .frow-assignee {
     margin-left: auto;
@@ -984,21 +1247,11 @@ details.archive > .panel {
     flex: none;
 }
 
-/* assignee autocomplete control inside the management bar */
-.issue-assign {
-    display: flex;
-    align-items: center;
-    gap: var(--s2);
-}
-
-.issue-assign .lbl {
-    color: var(--muted);
-    font-size: 13px;
-}
-
-.issue-assign input {
-    width: 150px;
-    max-width: 40vw;
+@media (max-width: 900px) {
+    .issue-detail {
+        grid-template-columns: 1fr;
+        gap: var(--s5);
+    }
 }
 
 /* merge requests */

@@ -3,50 +3,107 @@
 <div class="repo-layout">
     {#include RepositoryResource/sidebar nav=nav active='issues' /}
     <section class="repo-main">
-        <p><a href="/repos/{repo.ownerHandle}/{repo.name}/issues">← Issues</a></p>
-        <h2>{issue.title} <span class="issue-no">#{issue.number}</span></h2>
-        <div class="issue-meta">
-            <span class="badge status-{issue.status}">{issue.status.label}</span>
-            <span class="issue-person">opened by {#avatar user=issue.author /} <span>{issue.author.username}</span></span>
-            {#if issue.assignee}
-            <span class="issue-person">assigned to {#avatar user=issue.assignee /} <span>{issue.assignee.username}</span></span>
-            {#else}
-            <span class="issue-person muted">unassigned</span>
-            {/if}
+        <p class="issue-back"><a href="/repos/{repo.ownerHandle}/{repo.name}/issues">← Issues</a></p>
+        <div class="issue-detail">
+            <div class="issue-content">
+                <header class="issue-header">
+                    <h2 class="issue-heading">{issue.title} <span class="issue-no">#{issue.number}</span></h2>
+                    {#if owner}
+                    <div class="issue-header-actions">
+                        <a class="btn btn-secondary btn-sm" href="/repos/{repo.ownerHandle}/{repo.name}/issues/{issue.number}/edit">Edit</a>
+                        <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/issues/{issue.number}/delete"
+                              onsubmit="return confirm('Delete this issue? This cannot be undone.')">
+                            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                        </form>
+                    </div>
+                    {/if}
+                </header>
+                <div class="issue-byline">
+                    <span class="badge status-{issue.status}">{issue.status.label}</span>
+                    <span class="issue-person">{#avatar user=issue.author /} <span><strong>{issue.author.username}</strong> opened this issue</span></span>
+                </div>
+                {#if descriptionHtml}
+                <div class="panel issue-desc">
+                    <div class="readme-body">{descriptionHtml.raw}</div>
+                </div>
+                {#else}
+                <p class="issue-nodesc muted">No description provided.</p>
+                {/if}
+            </div>
+
+            <aside class="issue-side">
+                <section class="issue-side-block">
+                    <h3 class="issue-side-label">Status</h3>
+                    {#if owner}
+                    <form class="status-picker" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/issues/{issue.number}/status">
+                        {#for status in statuses}
+                        <button type="submit" name="status" value="{status}"
+                                class="status-opt status-opt-{status}{#if status == issue.status} is-current{/if}"
+                                {#if status == issue.status}aria-current="true" disabled{/if}>{status.label}</button>
+                        {/for}
+                    </form>
+                    {#else}
+                    <span class="badge status-{issue.status}">{issue.status.label}</span>
+                    {/if}
+                </section>
+
+                <section class="issue-side-block">
+                    <h3 class="issue-side-label">Assignee</h3>
+                    {#if owner}
+                    {! GitHub-style: the row is the trigger; clicking it opens a floating pick-a-person menu !}
+                    <details class="assignee-pop">
+                        <summary class="assignee-trigger">
+                            {#if issue.assignee}
+                            {#avatar user=issue.assignee /} <span class="assignee-name">{issue.assignee.username}</span>
+                            {#else}
+                            <span class="muted">No one assigned</span>
+                            {/if}
+                            <span class="assignee-caret" aria-hidden="true">▾</span>
+                        </summary>
+                        <div class="assignee-menu">
+                            <p class="assignee-menu-head">Assign this issue</p>
+                            {! free text handles any user; Enter submits. datalist offers the same names as the list !}
+                            <form class="assignee-search" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/issues/{issue.number}/assign">
+                                <input type="text" name="assignee" list="assignees" placeholder="Type a username…" autocomplete="off">
+                                <datalist id="assignees">
+                                    {#for candidate in assignees}
+                                    <option value="{candidate.username}">
+                                    {/for}
+                                </datalist>
+                            </form>
+                            <ul class="assignee-options">
+                                {#for candidate in assignees}
+                                <li>
+                                    <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/issues/{issue.number}/assign">
+                                        <button type="submit" name="assignee" value="{candidate.username}"
+                                                class="assignee-option{#if issue.assignee && candidate.username == issue.assignee.username} is-selected{/if}">
+                                            <span class="assignee-check" aria-hidden="true">{#if issue.assignee && candidate.username == issue.assignee.username}✓{/if}</span>
+                                            {#avatar user=candidate /} <span>{candidate.username}</span>
+                                        </button>
+                                    </form>
+                                </li>
+                                {/for}
+                            </ul>
+                            {#if issue.assignee}
+                            {! separate form with no assignee field: posts blank, which unassigns the issue !}
+                            <form class="assignee-clear" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/issues/{issue.number}/assign">
+                                <button type="submit" class="assignee-option assignee-clear-btn">Clear assignee</button>
+                            </form>
+                            {/if}
+                        </div>
+                    </details>
+                    {#else}
+                    <div class="assignee-current">
+                        {#if issue.assignee}
+                        {#avatar user=issue.assignee /} <span class="assignee-name">{issue.assignee.username}</span>
+                        {#else}
+                        <span class="muted">No one assigned</span>
+                        {/if}
+                    </div>
+                    {/if}
+                </section>
+            </aside>
         </div>
-        {#if descriptionHtml}
-        <div class="panel issue-desc">
-            <div class="readme-body">{descriptionHtml.raw}</div>
-        </div>
-        {#else}
-        <p class="muted">No description provided.</p>
-        {/if}
-        {#if owner}
-        <div class="issue-manage">
-            <a class="btn btn-secondary btn-sm" href="/repos/{repo.ownerHandle}/{repo.name}/issues/{issue.number}/edit">Edit issue</a>
-            <form class="issue-actions" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/issues/{issue.number}/status">
-                <span class="lbl">Move to</span>
-                {#for status in statuses}
-                <button type="submit" class="btn btn-secondary btn-sm" name="status" value="{status}"{#if status == issue.status} disabled{/if}>{status.label}</button>
-                {/for}
-            </form>
-            <form class="issue-assign" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/issues/{issue.number}/assign">
-                <span class="lbl">Assignee</span>
-                <input type="text" name="assignee" list="assignees" placeholder="username" autocomplete="off"
-                       value="{issue.assignee.username ?: ''}">
-                <datalist id="assignees">
-                    {#for candidate in assignees}
-                    <option value="{candidate.username}">
-                    {/for}
-                </datalist>
-                <button type="submit" class="btn btn-secondary btn-sm">Assign</button>
-            </form>
-            <form class="issue-remove" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/issues/{issue.number}/delete"
-                  onsubmit="return confirm('Delete this issue? This cannot be undone.')">
-                <button type="submit" class="btn btn-danger btn-sm">Delete issue</button>
-            </form>
-        </div>
-        {/if}
     </section>
 </div>
 {/include}

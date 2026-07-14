@@ -87,9 +87,12 @@ class IssueUiTest
 		collaboratorService.add(owner, repo, collab.username);
 		Issue issue = issueService.create(owner, repo, "Assign me", null);
 
-		// the assign input is backed by a datalist offering the owner and every collaborator
+		// the assignee is a floating popover (click the row to open) with a click-to-assign people list
+		// of the owner + collaborators, plus a free-text field backed by a datalist
 		given().when().get("/repos/" + owner.username + "/assignable/issues/" + issue.number)
 			.then().statusCode(200)
+			.body(containsString("<details class=\"assignee-pop\""))
+			.body(containsString("class=\"assignee-option"))
 			.body(containsString("<datalist id=\"assignees\""))
 			.body(containsString("list=\"assignees\""))
 			.body(containsString("value=\"iss-assign\""))
@@ -105,10 +108,11 @@ class IssueUiTest
 		Issue issue = issueService.create(owner, repo, "Has an owner", null);
 		issueService.assign(owner, issue, owner.username);
 
-		// the assignee is named and rendered through the avatar tag (initials fallback here, no uploaded image)
+		// the assignee is named in the metadata sidebar and rendered through the avatar tag
+		// (initials fallback here, since the test user has no uploaded image)
 		given().when().get("/repos/" + owner.username + "/avassign/issues/" + issue.number)
 			.then().statusCode(200)
-			.body(containsString("assigned to"))
+			.body(containsString("class=\"assignee-name\""))
 			.body(containsString("class=\"av-fallback\""));
 	}
 
@@ -130,7 +134,7 @@ class IssueUiTest
 			.header("Location", org.hamcrest.Matchers.endsWith(url));
 		given().when().get(url)
 			.then().statusCode(200)
-			.body(containsString("assigned to"))
+			.body(containsString("class=\"assignee-name\""))
 			.body(containsString(helper.username));
 
 		// posting a blank username clears the assignment again
@@ -138,7 +142,7 @@ class IssueUiTest
 			.contentType("application/x-www-form-urlencoded").formParam("assignee", "")
 			.when().post(url + "/assign")
 			.then().statusCode(303);
-		given().when().get(url).then().statusCode(200).body(containsString("unassigned"));
+		given().when().get(url).then().statusCode(200).body(containsString("No one assigned"));
 	}
 
 	@Test
@@ -182,6 +186,20 @@ class IssueUiTest
 			.then().statusCode(200)
 			.body(containsString("class=\"frow-assignee\""))
 			.body(containsString("class=\"av-fallback\""));
+	}
+
+	@Test
+	@TestSecurity(user = "iss-assets")
+	void stylesheetLinkIsCacheBusted()
+	{
+		// every page shares layout.html; the shark.css link must carry a ?v= token so browsers pick up
+		// CSS changes after a deploy instead of serving a stale cached copy
+		User owner = persistUser("iss-assets");
+		service.create(owner, "assetsrepo", Repository.Visibility.PUBLIC, null);
+
+		given().when().get("/repos/" + owner.username + "/assetsrepo/issues")
+			.then().statusCode(200)
+			.body(containsString("/shark.css?v="));
 	}
 
 	@Test
@@ -337,11 +355,11 @@ class IssueUiTest
 		String base = "/repos/" + owner.username + "/editable/issues";
 		String editUrl = base + "/" + issue.number + "/edit";
 
-		// the detail page links to the edit form from a single management bar
+		// the detail page links to the edit form from the header action cluster
 		given().when().get(base + "/" + issue.number)
 			.then().statusCode(200)
 			.body(containsString(editUrl))
-			.body(containsString("class=\"issue-manage\""));
+			.body(containsString("class=\"issue-header-actions\""));
 
 		// the edit form is pre-filled with the current title and description
 		given().when().get(editUrl)
