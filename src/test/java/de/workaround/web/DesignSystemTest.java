@@ -26,7 +26,7 @@ class DesignSystemTest
 	{
 		given().when().get("/")
 			.then().statusCode(200)
-			.body(containsString("<link rel=\"stylesheet\" href=\"/shark.css\">"))
+			.body(containsString("<link rel=\"stylesheet\" href=\"/shark.css?v="))
 			.body(not(containsString("<style>")));
 	}
 

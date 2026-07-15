@@ -367,7 +367,7 @@ class WebUiTest
 		// scripting is enhancement-only: loaded deferred, no inline handlers required for rendering
 		given().when().get("/")
 			.then().statusCode(200)
-			.body(containsString("<script defer src=\"/shark-hotkeys.js\">"));
+			.body(containsString("<script defer src=\"/shark-hotkeys.js?v="));
 	}
 
 	@Test
