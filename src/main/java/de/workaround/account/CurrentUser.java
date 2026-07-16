@@ -22,6 +22,9 @@ public class CurrentUser
 	@Inject
 	UserProvisioningService provisioning;
 
+	@Inject
+	AdminAccess adminAccess;
+
 	private User cached;
 
 	/** Cheap auth check for templates — no user provisioning, just the identity state. */
@@ -51,6 +54,12 @@ public class CurrentUser
 	{
 		User user = get();
 		return user == null ? "" : user.contentWidth.cssClass;
+	}
+
+	/** Whether the logged-in user is an instance admin; drives the admin nav entry. */
+	public boolean isAdmin()
+	{
+		return adminAccess.isAdmin(get());
 	}
 
 	public User require()

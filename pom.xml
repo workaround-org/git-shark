@@ -20,6 +20,9 @@
         <bouncycastle.version>1.84</bouncycastle.version>
         <commonmark.version>0.24.0</commonmark.version>
         <quarkus-mcp-server.version>1.13.1</quarkus-mcp-server.version>
+        <protobuf.version>3.25.5</protobuf.version>
+        <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
+        <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.6</surefire-plugin.version>
     </properties>
@@ -65,6 +68,11 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-panache-next</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>${protobuf.version}</version>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -163,12 +171,39 @@
     </dependencies>
 
     <build>
+        <!-- Resolves ${os.detected.classifier} so protobuf-maven-plugin can fetch the right protoc binary -->
+        <extensions>
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>${os-maven-plugin.version}</version>
+            </extension>
+        </extensions>
         <plugins>
             <plugin>
                 <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <version>${quarkus.platform.version}</version>
                 <extensions>true</extensions>
+            </plugin>
+            <!-- Generate Java message classes for the Forgejo/Gitea runner.v1 + ping.v1 Connect protocol
+                 (MIT protos under src/main/proto). Only message types are generated; the Connect unary
+                 endpoints are served by plain JAX-RS resources reading/writing serialized protobuf. -->
+            <plugin>
+                <groupId>org.xolstice.maven.plugins</groupId>
+                <artifactId>protobuf-maven-plugin</artifactId>
+                <version>${protobuf-maven-plugin.version}</version>
+                <configuration>
+                    <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
+                    <protoSourceRoot>${project.basedir}/src/main/proto</protoSourceRoot>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

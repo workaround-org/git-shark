@@ -1,0 +1,9 @@
+{#include layout}
+{#title}Registration token created – git-shark{/title}
+<h1>Registration token created</h1>
+<p>Copy this runner registration token now — it will not be shown again:</p>
+<pre class="token-line"><code>{plaintext}</code><button type="button" class="btn-icon copy-btn" data-copy="{plaintext}" aria-label="Copy registration token" title="Copy">⧉</button></pre>
+<p>Register a runner with it:</p>
+<pre class="token-line"><code>forgejo-runner register --no-interactive --instance &lt;this instance URL&gt; --token {plaintext}</code></pre>
+<p><a class="btn btn-secondary" href="/admin/runners">Back to runners</a></p>
+{/include}

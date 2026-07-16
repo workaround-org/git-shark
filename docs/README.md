@@ -31,6 +31,8 @@ OIDC login, and PostgreSQL metadata.
 - **[AI clients (MCP)](users/mcp.md)** — connect Claude Code, Claude Desktop, or
   any MCP client to your instance: token setup, client configuration, available
   tools.
+- **[CI/CD runners](users/ci-runners.md)** — what runners are, what admins can do
+  today (register runners), and what workflow execution is still coming.
 
 ### For admins
 
@@ -53,6 +55,9 @@ OIDC login, and PostgreSQL metadata.
 - **[Organisations](admins/organisations.md)** — shared handle namespace, owner
   resolution, role semantics, endpoints, and the `organisations` /
   `organisation_members` tables (no configuration needed).
+- **[CI/CD runners](admins/ci-runners.md)** — register Forgejo/Gitea runners via
+  the `runner.v1` Connect endpoints: admin handles, registration tokens, the
+  `/api/actions` paths, reverse-proxy notes, and the runner tables.
 
 ### For maintainers
 
@@ -67,6 +72,9 @@ OIDC login, and PostgreSQL metadata.
   implemented, the decisions behind it, what works and what is still missing.
 - **[Push mirrors architecture](maintainers/push-mirrors.md)** — trigger flow,
   queue design, credential encryption, and SSH decisions behind push mirroring.
+- **[CI/CD runner protocol](maintainers/ci-runners.md)** — how the Forgejo/Gitea
+  `runner.v1` server side is built (Connect-over-JAX-RS, protobuf codegen), the
+  decisions behind it, and the works/gaps list toward full workflow execution.
 
 ## Where else to look
 

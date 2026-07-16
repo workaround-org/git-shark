@@ -1,0 +1,14 @@
+// Copied from gitea.com/gitea/actions-proto-def (MIT License, Copyright (c) 2022 The Gitea Authors).
+// Only the java_package / java_multiple_files options are added; message shapes are unmodified.
+syntax = "proto3";
+
+package ping.v1;
+
+option java_package = "de.workaround.ci.proto.ping.v1";
+option java_multiple_files = true;
+
+import "ping/v1/messages.proto";
+
+service PingService {
+  rpc Ping(PingRequest) returns (PingResponse);
+}

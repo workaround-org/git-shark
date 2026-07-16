@@ -1,0 +1,54 @@
+{#include layout}
+{#title}CI runners – git-shark{/title}
+<h1>CI runners</h1>
+
+<p>Runners execute repository workflows. git-shark speaks the Forgejo/Gitea runner protocol, so a
+stock <code>forgejo-runner</code> or <code>act_runner</code> registers against this instance
+unchanged. Generate a registration token below, then run:</p>
+<pre class="token-line"><code>forgejo-runner register --no-interactive --instance &lt;this instance URL&gt; --token &lt;registration token&gt;</code></pre>
+
+<h2>Registered runners</h2>
+<table>
+    <tr><th>Name</th><th>Status</th><th>Labels</th><th>Version</th><th>Last seen</th><th class="actions"></th></tr>
+    {#for runner in runners}
+    <tr>
+        <td>{runner.name}</td>
+        <td>{runner.status}</td>
+        <td>{runner.labels ?: '—'}</td>
+        <td>{runner.version ?: '—'}</td>
+        <td>{runner.lastSeen ?: 'never'}</td>
+        <td class="actions">
+            <form class="inline" method="post" action="/admin/runners/{runner.id}/delete">
+                <button class="btn btn-danger btn-sm">Delete</button>
+            </form>
+        </td>
+    </tr>
+    {#else}
+    <tr><td colspan="6">No runners registered yet.</td></tr>
+    {/for}
+</table>
+
+<h2>Registration tokens</h2>
+<p>Registration tokens are reusable and instance-scoped. Delete a token to stop it registering new
+runners; runners already registered keep working.</p>
+<table>
+    <tr><th>Created</th><th>Created by</th><th>Last used</th><th class="actions"></th></tr>
+    {#for token in tokens}
+    <tr>
+        <td>{token.createdAt}</td>
+        <td>{#if token.createdBy}{token.createdBy.username}{#else}—{/if}</td>
+        <td>{token.lastUsed ?: 'never'}</td>
+        <td class="actions">
+            <form class="inline" method="post" action="/admin/runners/tokens/{token.id}/delete">
+                <button class="btn btn-danger btn-sm">Delete</button>
+            </form>
+        </td>
+    </tr>
+    {#else}
+    <tr><td colspan="4">No registration tokens yet.</td></tr>
+    {/for}
+</table>
+<form method="post" action="/admin/runners/tokens">
+    <button class="btn btn-primary">Generate registration token</button>
+</form>
+{/include}

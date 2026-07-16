@@ -1,0 +1,148 @@
+package de.workaround.ci;
+
+import java.util.Arrays;
+import java.util.List;
+
+import com.google.protobuf.InvalidProtocolBufferException;
+
+import de.workaround.ci.proto.ping.v1.PingRequest;
+import de.workaround.ci.proto.ping.v1.PingResponse;
+import de.workaround.ci.proto.runner.v1.DeclareRequest;
+import de.workaround.ci.proto.runner.v1.DeclareResponse;
+import de.workaround.ci.proto.runner.v1.RegisterRequest;
+import de.workaround.ci.proto.runner.v1.RegisterResponse;
+import de.workaround.ci.proto.runner.v1.Runner;
+import de.workaround.ci.proto.runner.v1.RunnerStatus;
+import de.workaround.model.CiRunner;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Response;
+
+/**
+ * Server side of the Forgejo/Gitea <code>runner.v1</code> Connect protocol (phase 1: Ping, Register,
+ * Declare). Connect unary RPC is a plain HTTP POST to <code>/{package}.{Service}/{Method}</code>
+ * whose body is the serialized request message and whose 200 response body is the serialized
+ * response message ({@code application/proto}). Stock <code>forgejo-runner</code> / <code>act_runner</code>
+ * point their <code>instance</code> at this origin and reach these paths under <code>/api/actions</code>.
+ * <p>
+ * Errors follow the Connect wire format: a non-200 status with a small JSON body
+ * <code>{"code": "...", "message": "..."}</code>. Post-registration calls authenticate with the
+ * <code>x-runner-uuid</code> / <code>x-runner-token</code> headers the runner stores after Register.
+ */
+@Path("/api/actions")
+@Consumes(ConnectRunnerResource.PROTO)
+@Produces(ConnectRunnerResource.PROTO)
+public class ConnectRunnerResource
+{
+	static final String PROTO = "application/proto";
+
+	@Inject
+	RunnerRegistrationService runnerService;
+
+	@POST
+	@Path("/ping.v1.PingService/Ping")
+	public Response ping(byte[] body) throws InvalidProtocolBufferException
+	{
+		PingRequest request = PingRequest.parseFrom(body);
+		PingResponse response = PingResponse.newBuilder()
+			.setData("Hello, " + request.getData())
+			.build();
+		return ok(response.toByteArray());
+	}
+
+	@POST
+	@Path("/runner.v1.RunnerService/Register")
+	public Response register(byte[] body) throws InvalidProtocolBufferException
+	{
+		RegisterRequest request = RegisterRequest.parseFrom(body);
+		try
+		{
+			RunnerRegistrationService.RegisteredRunner reg = runnerService.register(request.getToken(),
+				request.getName(), request.getLabelsList(), request.getVersion(), request.getEphemeral());
+			Runner runner = toProto(reg.runner(), reg.plaintext());
+			return ok(RegisterResponse.newBuilder().setRunner(runner).build().toByteArray());
+		}
+		catch (InvalidRegistrationTokenException e)
+		{
+			return connectError(Response.Status.UNAUTHORIZED, "unauthenticated", e.getMessage());
+		}
+	}
+
+	@POST
+	@Path("/runner.v1.RunnerService/Declare")
+	public Response declare(@HeaderParam("x-runner-uuid") String uuid, @HeaderParam("x-runner-token") String token,
+		byte[] body) throws InvalidProtocolBufferException
+	{
+		DeclareRequest request = DeclareRequest.parseFrom(body);
+		try
+		{
+			CiRunner runner = runnerService.declare(uuid, token, request.getVersion(), request.getLabelsList());
+			return ok(DeclareResponse.newBuilder().setRunner(toProto(runner, null)).build().toByteArray());
+		}
+		catch (RunnerAuthenticationException e)
+		{
+			return connectError(Response.Status.UNAUTHORIZED, "unauthenticated", e.getMessage());
+		}
+	}
+
+	private static Runner toProto(CiRunner runner, String plaintextSecret)
+	{
+		Runner.Builder builder = Runner.newBuilder()
+			.setUuid(runner.uuid)
+			.setName(runner.name)
+			.setStatus(toProtoStatus(runner.status))
+			.setEphemeral(runner.ephemeral)
+			.addAllLabels(splitLabels(runner.labels));
+		if (runner.version != null)
+		{
+			builder.setVersion(runner.version);
+		}
+		// The runner secret is delivered only in the Register response; Declare must not resend it.
+		if (plaintextSecret != null)
+		{
+			builder.setToken(plaintextSecret);
+		}
+		return builder.build();
+	}
+
+	private static RunnerStatus toProtoStatus(CiRunner.Status status)
+	{
+		return switch (status)
+		{
+			case IDLE -> RunnerStatus.RUNNER_STATUS_IDLE;
+			case ACTIVE -> RunnerStatus.RUNNER_STATUS_ACTIVE;
+			case OFFLINE -> RunnerStatus.RUNNER_STATUS_OFFLINE;
+			case UNSPECIFIED -> RunnerStatus.RUNNER_STATUS_UNSPECIFIED;
+		};
+	}
+
+	private static List<String> splitLabels(String labels)
+	{
+		if (labels == null || labels.isBlank())
+		{
+			return List.of();
+		}
+		return Arrays.stream(labels.split(",")).filter(s -> !s.isBlank()).toList();
+	}
+
+	private static Response ok(byte[] payload)
+	{
+		return Response.ok(payload, PROTO).build();
+	}
+
+	private static Response connectError(Response.Status status, String code, String message)
+	{
+		String json = "{\"code\":\"" + code + "\",\"message\":\"" + escapeJson(message) + "\"}";
+		return Response.status(status).type("application/json").entity(json).build();
+	}
+
+	private static String escapeJson(String value)
+	{
+		return value == null ? "" : value.replace("\\", "\\\\").replace("\"", "\\\"");
+	}
+
+}

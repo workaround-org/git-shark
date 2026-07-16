@@ -24,6 +24,7 @@
                 <a href="/settings/profile">{#avatar user=cdi:currentUser.get /} Profile</a>
                 <a href="/settings/keys">SSH keys</a>
                 <a href="/settings/tokens">Access tokens</a>
+                {#if cdi:currentUser.isAdmin}<a href="/admin/runners">CI runners</a>{/if}
                 <form class="logout" method="post" action="/logout"><button type="submit">Logout</button></form>
             </div>
         </details>
