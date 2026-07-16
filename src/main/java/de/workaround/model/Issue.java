@@ -74,6 +74,9 @@ public class Issue implements PanacheEntity.Managed
 		@HQL("select i from Issue i join fetch i.author left join fetch i.assignee where i.repository = :repository order by i.createdAt desc")
 		List<Issue> findByRepository(Repository repository);
 
+		@HQL("select i from Issue i join fetch i.repository where (i.author = :user or i.assignee = :user) and i.status <> DONE order by i.createdAt desc")
+		List<Issue> findOpenInvolving(User user);
+
 		@Find
 		Optional<Issue> findByRepositoryAndId(Repository repository, UUID id);
 

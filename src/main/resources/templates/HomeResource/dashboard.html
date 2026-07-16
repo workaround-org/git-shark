@@ -45,14 +45,15 @@
 <section class="dashboard-section">
     <h2>Notifications</h2>
     {#if notifications.isEmpty()}
-    <p class="muted empty-state">No notifications — assigned issues and merge requests will appear here once those features land.</p>
+    <p class="muted empty-state">Nothing needs your attention — issues and merge requests you're involved in show up here.</p>
     {#else}
     <table>
-        <tr><th>Type</th><th>What</th></tr>
+        <tr><th>Type</th><th>What</th><th>Repository</th></tr>
         {#for item in notifications}
-        <tr>
+        <tr class="row-link">
             <td><span class="badge">{item.category}</span></td>
-            <td><a href="{item.targetUrl}">{item.title}</a></td>
+            <td class="cell-link"><a href="{item.targetUrl}">{item.title}</a></td>
+            <td class="muted">{#if item.repository}{item.repository.ownerHandle}/{item.repository.name}{/if}</td>
         </tr>
         {/for}
     </table>

@@ -18,9 +18,8 @@ class NotificationServiceTest
 	NotificationService service;
 
 	@Test
-	void returnsEmptyWhenNoSourcesAreRegistered()
+	void returnsEmptyForAUserInvolvedInNothing()
 	{
-		// No concrete NotificationSource beans ship with this change.
 		assertTrue(service.notificationsFor(new User()).isEmpty());
 	}
 

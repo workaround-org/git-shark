@@ -24,6 +24,9 @@ class DashboardTest
 	GitRepositoryService service;
 
 	@Inject
+	de.workaround.git.IssueService issueService;
+
+	@Inject
 	User.Repo userRepo;
 
 	@Test
@@ -40,8 +43,22 @@ class DashboardTest
 			.body(containsString("Pinned"))
 			.body(containsString("Notifications"))
 			.body(containsString("All repositories"))
-			// notifications empty state references the not-yet-built features
-			.body(containsString("assigned issues and merge requests"));
+			// notifications empty state when the user is not involved in anything yet
+			.body(containsString("Nothing needs your attention"));
+	}
+
+	@Test
+	@TestSecurity(user = "dash-notif")
+	void issuesTheUserIsInvolvedInAppearInNotifications()
+	{
+		User user = persistUser("dash-notif");
+		Repository repo = service.create(user, "notifrepo", Repository.Visibility.PUBLIC, null);
+		issueService.create(user, repo, "Please look at this", null);
+
+		given().when().get("/").then().statusCode(200)
+			.body(containsString("Notifications"))
+			.body(containsString("Please look at this"))
+			.body(not(containsString("Nothing needs your attention")));
 	}
 
 	@Test

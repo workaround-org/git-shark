@@ -85,6 +85,9 @@ public class MergeRequest implements PanacheEntity.Managed
 		@HQL("select mr from MergeRequest mr join fetch mr.author left join fetch mr.assignee left join fetch mr.reviewer where mr.repository = :repository order by mr.createdAt desc")
 		List<MergeRequest> findByRepository(Repository repository);
 
+		@HQL("select mr from MergeRequest mr join fetch mr.repository where (mr.author = :user or mr.assignee = :user or mr.reviewer = :user) and mr.status = OPEN order by mr.createdAt desc")
+		List<MergeRequest> findOpenInvolving(User user);
+
 		@Find
 		Optional<MergeRequest> findByRepositoryAndId(Repository repository, UUID id);
 
