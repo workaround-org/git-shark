@@ -4,6 +4,36 @@
 {#if error}
 <p class="error">{error}</p>
 {/if}
+
+{#if users}
+<h2>Followed users</h2>
+{#for group in users}
+<section class="followed-user">
+    <h3>
+        <a href="{group.follow.remoteUserActorId}" rel="noopener noreferrer">{group.follow.handle}</a>
+        <form class="inline" method="post" action="/following/users/{group.follow.id}/unfollow">
+            <button class="btn btn-danger btn-sm">Unfollow user</button>
+        </form>
+    </h3>
+    {#if group.repositories}
+    <table>
+        <tr><th>Repository</th><th>State</th><th>Since</th></tr>
+        {#for follow in group.repositories}
+        <tr>
+            <td><a href="{follow.remoteActorId}" rel="noopener noreferrer">{follow.remoteActorId}</a></td>
+            <td>{#if follow.accepted}Accepted{#else}Pending{/if}</td>
+            <td>{follow.createdAt}</td>
+        </tr>
+        {/for}
+    </table>
+    {#else}
+    <p>No public repositories discovered for this user.</p>
+    {/if}
+</section>
+{/for}
+{/if}
+
+<h2>Followed repositories</h2>
 <table>
     <tr><th>Remote repository</th><th>State</th><th>Since</th><th class="actions"></th></tr>
     {#for follow in follows}
@@ -19,6 +49,7 @@
     </tr>
     {/for}
 </table>
+
 {#if pushes}
 <h2>Recent pushes</h2>
 <table>
@@ -33,6 +64,13 @@
     {/for}
 </table>
 {/if}
+
+<h2>Follow remote user</h2>
+<form method="post" action="/following/users">
+    <p><label>Handle or actor URL <input name="handle" placeholder="username@remote-host" required></label></p>
+    <button class="btn btn-primary">Follow user</button>
+</form>
+
 <h2>Follow remote repository</h2>
 <form method="post" action="/following">
     <p><label>Handle or actor URL <input name="handle" placeholder="owner/name@remote-host" required></label></p>

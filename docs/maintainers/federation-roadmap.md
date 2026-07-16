@@ -41,20 +41,23 @@ forks do not cross the instance boundary.
 
 ## Stories
 
-### Story 1 — Follow a user, see their aggregated repositories *(in progress)*
+### Story 1 — Follow a user, see their aggregated repositories *(done)*
 
 Follow a remote `Person` actor and see their public repositories, grouped, with
 recent push activity per repo — instead of following each repository one by one.
 
-Needs:
 - ✅ `Person` actor exposes a `repositories` collection (`/ap/users/{username}/repositories`,
-  public repos only) and advertises it in the actor document — **done**.
-- Outbound follow generalised to a `Person` target (today it targets repository
-  actors only).
-- Persist followed remote users; fetch and cache their repository collection.
-- `/following` UI groups activity by user → repository.
+  public repos only) and advertises it in the actor document.
+- ✅ Follow a remote user: `RemoteFollowService.followUser` resolves the `Person`,
+  reads their repositories collection via `RemoteRepositoryDirectory`, and fans
+  out to a repository follow per public repo (tagged `viaUserActorId`), reusing
+  the existing Follow/Accept/Push machinery.
+- ✅ Followed users persisted (`remote_user_follows`); the `/following` UI groups
+  repositories and their push activity under each followed user.
 
-Independently shippable, no merge-request risk. This is the next increment.
+Implemented as a **snapshot** at follow time (see the follow-a-user re-sync gap
+in [forgefed.md](forgefed.md)); repos the remote adds later need a re-follow to
+appear. A live re-sync is a possible follow-up.
 
 ### Story 2 — Cross-instance fork with upstream tracking *(issue #12)*
 

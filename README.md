@@ -72,7 +72,8 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
   [architecture](docs/maintainers/push-mirrors.md)
 - **Federation (ForgeFed / ActivityPub)** — *opt-in, off by default.* Public repositories are
   exposed as ForgeFed `Repository` actors that remote instances can follow and receive `Push`
-  activities from (see below)
+  activities from; local users can in turn follow a remote repository — or a whole remote user, whose
+  public repositories are then followed and shown grouped — and read their pushes (see below)
 
 ## Federation (ForgeFed)
 
