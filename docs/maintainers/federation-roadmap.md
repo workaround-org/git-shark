@@ -55,9 +55,13 @@ recent push activity per repo — instead of following each repository one by on
 - ✅ Followed users persisted (`remote_user_follows`); the `/following` UI groups
   repositories and their push activity under each followed user.
 
-Implemented as a **snapshot** at follow time (see the follow-a-user re-sync gap
-in [forgefed.md](forgefed.md)); repos the remote adds later need a re-follow to
-appear. A live re-sync is a possible follow-up.
+- ✅ A periodic `FederationResyncScheduler` re-scans each followed user's
+  repositories collection (add-only) so repos created after the follow are
+  picked up automatically — no re-follow needed.
+
+Remaining follow-ups are add-only reconcile limits (no unfollow on remote
+delete/private) and collection pagination — see the gap list in
+[forgefed.md](forgefed.md).
 
 ### Story 2 — Cross-instance fork with upstream tracking *(issue #12)*
 

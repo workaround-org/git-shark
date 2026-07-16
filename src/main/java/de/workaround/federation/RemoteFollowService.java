@@ -127,7 +127,8 @@ public class RemoteFollowService
 	/**
 	 * Follows a remote {@code Person} named by {@code input} (actor URL or {@code username@host}
 	 * handle): fans out to a repository follow per public repository the remote advertises. Idempotent
-	 * per (user, remote person). The repository set is a snapshot at follow time.
+	 * per (user, remote person). The repository set is kept in sync afterwards by the periodic
+	 * add-only re-scan in {@link #resyncUser} (via {@code FederationResyncScheduler}).
 	 */
 	@Transactional
 	public RemoteUserFollow followUser(User user, String input)
@@ -180,6 +181,42 @@ public class RemoteFollowService
 			unfollow(user, follow.id);
 		}
 		userFollows.deleteById(userFollow.id);
+	}
+
+	/** Ids of every remote-user follow across all users, for the scheduled re-sync pass. */
+	@Transactional
+	public List<UUID> allUserFollowIds()
+	{
+		return userFollows.findAllIds();
+	}
+
+	/**
+	 * Re-fetches a followed user's repositories collection and follows any public repository not yet
+	 * followed (add-only — repositories that vanished remotely are left in place). Makes
+	 * follow-then-create eventually consistent without a manual re-follow.
+	 */
+	@Transactional
+	public void resyncUser(UUID userFollowId)
+	{
+		RemoteUserFollow userFollow = userFollows.findById(userFollowId);
+		if (userFollow == null)
+		{
+			return;
+		}
+		User user = userFollow.user;
+		for (String repoActorId : directory.repositoriesOf(userFollow.remoteUserActorId))
+		{
+			try
+			{
+				followRepositoryActor(user, repoActorId, userFollow.remoteUserActorId);
+			}
+			catch (RemoteFollowException e)
+			{
+				// followRepositoryActor is idempotent; only genuinely unresolvable repos land here.
+				LOG.debugf("Re-sync skipping unresolvable repository %s of %s: %s", repoActorId,
+					userFollow.remoteUserActorId, e.getMessage());
+			}
+		}
 	}
 
 	/** The handle to display: the entered {@code username@host} form, else the resolved actor id. */
