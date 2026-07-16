@@ -1,0 +1,22 @@
+{#include layout}
+{#title}{profile.username} – git-shark{/title}
+<h1>{#avatar user=profile /} {profile.displayName ?: profile.username}</h1>
+<p class="muted mono">{profile.username}</p>
+<section class="dashboard-section">
+    <h2>Repositories</h2>
+    {#if repos.isEmpty()}
+    <p class="muted empty-state">No repositories yet.</p>
+    {#else}
+    <table>
+        <tr><th>Repository</th><th>Visibility</th><th>Description</th></tr>
+        {#for repo in repos}
+        <tr class="row-link">
+            <td class="cell-link"><a class="mono" href="/repos/{repo.ownerHandle}/{repo.name}">{#repoAvatar repo=repo /} {repo.name}</a></td>
+            <td><span class="badge badge-{repo.visibility.name().toLowerCase()}">{repo.visibility.name().toLowerCase()}</span></td>
+            <td class="muted">{repo.description ?: ''}</td>
+        </tr>
+        {/for}
+    </table>
+    {/if}
+</section>
+{/include}

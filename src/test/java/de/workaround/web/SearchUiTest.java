@@ -36,7 +36,21 @@ class SearchUiTest
 			.then().statusCode(200)
 			.body(containsString("/repos/owner-" + tok + "/repo-" + tok))
 			.body(not(containsString("priv-" + tok)))
-			.body(containsString("owner-" + tok));
+			.body(containsString("owner-" + tok))
+			// person hits link to the profile page (#11)
+			.body(containsString("/users/owner-" + tok));
+	}
+
+	@Test
+	void resultsPageHasNoOwnSearchInputAndPrefillsHeader()
+	{
+		String tok = "dup" + shortId();
+		given().when().get("/search?q=" + tok)
+			.then().statusCode(200)
+			// the page must not carry its own duplicate search form (class="search")
+			.body(not(containsString("class=\"search\"")))
+			// the single (header) search box shows what was searched
+			.body(containsString("value=\"" + tok + "\""));
 	}
 
 	@Test

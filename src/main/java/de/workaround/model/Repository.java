@@ -97,6 +97,9 @@ public class Repository implements PanacheEntity.Managed
 		@HQL("where ownerOrg = :ownerOrg order by name")
 		List<Repository> findByOwnerOrg(Organisation ownerOrg);
 
+		@HQL("where ownerUser = :ownerUser order by name")
+		List<Repository> findByOwnerUser(User ownerUser);
+
 		@HQL("select count(r) from Repository r where r.ownerOrg = :ownerOrg")
 		long countByOwnerOrg(Organisation ownerOrg);
 

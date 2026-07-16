@@ -198,6 +198,11 @@ public class GitRepositoryService
 		return repositories.findByOwnerOrg(organisation);
 	}
 
+	public List<Repository> listOwnedBy(User owner)
+	{
+		return repositories.findByOwnerUser(owner);
+	}
+
 	private static void validateName(String name)
 	{
 		if (name == null || name.isEmpty() || name.equals(".") || name.equals("..")

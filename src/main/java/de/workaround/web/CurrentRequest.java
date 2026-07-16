@@ -26,4 +26,14 @@ public class CurrentRequest
 		return "/login?redirect=" + URLEncoder.encode(routingContext.request().uri(), StandardCharsets.UTF_8);
 	}
 
+	/**
+	 * The current {@code q} query parameter, or an empty string. Used to prefill the single search
+	 * box in the header so the search results page needs no duplicate input of its own.
+	 */
+	public String searchQuery()
+	{
+		String q = routingContext.request().getParam("q");
+		return q == null ? "" : q;
+	}
+
 }

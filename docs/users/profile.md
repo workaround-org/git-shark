@@ -80,3 +80,22 @@ not covered — they're identified by their remote handle, not a local account.
 Your uploaded picture is served publicly at `/users/<your-username>/avatar` so
 it can be embedded on public pages without requiring the viewer to be logged
 in.
+
+---
+
+## Public profile page
+
+Everyone — including visitors who aren't logged in — has a public profile page
+at `/users/<username>`. It's what you land on when you click a person's name
+from a [search](search.md) hit.
+
+It shows:
+
+- The person's avatar and display name (or their username, if they haven't
+  set one).
+- A list of the repositories they own — filtered to what **you** are allowed
+  to see: their public repositories, plus their private ones only if you
+  already have read access (owner, collaborator, or through an organisation).
+
+An unknown username shows a 404 page. This is the person equivalent of an
+[organisation](organisations.md)'s profile at `/orgs/<name>`.

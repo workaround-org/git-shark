@@ -49,8 +49,10 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
 - **Search** — a simple case-insensitive substring search over repositories (owner, name,
   description) and people (username, display name), from the header search box or `GET /search`,
   and as JSON at `GET /api/v1/search?q=<term>`. Repository hits obey the same visibility rule as
-  everywhere else, so a private repo never surfaces to someone who cannot already read it. Guides:
-  [for users](docs/users/search.md), [for admins](docs/admins/search.md)
+  everywhere else, so a private repo never surfaces to someone who cannot already read it. Person
+  hits link to that user's public profile page at `GET /users/{username}` (avatar, display name,
+  and their visibility-filtered repositories — the person equivalent of the `/orgs/{name}`
+  organisation profile). Guides: [for users](docs/users/search.md), [for admins](docs/admins/search.md)
 - Single access policy on all paths: owner read/write, collaborators read/write, org roles
   (guest read / member write / owner admin) on org repositories, public world-readable,
   private repositories visible only to whoever holds a read grant

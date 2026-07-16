@@ -1,10 +1,6 @@
 {#include layout}
 {#title}Search – git-shark{/title}
 <h1>Search</h1>
-<form class="search" method="get" action="/search">
-    <input type="search" name="q" value="{query}" placeholder="Search repositories and people" aria-label="Search">
-    <button class="btn btn-primary">Search</button>
-</form>
 {#if query.isBlank()}
 <p class="muted">Type a query to search repositories and people.</p>
 {#else}
@@ -29,7 +25,7 @@
 {#else}
 <ul class="person-list">
     {#for person in persons}
-    <li>{#avatar user=person /} <span class="mono">{person.username}</span>{#if person.displayName} <span class="muted">{person.displayName}</span>{/if}</li>
+    <li><a href="/users/{person.username}">{#avatar user=person /} <span class="mono">{person.username}</span>{#if person.displayName} <span class="muted">{person.displayName}</span>{/if}</a></li>
     {/for}
 </ul>
 {/if}
