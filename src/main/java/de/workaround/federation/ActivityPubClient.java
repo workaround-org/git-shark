@@ -10,6 +10,8 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -115,6 +117,64 @@ public class ActivityPubClient
 			actor.persist();
 		}
 		return Optional.of(actor);
+	}
+
+	/**
+	 * Fetches an {@code OrderedCollection} document and returns its item ids: textual items are taken
+	 * verbatim, object items contribute their {@code id}. SSRF-guarded like every outbound fetch;
+	 * returns an empty list on any failure so callers never abort on an unreachable collection.
+	 */
+	public List<String> fetchCollectionItemIds(String collectionUrl)
+	{
+		URI uri;
+		try
+		{
+			uri = guard.requireSafe(collectionUrl);
+		}
+		catch (RemoteUrlGuard.UnsafeUrlException e)
+		{
+			return List.of();
+		}
+		try
+		{
+			HttpResponse<String> response = http.send(
+				HttpRequest.newBuilder(uri)
+					.header("Accept", ActivityPubMedia.ACTIVITY_JSON)
+					.timeout(Duration.ofSeconds(15))
+					.GET().build(),
+				HttpResponse.BodyHandlers.ofString());
+			if (response.statusCode() / 100 != 2 || response.body().length() > MAX_RESPONSE_BYTES)
+			{
+				return List.of();
+			}
+			JsonNode doc = mapper.readTree(response.body());
+			List<String> ids = new ArrayList<>();
+			for (JsonNode item : doc.path("orderedItems"))
+			{
+				if (item.isTextual())
+				{
+					ids.add(item.asText());
+				}
+				else
+				{
+					String id = item.path("id").asText(null);
+					if (id != null)
+					{
+						ids.add(id);
+					}
+				}
+			}
+			return ids;
+		}
+		catch (IOException e)
+		{
+			return List.of();
+		}
+		catch (InterruptedException e)
+		{
+			Thread.currentThread().interrupt();
+			return List.of();
+		}
 	}
 
 	/** Resolves the public key named by a {@code keyId} (actor id + {@code #main-key} fragment). */

@@ -35,15 +35,16 @@ Everything lives in `src/main/java/de/workaround/federation/`:
 | `FollowHandler` / `UndoHandler` | Inbound: remote actor (un)follows a local repository |
 | `AcceptHandler` | Inbound: remote accepts a `Follow` we sent — flips our follow to `ACCEPTED` |
 | `PushHandler` | Inbound: stores `Push` from repositories local users follow |
-| `RemoteFollowService` | Outbound: follow/unfollow a remote repository, push feed query |
+| `RemoteFollowService` | Outbound: follow/unfollow a remote repository or user, push feed query |
+| `RemoteRepositoryDirectory` | Outbound: reads a remote `Person`'s `repositories` collection (fan-out source for follow-a-user) |
 | `FederationPushService` | Outbound: fans out `Push` to followers from the git post-receive hook |
 | `DeliveryService` | Persisted outbound queue with retry/backoff/dead-letter |
 
 Web UI: `web/FollowingResource` + Qute template (`/following` page). Persistence
 in `model/` (`FederationKey`, `RemoteActor`, `RepositoryFollower`,
-`RemoteFollow`, `ReceivedPush`, `InboxActivity`, `OutboxActivity`,
-`FederationDelivery`), schema in `db/migration/V2__federation.sql` and
-`V9__federation_following.sql`.
+`RemoteFollow`, `RemoteUserFollow`, `ReceivedPush`, `InboxActivity`,
+`OutboxActivity`, `FederationDelivery`), schema in `db/migration/V2__federation.sql`,
+`V9__federation_following.sql`, and `V19__federation_user_follows.sql`.
 
 ## Actor model
 
@@ -71,6 +72,15 @@ signed `Follow`. The remote's `Accept` arrives at the user's inbox and
 `AcceptHandler` flips the row to `ACCEPTED` — but only when the accepting actor
 matches the one we followed. Unfollow enqueues `Undo(Follow)` and deletes the
 row.
+
+**Outbound follow-a-user** (`RemoteFollowService.followUser`): input resolves to
+a remote `Person` actor id → `RemoteRepositoryDirectory` reads that Person's
+`repositories` collection → a `RemoteUserFollow` row is persisted and one
+repository follow is fanned out per public repo (each tagged with
+`viaUserActorId`), reusing the ordinary follow path above. The set is a snapshot
+at follow time. `unfollowUser` undoes every tagged repository follow, then
+removes the `RemoteUserFollow`. The `/following` page groups repositories under
+their followed user; directly-followed repositories are listed separately.
 
 **Inbound follow** (`FollowHandler`): a remote actor follows one of our public
 repositories → persist `RepositoryFollower` → enqueue a signed `Accept` back.
@@ -168,15 +178,17 @@ don't accidentally undo them:
 
 - Actor documents and WebFinger discovery for repositories, users, and the
   instance; outbox and followers collections. The `Person` actor advertises and
-  serves a `repositories` collection of its public repository actors
-  (foundation for following a user — see the
-  [federated collaboration roadmap](federation-roadmap.md), Story 1).
+  serves a `repositories` collection of its public repository actors.
 - Inbound `Follow`/`Undo(Follow)` on public repositories, answered with a
   signed `Accept` (remote users can follow local repos).
 - `Push` fan-out to remote followers from both git transports.
 - Outbound follow/unfollow of remote repositories by handle or actor URL,
   including `Accept` confirmation tracking (`PENDING` → `ACCEPTED`) and the
   received-pushes feed — the `/following` UI covers all of it.
+- Outbound follow/unfollow of a remote **user**: reads the `Person`'s
+  `repositories` collection and fans out to a repository follow per public repo,
+  shown grouped in the `/following` UI (federated-collaboration roadmap Story 1).
+  Snapshot at follow time — new remote repositories are not auto-picked-up.
 - HTTP Signature signing/verification, per-actor keys, inbound dedup, peer
   allowlist, SSRF guard, delivery queue with retry and dead-letter.
 - Tested git-shark↔git-shark, including a scripted local two-host trial (see
@@ -223,5 +235,11 @@ Operational gaps:
   federation.
 - **Follower/feed UI depth** — repository pages don't show remote followers;
   the push feed is a flat newest-50 with no pagination or per-repo filtering.
+- **Follow-a-user re-sync** — the fanned-out repository set is a snapshot at
+  follow time; there is no re-fetch of a followed user's `repositories`
+  collection, so repos they add later are never picked up. Also,
+  `RemoteRepositoryDirectory` reads only the first collection page — it does not
+  follow `next` pagination, fine for the git-shark↔git-shark scope but a gap for
+  users with large repository lists or broader ForgeFed peers.
 - **Delivery observability** — dead-letters are only visible via SQL; no
   admin UI or metrics.

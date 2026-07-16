@@ -13,14 +13,31 @@ account on the remote server needed.
 
 ## What you can do
 
-- **Follow a remote public repository** and get its `Push` activity feed.
-- **Unfollow** it again.
+- **Follow a remote user** and get all of their public repositories at once,
+  grouped under that user, each with its own `Push` feed.
+- **Follow a single remote public repository** and get its `Push` activity feed.
+- **Unfollow** either again.
 - **Be discovered**: your user and every public repository on your instance are
   visible to other ForgeFed servers.
 
 What is *not* federated (yet): issues, merge requests, comments, forks, and
 anything on private repositories. Private repositories are never exposed to
 federation at all.
+
+---
+
+## Following a remote user
+
+Open **Following** in the header navigation (you must be logged in) and use the
+**Follow remote user** form with either a `username@host` handle or the user's
+actor URL (`https://shark.example.com/ap/users/alice`). Your instance reads the
+user's public repository list and follows each repository for you; they appear
+grouped under the user, and their pushes flow into the **Recent pushes** feed
+like any other follow.
+
+The repository set is a **snapshot taken when you follow** — repositories the
+remote user creates afterwards are not picked up automatically. Unfollowing the
+user unfollows every repository that was fanned out from it.
 
 ---
 

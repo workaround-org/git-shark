@@ -1,6 +1,7 @@
 package de.workaround.web;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -9,7 +10,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import de.workaround.federation.ActivityDispatcher;
+import de.workaround.federation.RemoteRepositoryDirectory;
 import de.workaround.model.RemoteActor;
+import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.inject.Inject;
@@ -109,6 +112,59 @@ class FollowingPagesTest
 			.then()
 			.statusCode(400)
 			.body(containsString("Could not resolve"));
+	}
+
+	@Test
+	@TestSecurity(user = "user-follow-tester")
+	void followUserGroupsRepositoriesAndUnfollows()
+	{
+		String person = "https://peer.test/ap/users/bob-" + unique();
+		String repo = "https://peer.test/ap/repos/bob/lib-" + unique();
+		seedRemoteActor(repo, repo + "/inbox");
+		QuarkusMock.installMockForType(new RemoteRepositoryDirectory()
+		{
+			@Override
+			public List<String> repositoriesOf(String personActorId)
+			{
+				return person.equals(personActorId) ? List.of(repo) : List.of();
+			}
+		}, RemoteRepositoryDirectory.class);
+
+		given()
+			.when().get("/following")
+			.then()
+			.statusCode(200)
+			.body(containsString("Follow remote user"));
+
+		given()
+			.redirects().follow(false)
+			.formParam("handle", person)
+			.when().post("/following/users")
+			.then()
+			.statusCode(anyOf(is(302), is(303)));
+
+		String body = given()
+			.when().get("/following")
+			.then()
+			.statusCode(200)
+			.body(containsString(person))
+			.body(containsString(repo))
+			.extract().body().asString();
+
+		String userFollowId = body.substring(body.indexOf("/following/users/") + "/following/users/".length());
+		userFollowId = userFollowId.substring(0, userFollowId.indexOf("/unfollow"));
+
+		given()
+			.redirects().follow(false)
+			.when().post("/following/users/" + userFollowId + "/unfollow")
+			.then()
+			.statusCode(anyOf(is(302), is(303)));
+
+		given()
+			.when().get("/following")
+			.then()
+			.statusCode(200)
+			.body(not(containsString(repo)));
 	}
 
 	@Test

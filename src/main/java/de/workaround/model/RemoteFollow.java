@@ -42,6 +42,13 @@ public class RemoteFollow implements PanacheEntity.Managed
 	@Column(columnDefinition = "text")
 	public String followActivityId;
 
+	/**
+	 * Null for a directly-followed repository; the remote {@code Person} actor id when this follow was
+	 * created by fanning out a followed user's repositories collection (see {@link RemoteUserFollow}).
+	 */
+	@Column(columnDefinition = "text")
+	public String viaUserActorId;
+
 	@Enumerated(EnumType.STRING)
 	public State state = State.PENDING;
 
@@ -72,6 +79,14 @@ public class RemoteFollow implements PanacheEntity.Managed
 
 		@HQL("select f from RemoteFollow f where f.user = :user order by f.createdAt")
 		List<RemoteFollow> findByUser(User user);
+
+		@HQL("select f from RemoteFollow f where f.user = :user and f.viaUserActorId = :viaUserActorId"
+			+ " order by f.createdAt")
+		List<RemoteFollow> findByUserAndViaUserActorId(User user, String viaUserActorId);
+
+		@HQL("select f from RemoteFollow f where f.user = :user and f.viaUserActorId is null"
+			+ " order by f.createdAt")
+		List<RemoteFollow> findStandaloneByUser(User user);
 	}
 
 }

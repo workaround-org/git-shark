@@ -80,6 +80,8 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
   `/admin/runners`; secrets are stored hashed. Workflow execution (fetching and running jobs) is a
   follow-up phase. Guides: [for users](docs/users/ci-runners.md), [for admins](docs/admins/ci-runners.md),
   [architecture](docs/maintainers/ci-runners.md)
+  activities from; local users can in turn follow a remote repository — or a whole remote user, whose
+  public repositories are then followed and shown grouped — and read their pushes (see below)
 
 ## Federation (ForgeFed)
 

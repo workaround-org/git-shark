@@ -134,7 +134,8 @@ select remote_actor_id, state, created_at from remote_follows where state = 'PEN
 | `federation_keys` | Local actor keypairs (public + private PEM) |
 | `remote_actors` | Cache of fetched remote actors (inbox, public key; 6h TTL) |
 | `repository_followers` | Remote actors following local repositories |
-| `remote_follows` | Local users' follows of remote repositories (`PENDING`/`ACCEPTED`) |
+| `remote_follows` | Local users' follows of remote repositories (`PENDING`/`ACCEPTED`); `via_user_actor_id` tags follows fanned out from a followed user |
+| `remote_user_follows` | Local users' follows of remote users (each expands to a `remote_follows` row per public repo) |
 | `received_pushes` | `Push` activities received from followed repositories (feed) |
 | `federation_outbox` / `federation_inbox` | Published activities / inbound dedup log |
 | `federation_delivery` | Outbound delivery queue |
