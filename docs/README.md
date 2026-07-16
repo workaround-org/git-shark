@@ -70,6 +70,9 @@ OIDC login, and PostgreSQL metadata.
   visibility-guarded serving endpoint.
 - **[ForgeFed architecture](maintainers/forgefed.md)** — how federation is
   implemented, the decisions behind it, what works and what is still missing.
+- **[Federated collaboration roadmap](maintainers/federation-roadmap.md)** — the
+  plan to grow federation from follow-and-feed into cross-instance discovery,
+  forking, and merge requests: the stories, protocol choice, and prerequisites.
 - **[Push mirrors architecture](maintainers/push-mirrors.md)** — trigger flow,
   queue design, credential encryption, and SSH decisions behind push mirroring.
 - **[CI/CD runner protocol](maintainers/ci-runners.md)** — how the Forgejo/Gitea

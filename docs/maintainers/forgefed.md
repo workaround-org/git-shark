@@ -3,7 +3,8 @@
 Maintainer-facing documentation for the federation subsystem: how it is built,
 why it is built that way, what works today, and what is still missing. For
 operating it see the [deployment guide](../admins/federation.md); for the user
-view see the [user guide](../users/federation.md).
+view see the [user guide](../users/federation.md); for where the subsystem is
+headed see the [federated collaboration roadmap](federation-roadmap.md).
 
 git-shark speaks [ForgeFed](https://forgefed.org), the forge-federation
 vocabulary on top of [ActivityPub](https://www.w3.org/TR/activitypub/). The
@@ -54,10 +55,12 @@ Three local actor types, all rooted at `gitshark.federation.base-url`:
 | User | `Person` | `/ap/users/{username}` | `acct:username@host` |
 | Instance | `Application` | `/ap/instance` | — |
 
-Each has its own inbox; repositories and users also expose `outbox` and
-(repositories) `followers` collections. Private repositories are invisible to
-every federation endpoint — visibility is checked at the resource layer, not
-filtered in templates.
+Each has its own inbox; repositories and users also expose `outbox`,
+repositories additionally a `followers` collection, and users a `repositories`
+collection (`…/ap/users/{username}/repositories`) listing that user's public
+repository actors for cross-instance discovery. Private repositories are
+invisible to every federation endpoint — visibility is checked at the resource
+layer, not filtered in templates.
 
 ## Data flow
 
@@ -164,7 +167,10 @@ don't accidentally undo them:
 ## What works today
 
 - Actor documents and WebFinger discovery for repositories, users, and the
-  instance; outbox and followers collections.
+  instance; outbox and followers collections. The `Person` actor advertises and
+  serves a `repositories` collection of its public repository actors
+  (foundation for following a user — see the
+  [federated collaboration roadmap](federation-roadmap.md), Story 1).
 - Inbound `Follow`/`Undo(Follow)` on public repositories, answered with a
   signed `Accept` (remote users can follow local repos).
 - `Push` fan-out to remote followers from both git transports.

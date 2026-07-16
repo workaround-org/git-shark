@@ -65,6 +65,44 @@ class FederationActorsTest
 	}
 
 	@Test
+	void personActorAdvertisesRepositoriesCollection()
+	{
+		User user = persistUser("fed-act-ivy-" + unique());
+
+		given().accept(ACTIVITY_JSON)
+			.when().get("/ap/users/" + user.username)
+			.then().statusCode(200)
+			.body(containsString("\"type\":\"Person\""))
+			.body(containsString("/ap/users/" + user.username + "/repositories"));
+	}
+
+	@Test
+	void personRepositoriesCollectionListsOnlyPublicRepos()
+	{
+		User owner = persistUser("fed-act-jane-" + unique());
+		service.create(owner, "alpha", Repository.Visibility.PUBLIC, "first");
+		service.create(owner, "beta", Repository.Visibility.PUBLIC, "second");
+		service.create(owner, "hidden", Repository.Visibility.PRIVATE, "secret");
+
+		given().accept(ACTIVITY_JSON)
+			.when().get("/ap/users/" + owner.username + "/repositories")
+			.then().statusCode(200)
+			.body(containsString("\"type\":\"OrderedCollection\""))
+			.body(containsString("\"totalItems\":2"))
+			.body(containsString("/ap/repos/" + owner.username + "/alpha"))
+			.body(containsString("/ap/repos/" + owner.username + "/beta"))
+			.body(not(containsString("/ap/repos/" + owner.username + "/hidden")));
+	}
+
+	@Test
+	void personRepositoriesCollectionEmptyForUnknownUserIsNotFound()
+	{
+		given().accept(ACTIVITY_JSON)
+			.when().get("/ap/users/nobody-" + unique() + "/repositories")
+			.then().statusCode(404);
+	}
+
+	@Test
 	void instanceActorResolves()
 	{
 		given().accept(ACTIVITY_JSON)

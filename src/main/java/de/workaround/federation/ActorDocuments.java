@@ -59,6 +59,7 @@ public class ActorDocuments
 		}
 		node.put("inbox", uris.inbox(id));
 		node.put("outbox", uris.outbox(id));
+		node.put("repositories", uris.repositories(id));
 		addPublicKey(node, id, FederationKey.ActorType.PERSON, user.id.toString());
 		return node;
 	}

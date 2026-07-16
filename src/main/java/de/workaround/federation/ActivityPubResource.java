@@ -106,6 +106,19 @@ public class ActivityPubResource
 		return json(documents.orderedCollection(id, payloads(FederationKey.ActorType.PERSON, user.id.toString())));
 	}
 
+	@GET
+	@Path("users/{username}/repositories")
+	public Response personRepositories(@PathParam("username") String username)
+	{
+		User user = requireUser(username);
+		String id = uris.repositories(uris.person(user));
+		List<Object> items = new ArrayList<>(repositories.listOwnedBy(user).stream()
+			.filter(repo -> repo.visibility == Repository.Visibility.PUBLIC)
+			.map(repo -> (Object) uris.repository(repo))
+			.toList());
+		return json(documents.orderedCollection(id, items));
+	}
+
 	private List<Object> payloads(FederationKey.ActorType type, String ref)
 	{
 		List<Object> items = new ArrayList<>();

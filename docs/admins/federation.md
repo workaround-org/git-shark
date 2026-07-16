@@ -63,6 +63,7 @@ With federation operational, these endpoints are public (no login):
 | `GET /ap/users/{username}` | ActivityPub `Person` actor |
 | `GET /ap/instance` | Instance `Application` actor |
 | `GET …/outbox`, `…/followers` | Activity and follower collections |
+| `GET /ap/users/{username}/repositories` | A user's public repository actors (discovery) |
 | `POST …/inbox` | Signed inbound activities (repo, user, and instance inboxes) |
 
 Private repositories are never exposed. Inbound posts are verified (HTTP
