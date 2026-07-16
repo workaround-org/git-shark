@@ -104,6 +104,34 @@ class RemoteUserFollowTest
 	}
 
 	@Test
+	void resyncPicksUpRepositoriesCreatedAfterFollow()
+	{
+		User user = persistUser("ruf-rick-" + unique());
+		String person = "https://peer.test/ap/users/bob-" + unique();
+		canned.put(person, List.of()); // no public repos at follow time
+		RemoteUserFollow uf = service.followUser(user, person);
+		assertTrue(service.repositoriesOfFollowedUser(user, person).isEmpty());
+
+		// The remote creates a public repository afterwards.
+		String repoOne = "https://peer.test/ap/repos/bob/late-" + unique();
+		seedRemoteActor(repoOne);
+		canned.put(person, List.of(repoOne));
+
+		service.resyncUser(uf.id);
+
+		List<RemoteFollow> repos = service.repositoriesOfFollowedUser(user, person);
+		assertEquals(1, repos.size());
+		assertEquals(repoOne, repos.get(0).remoteActorId);
+		assertEquals(person, repos.get(0).viaUserActorId);
+		assertTrue(deliveries.findDue(Instant.now()).stream()
+			.anyMatch(t -> t.targetInbox.equals(repoOne + "/inbox") && t.payload.contains("\"Follow\"")));
+
+		// Re-syncing again must not duplicate the follow.
+		service.resyncUser(uf.id);
+		assertEquals(1, service.repositoriesOfFollowedUser(user, person).size());
+	}
+
+	@Test
 	void unfollowUserUndoesEveryDerivedFollow()
 	{
 		User user = persistUser("ruf-frank-" + unique());

@@ -37,6 +37,7 @@ Everything lives in `src/main/java/de/workaround/federation/`:
 | `PushHandler` | Inbound: stores `Push` from repositories local users follow |
 | `RemoteFollowService` | Outbound: follow/unfollow a remote repository or user, push feed query |
 | `RemoteRepositoryDirectory` | Outbound: reads a remote `Person`'s `repositories` collection (fan-out source for follow-a-user) |
+| `FederationResyncScheduler` | Periodic add-only re-scan of followed users' repositories (picks up repos created after the follow) |
 | `FederationPushService` | Outbound: fans out `Push` to followers from the git post-receive hook |
 | `DeliveryService` | Persisted outbound queue with retry/backoff/dead-letter |
 
@@ -81,6 +82,10 @@ repository follow is fanned out per public repo (each tagged with
 at follow time. `unfollowUser` undoes every tagged repository follow, then
 removes the `RemoteUserFollow`. The `/following` page groups repositories under
 their followed user; directly-followed repositories are listed separately.
+`FederationResyncScheduler` re-runs `RemoteRepositoryDirectory` for every
+followed user on a configurable interval
+(`gitshark.federation.user-resync-interval`, default 5m) and follows any new
+public repository — add-only, so repos that disappear remotely are left in place.
 
 **Inbound follow** (`FollowHandler`): a remote actor follows one of our public
 repositories → persist `RepositoryFollower` → enqueue a signed `Accept` back.
@@ -188,7 +193,8 @@ don't accidentally undo them:
 - Outbound follow/unfollow of a remote **user**: reads the `Person`'s
   `repositories` collection and fans out to a repository follow per public repo,
   shown grouped in the `/following` UI (federated-collaboration roadmap Story 1).
-  Snapshot at follow time — new remote repositories are not auto-picked-up.
+  A periodic `FederationResyncScheduler` re-scans followed users (add-only), so
+  repositories created after the follow are picked up automatically.
 - HTTP Signature signing/verification, per-actor keys, inbound dedup, peer
   allowlist, SSRF guard, delivery queue with retry and dead-letter.
 - Tested git-shark↔git-shark, including a scripted local two-host trial (see
@@ -235,9 +241,9 @@ Operational gaps:
   federation.
 - **Follower/feed UI depth** — repository pages don't show remote followers;
   the push feed is a flat newest-50 with no pagination or per-repo filtering.
-- **Follow-a-user re-sync** — the fanned-out repository set is a snapshot at
-  follow time; there is no re-fetch of a followed user's `repositories`
-  collection, so repos they add later are never picked up. Also,
+- **Follow-a-user reconcile is add-only** — `FederationResyncScheduler` picks up
+  repositories added after the follow, but does not *unfollow* repositories that
+  the remote user made private or deleted; those stale follows linger. Also,
   `RemoteRepositoryDirectory` reads only the first collection page — it does not
   follow `next` pagination, fine for the git-shark↔git-shark scope but a gap for
   users with large repository lists or broader ForgeFed peers.

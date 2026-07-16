@@ -341,6 +341,7 @@ Every value below is an environment variable on the `app` service. Defaults come
 | `GITSHARK_FEDERATION_BASE_URL` | — | — | Public HTTPS origin; permanent actor-ID base |
 | `GITSHARK_FEDERATION_PEER_ALLOWLIST` | — | — | Comma-separated peer hosts (empty denies all) |
 | `GITSHARK_FEDERATION_MAX_ATTEMPTS` | — | `8` | Outbound delivery retry cap |
+| `GITSHARK_FEDERATION_USER_RESYNC_INTERVAL` | — | `5m` | Re-scan followed users for new public repos |
 | `GITSHARK_FEDERATION_DEV_ALLOW_INSECURE` | — | `false` | Dev only: allow http/loopback peers |
 
 ### Optional: push mirrors

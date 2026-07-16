@@ -35,9 +35,10 @@ user's public repository list and follows each repository for you; they appear
 grouped under the user, and their pushes flow into the **Recent pushes** feed
 like any other follow.
 
-The repository set is a **snapshot taken when you follow** — repositories the
-remote user creates afterwards are not picked up automatically. Unfollowing the
-user unfollows every repository that was fanned out from it.
+Repositories the remote user creates *after* you follow them are picked up
+automatically: your instance re-scans each followed user periodically (every few
+minutes) and starts following any new public repository. Unfollowing the user
+unfollows every repository that was fanned out from it.
 
 ---
 

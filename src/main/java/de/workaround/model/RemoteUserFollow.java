@@ -52,6 +52,9 @@ public class RemoteUserFollow implements PanacheEntity.Managed
 
 		@HQL("select f from RemoteUserFollow f where f.user = :user order by f.createdAt")
 		List<RemoteUserFollow> findByUser(User user);
+
+		@HQL("select f.id from RemoteUserFollow f")
+		List<UUID> findAllIds();
 	}
 
 }

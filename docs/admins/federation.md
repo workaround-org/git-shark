@@ -21,6 +21,7 @@ All settings come from environment variables:
 | `GITSHARK_FEDERATION_BASE_URL` | — | Public HTTPS origin of this instance, e.g. `https://shark.example.com`. Actor IDs derive from it |
 | `GITSHARK_FEDERATION_PEER_ALLOWLIST` | — (empty) | Comma-separated peer **hosts**, e.g. `shark.other.org,forge.example`. Empty denies every remote peer |
 | `GITSHARK_FEDERATION_MAX_ATTEMPTS` | `8` | Delivery attempts before an outbound activity is dead-lettered |
+| `GITSHARK_FEDERATION_USER_RESYNC_INTERVAL` | `5m` | How often followed remote users are re-scanned for newly created public repositories (add-only) |
 | `GITSHARK_FEDERATION_DEV_ALLOW_INSECURE` | `false` | **Dev only.** Permits `http://` and loopback/private targets. Never in production |
 
 Minimal production setup:
