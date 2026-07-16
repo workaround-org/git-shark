@@ -323,6 +323,27 @@ header.site nav .logout button:focus-visible {
     border-radius: var(--radius-sm);
 }
 
+/* On narrow viewports the brand + search + nav no longer fit on one row; without wrapping they
+   force the whole page wider than the screen (horizontal scroll). Collapse to two rows instead:
+   brand and nav share the top row, the search box drops to a full-width row of its own. */
+@media (max-width: 640px) {
+    header.site {
+        flex-wrap: wrap;
+        row-gap: var(--s3);
+    }
+
+    header.site nav {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: var(--s3);
+    }
+
+    header.site .nav-search {
+        order: 10;
+        flex: 1 1 100%;
+    }
+}
+
 main {
     max-width: var(--content-w);
     margin: var(--s6) auto;
