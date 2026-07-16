@@ -1238,6 +1238,27 @@ details.archive > .panel {
     background: var(--danger-bg);
 }
 
+/* merge-request metadata strip: assignee + reviewer pickers sit side by side above the diff */
+.mr-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s6);
+    margin: var(--s4) 0 var(--s5);
+    padding: var(--s4) 0;
+    border-top: 1px solid var(--border-soft);
+    border-bottom: 1px solid var(--border-soft);
+}
+
+.mr-meta-field {
+    position: relative;
+    width: 240px;
+    max-width: 100%;
+}
+
+.mr-meta-field .issue-side-label {
+    margin: 0 0 var(--s2);
+}
+
 /* assignee avatar pinned to the right of an issue list row */
 .frow-assignee {
     margin-left: auto;

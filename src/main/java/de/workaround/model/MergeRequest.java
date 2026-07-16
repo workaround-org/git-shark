@@ -38,6 +38,14 @@ public class MergeRequest implements PanacheEntity.Managed
 	@ManyToOne(optional = false)
 	public User author;
 
+	/** Optional person responsible for the change; null means nobody is assigned. Cleared if that user is deleted. */
+	@ManyToOne
+	public User assignee;
+
+	/** Optional person asked to review the change; null means no reviewer. Cleared if that user is deleted. */
+	@ManyToOne
+	public User reviewer;
+
 	/** Per-repository, human-facing number (#1, #2, ...) assigned on creation; unique within the repository. */
 	public int number;
 
@@ -74,7 +82,7 @@ public class MergeRequest implements PanacheEntity.Managed
 
 	public interface Repo extends PanacheRepository.Managed<MergeRequest, UUID>
 	{
-		@HQL("select mr from MergeRequest mr join fetch mr.author where mr.repository = :repository order by mr.createdAt desc")
+		@HQL("select mr from MergeRequest mr join fetch mr.author left join fetch mr.assignee left join fetch mr.reviewer where mr.repository = :repository order by mr.createdAt desc")
 		List<MergeRequest> findByRepository(Repository repository);
 
 		@Find

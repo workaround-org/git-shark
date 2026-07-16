@@ -13,6 +13,89 @@
 {#if mr.description}
 <pre class="issue-desc">{mr.description}</pre>
 {/if}
+<div class="mr-meta">
+    <div class="mr-meta-field">
+        <h3 class="issue-side-label">Assignee</h3>
+        {#if owner}
+        <details class="assignee-pop">
+            <summary class="assignee-trigger">
+                {#if mr.assignee}{#avatar user=mr.assignee /} <span class="assignee-name">{mr.assignee.username}</span>{#else}<span class="muted">No one assigned</span>{/if}
+                <span class="assignee-caret" aria-hidden="true">&#9662;</span>
+            </summary>
+            <div class="assignee-menu">
+                <p class="assignee-menu-head">Assign this merge request</p>
+                <form class="assignee-search" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/merge-requests/{mr.id}/assign">
+                    <input type="text" name="assignee" list="mr-people" placeholder="Type a username&hellip;" autocomplete="off">
+                </form>
+                <ul class="assignee-options">
+                    {#for candidate in assignees}
+                    <li>
+                        <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/merge-requests/{mr.id}/assign">
+                            <button type="submit" name="assignee" value="{candidate.username}"
+                                    class="assignee-option{#if mr.assignee && candidate.username == mr.assignee.username} is-selected{/if}">
+                                <span class="assignee-check" aria-hidden="true">{#if mr.assignee && candidate.username == mr.assignee.username}&check;{/if}</span>
+                                {#avatar user=candidate /} <span>{candidate.username}</span>
+                            </button>
+                        </form>
+                    </li>
+                    {/for}
+                </ul>
+                {#if mr.assignee}
+                <form class="assignee-clear" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/merge-requests/{mr.id}/assign">
+                    <button type="submit" class="assignee-option assignee-clear-btn">Clear assignee</button>
+                </form>
+                {/if}
+            </div>
+        </details>
+        {#else}
+        <div class="assignee-current">{#if mr.assignee}{#avatar user=mr.assignee /} <span class="assignee-name">{mr.assignee.username}</span>{#else}<span class="muted">No one assigned</span>{/if}</div>
+        {/if}
+    </div>
+
+    <div class="mr-meta-field">
+        <h3 class="issue-side-label">Reviewer</h3>
+        {#if owner}
+        <details class="assignee-pop">
+            <summary class="assignee-trigger">
+                {#if mr.reviewer}{#avatar user=mr.reviewer /} <span class="assignee-name">{mr.reviewer.username}</span>{#else}<span class="muted">No reviewer</span>{/if}
+                <span class="assignee-caret" aria-hidden="true">&#9662;</span>
+            </summary>
+            <div class="assignee-menu">
+                <p class="assignee-menu-head">Request a review</p>
+                <form class="assignee-search" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/merge-requests/{mr.id}/reviewer">
+                    <input type="text" name="reviewer" list="mr-people" placeholder="Type a username&hellip;" autocomplete="off">
+                </form>
+                <ul class="assignee-options">
+                    {#for candidate in assignees}
+                    <li>
+                        <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/merge-requests/{mr.id}/reviewer">
+                            <button type="submit" name="reviewer" value="{candidate.username}"
+                                    class="assignee-option{#if mr.reviewer && candidate.username == mr.reviewer.username} is-selected{/if}">
+                                <span class="assignee-check" aria-hidden="true">{#if mr.reviewer && candidate.username == mr.reviewer.username}&check;{/if}</span>
+                                {#avatar user=candidate /} <span>{candidate.username}</span>
+                            </button>
+                        </form>
+                    </li>
+                    {/for}
+                </ul>
+                {#if mr.reviewer}
+                <form class="assignee-clear" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/merge-requests/{mr.id}/reviewer">
+                    <button type="submit" class="assignee-option assignee-clear-btn">Clear reviewer</button>
+                </form>
+                {/if}
+            </div>
+        </details>
+        {#else}
+        <div class="assignee-current">{#if mr.reviewer}{#avatar user=mr.reviewer /} <span class="assignee-name">{mr.reviewer.username}</span>{#else}<span class="muted">No reviewer</span>{/if}</div>
+        {/if}
+    </div>
+
+    <datalist id="mr-people">
+        {#for candidate in assignees}
+        <option value="{candidate.username}">
+        {/for}
+    </datalist>
+</div>
 {#if owner && mr.status.name() == 'OPEN'}
 <div class="issue-actions">
     <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/merge-requests/{mr.id}/merge">

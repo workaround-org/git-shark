@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import de.workaround.git.GitRepositoryService;
 import de.workaround.git.GitTestSeeder;
+import de.workaround.git.MergeRequestService;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
 import io.quarkus.test.junit.QuarkusTest;
@@ -28,6 +29,9 @@ class MergeRequestUiTest
 {
 	@Inject
 	GitRepositoryService service;
+
+	@Inject
+	MergeRequestService mergeRequestService;
 
 	@Inject
 	User.Repo userRepo;
@@ -100,6 +104,71 @@ class MergeRequestUiTest
 			.then().statusCode(303);
 
 		given().when().get(location).then().statusCode(200).body(containsString("Closed"));
+	}
+
+	@Test
+	@TestSecurity(user = "mru-assign")
+	void assigneeAndReviewerCanBeSetAndClearedViaTheForm()
+	{
+		User owner = persistUser("mru-assign");
+		User helper = persistUser("mru-helper");
+		seed(owner, "assignboard");
+		String base = "/repos/" + owner.username + "/assignboard/merge-requests";
+		String location = given().redirects().follow(false).contentType("application/x-www-form-urlencoded")
+			.formParam("title", "Assign me").formParam("sourceBranch", "feature").formParam("targetBranch", "main")
+			.when().post(base).then().statusCode(303).extract().header("Location");
+
+		// the detail page offers assignee and reviewer pickers
+		given().when().get(location)
+			.then().statusCode(200)
+			.body(containsString("class=\"assignee-pop\""))
+			.body(containsString("Reviewer"));
+
+		// assign a person via the form
+		given().redirects().follow(false).contentType("application/x-www-form-urlencoded")
+			.formParam("assignee", helper.username)
+			.when().post(location + "/assign").then().statusCode(303);
+		given().when().get(location).then().statusCode(200)
+			.body(containsString("class=\"assignee-name\"")).body(containsString(helper.username));
+
+		// set a reviewer via the form
+		given().redirects().follow(false).contentType("application/x-www-form-urlencoded")
+			.formParam("reviewer", helper.username)
+			.when().post(location + "/reviewer").then().statusCode(303);
+
+		// clearing the assignee (blank) removes it again
+		given().redirects().follow(false).contentType("application/x-www-form-urlencoded")
+			.formParam("assignee", "")
+			.when().post(location + "/assign").then().statusCode(303);
+		given().when().get(location).then().statusCode(200).body(containsString("No one assigned"));
+	}
+
+	@Test
+	@TestSecurity(user = "mru-badassign")
+	void assigningAnUnknownUsernameIsRejected()
+	{
+		User owner = persistUser("mru-badassign");
+		seed(owner, "badassignboard");
+		String base = "/repos/" + owner.username + "/badassignboard/merge-requests";
+		String location = given().redirects().follow(false).contentType("application/x-www-form-urlencoded")
+			.formParam("title", "Bad assign").formParam("sourceBranch", "feature").formParam("targetBranch", "main")
+			.when().post(base).then().statusCode(303).extract().header("Location");
+
+		given().contentType("application/x-www-form-urlencoded").formParam("assignee", "ghost-user")
+			.when().post(location + "/assign").then().statusCode(400);
+	}
+
+	@Test
+	void anonymousCannotAssignMergeRequests()
+	{
+		User owner = persistUser("mru-assign-anon-" + UUID.randomUUID().toString().substring(0, 8));
+		Repository repo = seed(owner, "noassignboard");
+		// create the MR as the owner (via the service) so an anonymous assign attempt has a target
+		var mr = mergeRequestService.create(owner, repo, "x", null, "feature", "main");
+
+		given().contentType("application/x-www-form-urlencoded").formParam("assignee", owner.username)
+			.when().post("/repos/" + owner.username + "/noassignboard/merge-requests/" + mr.id + "/assign")
+			.then().statusCode(403);
 	}
 
 	@Test

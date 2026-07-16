@@ -54,12 +54,14 @@ public final class ApiModels
 	}
 
 	public record MergeRequestView(int number, String title, String description, String sourceBranch,
-		String targetBranch, MergeRequest.Status status, String author, Instant createdAt, Instant mergedAt)
+		String targetBranch, MergeRequest.Status status, String author, String assignee, String reviewer,
+		Instant createdAt, Instant mergedAt)
 	{
 		public static MergeRequestView of(MergeRequest mr)
 		{
 			return new MergeRequestView(mr.number, mr.title, mr.description, mr.sourceBranch, mr.targetBranch,
-				mr.status, mr.author.username, mr.createdAt, mr.mergedAt);
+				mr.status, mr.author.username, mr.assignee == null ? null : mr.assignee.username,
+				mr.reviewer == null ? null : mr.reviewer.username, mr.createdAt, mr.mergedAt);
 		}
 	}
 

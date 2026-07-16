@@ -25,6 +25,9 @@ public class MergeRequestService
 	MergeRequest.Repo mergeRequests;
 
 	@Inject
+	User.Repo users;
+
+	@Inject
 	AccessPolicy accessPolicy;
 
 	@Inject
@@ -140,6 +143,50 @@ public class MergeRequestService
 				"Source or target branch no longer exists");
 		}
 		return result;
+	}
+
+	/**
+	 * Assigns the merge request to the local user with the given username, or unassigns it when the
+	 * username is blank/null. Any existing user can be named — assignment itself needs no repo access.
+	 */
+	@Transactional
+	public void assign(User actor, MergeRequest mr, String username)
+	{
+		requireWrite(actor, mr.repository);
+		User assignee = resolveUser(username);
+		MergeRequest managed = mergeRequests.findById(mr.id);
+		if (managed != null)
+		{
+			managed.assignee = assignee;
+		}
+	}
+
+	/**
+	 * Sets the merge request's reviewer to the local user with the given username, or clears it when the
+	 * username is blank/null. Any existing user can be named — setting a reviewer needs no repo access.
+	 */
+	@Transactional
+	public void setReviewer(User actor, MergeRequest mr, String username)
+	{
+		requireWrite(actor, mr.repository);
+		User reviewer = resolveUser(username);
+		MergeRequest managed = mergeRequests.findById(mr.id);
+		if (managed != null)
+		{
+			managed.reviewer = reviewer;
+		}
+	}
+
+	/** Resolves a username to a local user, or null when blank; an unknown handle is a 400-level error. */
+	private User resolveUser(String username)
+	{
+		String handle = username == null ? "" : username.strip();
+		if (handle.isEmpty())
+		{
+			return null;
+		}
+		return users.findByUsername(handle)
+			.orElseThrow(() -> new InvalidMergeRequestException("No user with that username exists."));
 	}
 
 	/** Moves an open merge request to CLOSED without merging. */

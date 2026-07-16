@@ -52,6 +52,8 @@ class MergeRequestApiTest
 			.body("status", equalTo("OPEN"))
 			.body("sourceBranch", equalTo("feature"))
 			.body("targetBranch", equalTo("main"))
+			.body("assignee", org.hamcrest.Matchers.nullValue())
+			.body("reviewer", org.hamcrest.Matchers.nullValue())
 			.extract().path("number");
 
 		given().when().get(base)

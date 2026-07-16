@@ -136,6 +136,77 @@ class MergeRequestServiceTest
 	}
 
 	@Test
+	void newMergeRequestsHaveNoAssigneeOrReviewer() throws Exception
+	{
+		User owner = persistUser("mr-omar");
+		Repository repository = seed(owner, "mro");
+
+		MergeRequest mr = mergeRequests.create(owner, repository, "x", null, "feature", "main");
+
+		assertNull(mr.assignee, "a fresh merge request is unassigned");
+		assertNull(mr.reviewer, "a fresh merge request has no reviewer");
+	}
+
+	@Test
+	void assigneeAndReviewerAreSetByUsername() throws Exception
+	{
+		User owner = persistUser("mr-pat");
+		User helper = persistUser("mr-quinn");
+		Repository repository = seed(owner, "mrp");
+		MergeRequest mr = mergeRequests.create(owner, repository, "x", null, "feature", "main");
+
+		mergeRequests.assign(owner, mr, helper.username);
+		mergeRequests.setReviewer(owner, mr, helper.username);
+
+		// read once after the mutations (this class commits, so avoid a stale first-level-cache read)
+		MergeRequest set = repo.findById(mr.id);
+		assertEquals(helper.id, set.assignee.id, "the named user becomes the assignee");
+		assertEquals(helper.id, set.reviewer.id, "the named user becomes the reviewer");
+	}
+
+	@Test
+	void blankOrNullUsernameClearsAssigneeAndReviewer() throws Exception
+	{
+		User owner = persistUser("mr-uma");
+		User helper = persistUser("mr-vic");
+		Repository repository = seed(owner, "mru");
+		MergeRequest mr = mergeRequests.create(owner, repository, "x", null, "feature", "main");
+		mergeRequests.assign(owner, mr, helper.username);
+		mergeRequests.setReviewer(owner, mr, helper.username);
+
+		mergeRequests.assign(owner, mr, "  ");
+		mergeRequests.setReviewer(owner, mr, null);
+
+		MergeRequest cleared = repo.findById(mr.id);
+		assertNull(cleared.assignee, "a blank username unassigns");
+		assertNull(cleared.reviewer, "a null username clears the reviewer");
+	}
+
+	@Test
+	void assignAndSetReviewerRejectUnknownUsername() throws Exception
+	{
+		User owner = persistUser("mr-rob");
+		Repository repository = seed(owner, "mrr");
+		MergeRequest mr = mergeRequests.create(owner, repository, "x", null, "feature", "main");
+
+		assertThrows(InvalidMergeRequestException.class, () -> mergeRequests.assign(owner, mr, "ghost-user"));
+		assertThrows(InvalidMergeRequestException.class, () -> mergeRequests.setReviewer(owner, mr, "ghost-user"));
+	}
+
+	@Test
+	void nonWriterCannotAssignOrSetReviewer() throws Exception
+	{
+		User owner = persistUser("mr-sam");
+		User stranger = persistUser("mr-tom");
+		Repository repository = seed(owner, "mrs");
+		MergeRequest mr = mergeRequests.create(owner, repository, "x", null, "feature", "main");
+
+		assertThrows(ForbiddenOperationException.class, () -> mergeRequests.assign(stranger, mr, stranger.username));
+		assertThrows(ForbiddenOperationException.class,
+			() -> mergeRequests.setReviewer(stranger, mr, stranger.username));
+	}
+
+	@Test
 	void countOpenExcludesMergedAndClosed() throws Exception
 	{
 		User owner = persistUser("mr-jane");

@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import de.workaround.account.CurrentUser;
 import de.workaround.git.AccessPolicy;
+import de.workaround.git.CollaboratorService;
 import de.workaround.git.ForbiddenOperationException;
 import de.workaround.git.GitBrowseService;
 import de.workaround.git.GitMergeService;
@@ -48,7 +49,8 @@ public class MergeRequestResource
 			String defaultBranch);
 
 		static native TemplateInstance mergeRequest(Repository repo, RepoNav nav, boolean owner, boolean loggedIn,
-			UUID currentUserId, MergeRequest mr, List<FileDiffView> files, int additions, int deletions);
+			UUID currentUserId, MergeRequest mr, List<FileDiffView> files, int additions, int deletions,
+			List<User> assignees);
 	}
 
 	/**
@@ -82,6 +84,9 @@ public class MergeRequestResource
 
 	@Inject
 	MergeRequestCommentService commentService;
+
+	@Inject
+	CollaboratorService collaboratorService;
 
 	@Inject
 	MergeRequestComment.Repo commentRepo;
@@ -172,7 +177,22 @@ public class MergeRequestResource
 			}
 		}
 		return Templates.mergeRequest(repo, repoNav.build(repo, uriInfo), isOwner(repo), loggedIn, currentUserId, mr,
-			files, additions, deletions);
+			files, additions, deletions, assignableUsers(repo));
+	}
+
+	/**
+	 * Suggestions offered by the assignee/reviewer pickers: the repository owner (for personal repos) plus
+	 * every collaborator. Assignment itself accepts any username; this list only powers the picker menus.
+	 */
+	private List<User> assignableUsers(Repository repo)
+	{
+		List<User> users = new ArrayList<>();
+		if (repo.ownerUser != null)
+		{
+			users.add(repo.ownerUser);
+		}
+		collaboratorService.list(repo).forEach(collaborator -> users.add(collaborator.user));
+		return users;
 	}
 
 	@POST
@@ -220,6 +240,31 @@ public class MergeRequestResource
 		Repository repo = requireReadable(owner, name);
 		MergeRequest mr = mergeRequestService.find(repo, parseId(id)).orElseThrow(NotFoundException::new);
 		mergeRequestService.merge(currentUser.require(), mr);
+		return Response.seeOther(detailUri(repo, mr.id)).build();
+	}
+
+	@POST
+	@jakarta.ws.rs.Path("{id}/assign")
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	public Response assign(@PathParam("owner") String owner, @PathParam("name") String name,
+		@PathParam("id") String id, @FormParam("assignee") String assignee)
+	{
+		Repository repo = requireReadable(owner, name);
+		MergeRequest mr = mergeRequestService.find(repo, parseId(id)).orElseThrow(NotFoundException::new);
+		// username resolution/validation lives in the service (InvalidMergeRequestException -> 400 via mapper)
+		mergeRequestService.assign(currentUser.require(), mr, assignee);
+		return Response.seeOther(detailUri(repo, mr.id)).build();
+	}
+
+	@POST
+	@jakarta.ws.rs.Path("{id}/reviewer")
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	public Response reviewer(@PathParam("owner") String owner, @PathParam("name") String name,
+		@PathParam("id") String id, @FormParam("reviewer") String reviewer)
+	{
+		Repository repo = requireReadable(owner, name);
+		MergeRequest mr = mergeRequestService.find(repo, parseId(id)).orElseThrow(NotFoundException::new);
+		mergeRequestService.setReviewer(currentUser.require(), mr, reviewer);
 		return Response.seeOther(detailUri(repo, mr.id)).build();
 	}
 
