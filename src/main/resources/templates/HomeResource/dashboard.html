@@ -27,21 +27,6 @@
     {/if}
 </section>
 
-{#if !orgs.isEmpty()}
-<section class="dashboard-section">
-    <h2>Organisations</h2>
-    <table>
-        <tr><th>Organisation</th><th>Your role</th></tr>
-        {#for membership in orgs}
-        <tr class="row-link">
-            <td class="cell-link"><a class="mono" href="/orgs/{membership.organisation.name}"><span class="av-fallback">{membership.organisation.name.charAt(0)}</span> {membership.organisation.name}</a></td>
-            <td><span class="badge">{membership.role.name().toLowerCase()}</span></td>
-        </tr>
-        {/for}
-    </table>
-</section>
-{/if}
-
 <section class="dashboard-section">
     <h2>Notifications</h2>
     {#if notifications.isEmpty()}
@@ -59,6 +44,21 @@
     </table>
     {/if}
 </section>
+
+{#if !orgs.isEmpty()}
+<section class="dashboard-section">
+    <h2>Organisations</h2>
+    <table>
+        <tr><th>Organisation</th><th>Your role</th></tr>
+        {#for membership in orgs}
+        <tr class="row-link">
+            <td class="cell-link"><a class="mono" href="/orgs/{membership.organisation.name}"><span class="av-fallback">{membership.organisation.name.charAt(0)}</span> {membership.organisation.name}</a></td>
+            <td><span class="badge">{membership.role.name().toLowerCase()}</span></td>
+        </tr>
+        {/for}
+    </table>
+</section>
+{/if}
 
 <section class="dashboard-section">
     <h2>All repositories</h2>

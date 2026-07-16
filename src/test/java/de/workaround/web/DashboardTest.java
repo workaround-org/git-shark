@@ -4,7 +4,9 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import de.workaround.account.OrganisationService;
 import de.workaround.git.GitRepositoryService;
+import de.workaround.model.Organisation;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
 import io.quarkus.test.junit.QuarkusTest;
@@ -28,6 +30,9 @@ class DashboardTest
 
 	@Inject
 	User.Repo userRepo;
+
+	@Inject
+	OrganisationService organisations;
 
 	@Test
 	@TestSecurity(user = "dash-alice")
@@ -59,6 +64,26 @@ class DashboardTest
 			.body(containsString("Notifications"))
 			.body(containsString("Please look at this"))
 			.body(not(containsString("Nothing needs your attention")));
+	}
+
+	@Test
+	@TestSecurity(user = "dash-order")
+	void notificationsSectionAppearsBeforeOrganisations()
+	{
+		User user = persistUser("dash-order");
+		createOrg(user);
+
+		String body = given()
+			.when().get("/")
+			.then().statusCode(200)
+			.extract().body().asString();
+
+		int notifications = body.indexOf("<h2>Notifications</h2>");
+		int organisations = body.indexOf("<h2>Organisations</h2>");
+		org.junit.jupiter.api.Assertions.assertTrue(notifications >= 0, "Notifications section missing");
+		org.junit.jupiter.api.Assertions.assertTrue(organisations >= 0, "Organisations section missing");
+		org.junit.jupiter.api.Assertions.assertTrue(notifications < organisations,
+			"Notifications section must come before Organisations");
 	}
 
 	@Test
@@ -132,6 +157,12 @@ class DashboardTest
 	private static String unique()
 	{
 		return UUID.randomUUID().toString().substring(0, 8);
+	}
+
+	@Transactional
+	Organisation createOrg(User creator)
+	{
+		return organisations.create(creator, "dashorg-" + unique(), null);
 	}
 
 	@Transactional
