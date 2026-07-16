@@ -57,6 +57,11 @@ public class ActorUris
 		return actorId + "/followers";
 	}
 
+	public String repositories(String actorId)
+	{
+		return actorId + "/repositories";
+	}
+
 	public String keyId(String actorId)
 	{
 		return actorId + KEY_FRAGMENT;
