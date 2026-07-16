@@ -48,7 +48,7 @@ class MergeRequestCommentUiTest
 	{
 		User owner = persistUser("cmu-owner");
 		MergeRequest mr = seededMr(owner, "board");
-		String detail = "/repos/" + owner.username + "/board/merge-requests/" + mr.id;
+		String detail = "/repos/" + owner.username + "/board/merge-requests/" + mr.number;
 
 		// a commentable line exposes a hover comment icon (not a full-width placeholder bar)
 		given().when().get(detail)
@@ -75,7 +75,7 @@ class MergeRequestCommentUiTest
 		persistUser("cmu-reader");
 		User owner = persistUser("cmu-owner2-" + UUID.randomUUID().toString().substring(0, 8));
 		MergeRequest mr = seededMr(owner, "board");
-		String detail = "/repos/" + owner.username + "/board/merge-requests/" + mr.id;
+		String detail = "/repos/" + owner.username + "/board/merge-requests/" + mr.number;
 
 		given().redirects().follow(false).contentType("application/x-www-form-urlencoded")
 			.formParam("filePath", "feature.txt").formParam("oldLine", "-1").formParam("newLine", "1")
@@ -91,7 +91,7 @@ class MergeRequestCommentUiTest
 	{
 		User owner = persistUser("cmu-anon-" + UUID.randomUUID().toString().substring(0, 8));
 		MergeRequest mr = seededMr(owner, "board");
-		String detail = "/repos/" + owner.username + "/board/merge-requests/" + mr.id;
+		String detail = "/repos/" + owner.username + "/board/merge-requests/" + mr.number;
 
 		given().contentType("application/x-www-form-urlencoded")
 			.formParam("filePath", "feature.txt").formParam("oldLine", "-1").formParam("newLine", "1")
@@ -107,7 +107,7 @@ class MergeRequestCommentUiTest
 		User owner = persistUser("cmu-del");
 		MergeRequest mr = seededMr(owner, "board");
 		MergeRequestComment comment = comments.add(owner, mr, "feature.txt", -1, 1, "temporary note");
-		String detail = "/repos/" + owner.username + "/board/merge-requests/" + mr.id;
+		String detail = "/repos/" + owner.username + "/board/merge-requests/" + mr.number;
 
 		given().when().get(detail).then().statusCode(200).body(containsString("temporary note"));
 

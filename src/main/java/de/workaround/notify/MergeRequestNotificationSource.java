@@ -32,7 +32,7 @@ public class MergeRequestNotificationSource implements NotificationSource
 		return mergeRequests.findOpenInvolving(user).stream()
 			.filter(mr -> accessPolicy.canRead(user, mr.repository))
 			.map(mr -> new NotificationItem("merge-request", "!" + mr.number + " " + mr.title, mr.repository,
-				"/repos/" + mr.repository.ownerHandle() + "/" + mr.repository.name + "/merge-requests/" + mr.id))
+				"/repos/" + mr.repository.ownerHandle() + "/" + mr.repository.name + "/merge-requests/" + mr.number))
 			.toList();
 	}
 }

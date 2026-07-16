@@ -131,16 +131,16 @@ public class MergeRequestResource
 		Repository repo = requireReadable(owner, name);
 		MergeRequest mr = mergeRequestService.create(currentUser.require(), repo, title, description, sourceBranch,
 			targetBranch);
-		return Response.seeOther(detailUri(repo, mr.id)).build();
+		return Response.seeOther(detailUri(repo, mr.number)).build();
 	}
 
 	@GET
-	@jakarta.ws.rs.Path("{id}")
+	@jakarta.ws.rs.Path("{number:\\d+}")
 	public TemplateInstance detail(@PathParam("owner") String owner, @PathParam("name") String name,
-		@PathParam("id") String id)
+		@PathParam("number") int number)
 	{
 		Repository repo = requireReadable(owner, name);
-		MergeRequest mr = mergeRequestService.find(repo, parseId(id)).orElseThrow(NotFoundException::new);
+		MergeRequest mr = mergeRequestService.find(repo, number).orElseThrow(NotFoundException::new);
 		GitMergeService.DiffView diff = mergeRequestService.diff(mr).orElse(null);
 		List<MergeRequestComment> comments = commentService.list(mr);
 		User user = currentUser.get();
@@ -195,35 +195,46 @@ public class MergeRequestResource
 		return users;
 	}
 
+	/** Merge requests were originally addressed by UUID; keep old bookmarks and federated links working. */
+	@GET
+	@jakarta.ws.rs.Path("{id:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}")
+	public Response legacyDetail(@PathParam("owner") String owner, @PathParam("name") String name,
+		@PathParam("id") UUID id)
+	{
+		Repository repo = requireReadable(owner, name);
+		MergeRequest mr = mergeRequestService.find(repo, id).orElseThrow(NotFoundException::new);
+		return Response.status(Response.Status.MOVED_PERMANENTLY).location(detailUri(repo, mr.number)).build();
+	}
+
 	@POST
-	@jakarta.ws.rs.Path("{id}/comments")
+	@jakarta.ws.rs.Path("{number:\\d+}/comments")
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	public Response comment(@PathParam("owner") String owner, @PathParam("name") String name,
-		@PathParam("id") String id, @FormParam("filePath") String filePath,
+		@PathParam("number") int number, @FormParam("filePath") String filePath,
 		@FormParam("oldLine") @DefaultValue("-1") int oldLine, @FormParam("newLine") @DefaultValue("-1") int newLine,
 		@FormParam("body") String body)
 	{
 		Repository repo = requireReadable(owner, name);
-		MergeRequest mr = mergeRequestService.find(repo, parseId(id)).orElseThrow(NotFoundException::new);
+		MergeRequest mr = mergeRequestService.find(repo, number).orElseThrow(NotFoundException::new);
 		commentService.add(currentUser.require(), mr, filePath, oldLine, newLine, body);
-		return Response.seeOther(detailUri(repo, mr.id)).build();
+		return Response.seeOther(detailUri(repo, mr.number)).build();
 	}
 
 	@POST
-	@jakarta.ws.rs.Path("{id}/comments/{commentId}/delete")
+	@jakarta.ws.rs.Path("{number:\\d+}/comments/{commentId}/delete")
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	public Response deleteComment(@PathParam("owner") String owner, @PathParam("name") String name,
-		@PathParam("id") String id, @PathParam("commentId") String commentId)
+		@PathParam("number") int number, @PathParam("commentId") String commentId)
 	{
 		Repository repo = requireReadable(owner, name);
-		MergeRequest mr = mergeRequestService.find(repo, parseId(id)).orElseThrow(NotFoundException::new);
+		MergeRequest mr = mergeRequestService.find(repo, number).orElseThrow(NotFoundException::new);
 		MergeRequestComment comment = commentRepo.findById(parseId(commentId));
 		if (comment == null || !comment.mergeRequest.id.equals(mr.id))
 		{
 			throw new NotFoundException();
 		}
 		commentService.delete(currentUser.require(), comment);
-		return Response.seeOther(detailUri(repo, mr.id)).build();
+		return Response.seeOther(detailUri(repo, mr.number)).build();
 	}
 
 	private static boolean isContent(String lineType)
@@ -232,57 +243,57 @@ public class MergeRequestResource
 	}
 
 	@POST
-	@jakarta.ws.rs.Path("{id}/merge")
+	@jakarta.ws.rs.Path("{number:\\d+}/merge")
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	public Response merge(@PathParam("owner") String owner, @PathParam("name") String name,
-		@PathParam("id") String id)
+		@PathParam("number") int number)
 	{
 		Repository repo = requireReadable(owner, name);
-		MergeRequest mr = mergeRequestService.find(repo, parseId(id)).orElseThrow(NotFoundException::new);
+		MergeRequest mr = mergeRequestService.find(repo, number).orElseThrow(NotFoundException::new);
 		mergeRequestService.merge(currentUser.require(), mr);
-		return Response.seeOther(detailUri(repo, mr.id)).build();
+		return Response.seeOther(detailUri(repo, mr.number)).build();
 	}
 
 	@POST
-	@jakarta.ws.rs.Path("{id}/assign")
+	@jakarta.ws.rs.Path("{number:\\d+}/assign")
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	public Response assign(@PathParam("owner") String owner, @PathParam("name") String name,
-		@PathParam("id") String id, @FormParam("assignee") String assignee)
+		@PathParam("number") int number, @FormParam("assignee") String assignee)
 	{
 		Repository repo = requireReadable(owner, name);
-		MergeRequest mr = mergeRequestService.find(repo, parseId(id)).orElseThrow(NotFoundException::new);
+		MergeRequest mr = mergeRequestService.find(repo, number).orElseThrow(NotFoundException::new);
 		// username resolution/validation lives in the service (InvalidMergeRequestException -> 400 via mapper)
 		mergeRequestService.assign(currentUser.require(), mr, assignee);
-		return Response.seeOther(detailUri(repo, mr.id)).build();
+		return Response.seeOther(detailUri(repo, mr.number)).build();
 	}
 
 	@POST
-	@jakarta.ws.rs.Path("{id}/reviewer")
+	@jakarta.ws.rs.Path("{number:\\d+}/reviewer")
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	public Response reviewer(@PathParam("owner") String owner, @PathParam("name") String name,
-		@PathParam("id") String id, @FormParam("reviewer") String reviewer)
+		@PathParam("number") int number, @FormParam("reviewer") String reviewer)
 	{
 		Repository repo = requireReadable(owner, name);
-		MergeRequest mr = mergeRequestService.find(repo, parseId(id)).orElseThrow(NotFoundException::new);
+		MergeRequest mr = mergeRequestService.find(repo, number).orElseThrow(NotFoundException::new);
 		mergeRequestService.setReviewer(currentUser.require(), mr, reviewer);
-		return Response.seeOther(detailUri(repo, mr.id)).build();
+		return Response.seeOther(detailUri(repo, mr.number)).build();
 	}
 
 	@POST
-	@jakarta.ws.rs.Path("{id}/close")
+	@jakarta.ws.rs.Path("{number:\\d+}/close")
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	public Response close(@PathParam("owner") String owner, @PathParam("name") String name,
-		@PathParam("id") String id)
+		@PathParam("number") int number)
 	{
 		Repository repo = requireReadable(owner, name);
-		MergeRequest mr = mergeRequestService.find(repo, parseId(id)).orElseThrow(NotFoundException::new);
+		MergeRequest mr = mergeRequestService.find(repo, number).orElseThrow(NotFoundException::new);
 		mergeRequestService.close(currentUser.require(), mr);
-		return Response.seeOther(detailUri(repo, mr.id)).build();
+		return Response.seeOther(detailUri(repo, mr.number)).build();
 	}
 
-	private URI detailUri(Repository repo, UUID id)
+	private URI detailUri(Repository repo, int number)
 	{
-		return URI.create("/repos/" + repo.ownerHandle() + "/" + repo.name + "/merge-requests/" + id);
+		return URI.create("/repos/" + repo.ownerHandle() + "/" + repo.name + "/merge-requests/" + number);
 	}
 
 	private boolean isOwner(Repository repo)

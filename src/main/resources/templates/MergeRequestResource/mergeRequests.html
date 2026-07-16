@@ -14,7 +14,7 @@
         {#else}
         <div class="panel">
             {#for mr in open}
-            <a class="frow" href="/repos/{repo.ownerHandle}/{repo.name}/merge-requests/{mr.id}">
+            <a class="frow" href="/repos/{repo.ownerHandle}/{repo.name}/merge-requests/{mr.number}">
                 <span class="fname">
                     <span class="badge status-{mr.status}">{mr.status.label}</span>
                     <span class="n">{mr.title}</span>
@@ -30,7 +30,7 @@
             <summary>Archive <span class="ct">{closed.size}</span></summary>
             <div class="panel">
                 {#for mr in closed}
-                <a class="frow" href="/repos/{repo.ownerHandle}/{repo.name}/merge-requests/{mr.id}">
+                <a class="frow" href="/repos/{repo.ownerHandle}/{repo.name}/merge-requests/{mr.number}">
                     <span class="fname">
                         <span class="badge status-{mr.status}">{mr.status.label}</span>
                         <span class="n">{mr.title}</span>

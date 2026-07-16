@@ -22,6 +22,7 @@ import jakarta.transaction.Transactional;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.endsWith;
 import static org.hamcrest.CoreMatchers.not;
 
 @QuarkusTest
@@ -167,8 +168,43 @@ class MergeRequestUiTest
 		var mr = mergeRequestService.create(owner, repo, "x", null, "feature", "main");
 
 		given().contentType("application/x-www-form-urlencoded").formParam("assignee", owner.username)
-			.when().post("/repos/" + owner.username + "/noassignboard/merge-requests/" + mr.id + "/assign")
+			.when().post("/repos/" + owner.username + "/noassignboard/merge-requests/" + mr.number + "/assign")
 			.then().statusCode(403);
+	}
+
+	@Test
+	@TestSecurity(user = "mru-numbers")
+	void mergeRequestsUseSequentialNumbersInUrls()
+	{
+		User owner = persistUser("mru-numbers");
+		seed(owner, "numboard");
+		String base = "/repos/" + owner.username + "/numboard/merge-requests";
+
+		// the first MR gets #1; the redirect URL is the number, not a UUID
+		given().redirects().follow(false).contentType("application/x-www-form-urlencoded")
+			.formParam("title", "First MR").formParam("sourceBranch", "feature").formParam("targetBranch", "main")
+			.when().post(base).then().statusCode(303)
+			.header("Location", endsWith("/merge-requests/1"));
+
+		// reachable by number
+		given().when().get(base + "/1").then().statusCode(200).body(containsString("First MR"));
+
+		// the list links to the number URL
+		given().when().get(base).then().statusCode(200).body(containsString("/merge-requests/1\""));
+	}
+
+	@Test
+	@TestSecurity(user = "mru-legacy")
+	void legacyUuidUrlRedirectsToNumber()
+	{
+		User owner = persistUser("mru-legacy");
+		Repository repo = seed(owner, "legboard");
+		var mr = mergeRequestService.create(owner, repo, "Legacy link", null, "feature", "main");
+		String base = "/repos/" + owner.username + "/legboard/merge-requests";
+
+		given().redirects().follow(false).when().get(base + "/" + mr.id)
+			.then().statusCode(301)
+			.header("Location", containsString("/merge-requests/" + mr.number));
 	}
 
 	@Test
