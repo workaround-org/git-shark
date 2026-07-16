@@ -68,6 +68,28 @@ Pictures uploaded before the fix are gone (they lived in the discarded container
 layer); affected users re-upload under *Settings → Profile*, or remove the picture
 there to fall back to the initials badge.
 
+## Fixing root-owned /data volumes
+
+The reference Compose file relies on Docker copying ownership from the image into each
+freshly created named volume. Images from before the `/data`-ownership fix didn't ship
+the `/data` directories, so volumes first created with such an image have root-owned
+mount points that the app user (UID `185`, or `1001` for the native image) cannot
+write. Ownership is only copied when a volume is **first** created, so upgrading the
+image alone does not repair existing volumes.
+
+Symptoms: repository creation and avatar/repository-image uploads fail, the SSH host
+key changes on every restart (it can't be persisted), and the app logs show
+`Permission denied` or `AccessDeniedException` under `/data`.
+
+One-time repair on the running deployment:
+
+```bash
+docker compose exec --user 0 app chown -R 185:0 /data   # native image: 1001:0
+docker compose restart app
+```
+
+Verify afterwards that `/data/ssh/host-key` exists and survives a restart.
+
 ## Backups
 
 Back up all five stores together and consistently — a DB dump that references git

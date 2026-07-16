@@ -228,7 +228,12 @@ Notes:
 
 - **Separate volumes for `/data/repositories`, `/data/avatars`, `/data/repo-images`,
   and `/data/ssh`** so Docker creates each mount point with the right ownership — no
-  init container or `mkdir` needed. The SSH host key is generated on first boot and
+  init container or `mkdir` needed. This works because the image ships those
+  directories pre-owned by the runtime user, and Docker copies that ownership into a
+  freshly created named volume. Volumes first created with an image from before this
+  fix are root-owned and stay that way — see
+  [Persistent data](persistent-data.md#fixing-root-owned-data-volumes) for the
+  one-time repair. The SSH host key is generated on first boot and
   persists across restarts (so client `known_hosts` entries stay valid). All four mounts
   (plus the database) are mandatory for a stateful deployment — see
   [Persistent data](persistent-data.md) for what each holds and what breaks without it.
@@ -424,7 +429,8 @@ docker compose logs -f app
 | Boot fails on OIDC discovery | `QUARKUS_OIDC_AUTH_SERVER_URL` wrong/unreachable, or IdP demands HTTPS the app can't reach. |
 | IdP rejects login with a `redirect_uri` error | The client's registered redirect URI doesn't match the fixed callback `https://<host>/login` (Step 2). Deployments set up before the silent-refresh change registered `https://<host>/` — add/replace it with `/login`. |
 | App exits complaining about secret length | `*_STATE_SECRET` shorter than 32 chars. Regenerate with `openssl rand -hex 16`. |
-| SSH host key changed after redeploy | The `ssh` volume wasn't persisted — confirm it's a named volume, not a throwaway mount. |
+| SSH host key changed after redeploy | The `ssh` volume wasn't persisted — confirm it's a named volume, not a throwaway mount. If the volume **is** there but stays empty and the logs show `Failed (AccessDeniedException) to write EC key`, the mount points are root-owned (volumes created with a pre-fix image) — see the row below. |
+| Repository creation or image/avatar upload fails; app logs show `Permission denied` or `AccessDeniedException` under `/data` | The `/data` volumes were first created by an image that didn't ship those directories, so their mount points are root-owned and the app user (UID 185, or 1001 for the native image) can't write. One-time fix: `docker compose exec --user 0 app chown -R 185:0 /data && docker compose restart app` (use `1001:0` for the native image). Details in [Persistent data](persistent-data.md#fixing-root-owned-data-volumes). |
 | Profile pictures disappear after redeploy / render as broken images | The `avatars` volume wasn't mounted, so uploads landed in the container layer. Add the volume and `GITSHARK_AVATAR_ROOT` as in Step 5 — retrofit steps in [Persistent data](persistent-data.md#upgrading-a-deployment-created-before-profile-pictures). |
 | `git push` over HTTP rejected | Use a personal access token (from *Access tokens*) as the Basic-auth password, not your OIDC password. |
 | Schema validation error at start | DB not empty / migrated by a different tool. git-shark's Flyway owns the schema; start from an empty database. |

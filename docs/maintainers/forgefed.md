@@ -44,7 +44,7 @@ Everything lives in `src/main/java/de/workaround/federation/`:
 Web UI: `web/FollowingResource` + Qute template (`/following` page). Persistence
 in `model/` (`FederationKey`, `RemoteActor`, `RepositoryFollower`,
 `RemoteFollow`, `RemoteUserFollow`, `ReceivedPush`, `InboxActivity`,
-`OutboxActivity`, `FederationDelivery`), schema in `db/migration/V2__federation.sql`,
+`OutboxActivity`, `DeliveryTask`), schema in `db/migration/V2__federation.sql`,
 `V9__federation_following.sql`, and `V20__federation_user_follows.sql`.
 
 ## Actor model

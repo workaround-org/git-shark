@@ -84,6 +84,15 @@ FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:1.24
 
 ENV LANGUAGE='en_US:en'
 
+# The documented deployment mounts named volumes at these /data paths. They must
+# exist in the image owned by the runtime UID so Docker copies that ownership into
+# freshly created volumes — otherwise every mount point is root-owned and the app
+# cannot persist the SSH host key or write repositories, avatars, or repo images.
+USER root
+RUN mkdir -p /data/repositories /data/avatars /data/repo-images /data/ssh \
+    && chown -R 185:0 /data \
+    && chmod -R g+rwX /data
+USER 185
 
 COPY target/lib/* /deployments/lib/
 COPY target/*-runner.jar /deployments/quarkus-run.jar

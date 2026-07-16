@@ -21,6 +21,13 @@ WORKDIR /work/
 RUN chown 1001 /work \
     && chmod "g+rwX" /work \
     && chown 1001:root /work
+# The documented deployment mounts named volumes at these /data paths. They must
+# exist in the image owned by the runtime UID so Docker copies that ownership into
+# freshly created volumes — otherwise every mount point is root-owned and the app
+# cannot persist the SSH host key or write repositories, avatars, or repo images.
+RUN mkdir -p /data/repositories /data/avatars /data/repo-images /data/ssh \
+    && chown -R 1001:root /data \
+    && chmod -R g+rwX /data
 COPY --chown=1001:root --chmod=0755 target/*-runner /work/application
 
 EXPOSE 8080

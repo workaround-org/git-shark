@@ -20,6 +20,13 @@ jobs:
           cache: maven
       - name: Native build & integration tests
         run: ./mvnw -B verify -Dnative -Dquarkus.native.container-build=true
+      # The documented Compose setup relies on the image shipping /data mount points
+      # owned by the runtime UID (1001 in the native image) so freshly created named
+      # volumes inherit that ownership. Verify before the image gets published.
+      - name: Build native image for smoke test
+        run: docker build -f src/main/docker/Dockerfile.native-micro -t git-shark:native-smoke .
+      - name: Smoke-test /data volume ownership
+        run: ./src/main/docker/smoke-test-volumes.sh git-shark:native-smoke 1001
       # Publish the native image to GHCR after the build and integration tests pass.
       # The native executable is architecture-specific and was compiled on this amd64
       # runner, so the image is published for linux/amd64 only (the multi-arch manifest

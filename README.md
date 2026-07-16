@@ -185,6 +185,7 @@ MCP tools. Client setup (Claude Code, Claude Desktop, others) is described in
 | `GITSHARK_REPO_IMAGE_ROOT` | `data/repo-images` | Root directory for uploaded per-repository images (persistent volume) |
 | `GITSHARK_SSH_PORT` | `2222` | Embedded SSH server port |
 | `GITSHARK_SSH_HOST_KEY` | `data/ssh/host-key` | Persisted SSH host key file |
+| `GITSHARK_ADMIN_HANDLES` | — (empty = no admins) | Comma-separated handles allowed into `/admin/*` (CI runner management) |
 | `QUARKUS_DATASOURCE_JDBC_URL` / `_USERNAME` / `_PASSWORD` | — (Dev Services in dev/test) | PostgreSQL connection |
 | `QUARKUS_OIDC_AUTH_SERVER_URL` / `_CLIENT_ID` / `_CREDENTIALS_SECRET` | — (Keycloak Dev Services in dev/test) | OIDC provider |
 | `QUARKUS_OIDC_AUTHENTICATION_STATE_SECRET` | — (dev/test use a fixed dev secret) | Encrypts the OIDC state cookie carrying the PKCE `code_verifier`; ≥ 32 chars, stable across pods |
@@ -196,6 +197,7 @@ MCP tools. Client setup (Claude Code, Claude Desktop, others) is described in
 | `GITSHARK_FEDERATION_BASE_URL` | — | Public HTTPS origin (e.g. `https://shark.example`); actor IDs derive from it and are permanent |
 | `GITSHARK_FEDERATION_PEER_ALLOWLIST` | — (empty = deny all) | Comma-separated peer hosts allowed to send/receive federation traffic |
 | `GITSHARK_FEDERATION_MAX_ATTEMPTS` | `8` | Max delivery attempts before a queued activity is dead-lettered |
+| `GITSHARK_FEDERATION_USER_RESYNC_INTERVAL` | `5m` | How often followed remote users are re-scanned for new public repositories |
 | `GITSHARK_FEDERATION_DEV_ALLOW_INSECURE` | `false` | **Dev/local only.** Lets the SSRF guard accept `http` + loopback/private targets so two instances can federate on one machine (peer allowlist still enforced). Never enable in production. |
 
 > **TLS required in production:** personal access tokens travel as HTTP Basic credentials
@@ -245,7 +247,7 @@ onboarding page.
 
 | Store | What |
 |---|---|
-| PostgreSQL | `users`, `repositories` (metadata), `repository_pins` (per-user pinned repositories), `ssh_keys` (public keys + fingerprints), `access_tokens` (SHA-256 hashes, labels, last-used), push-mirror tables (`push_mirror` with AES-GCM-encrypted secrets, `mirror_sync` queue), federation tables (`federation_keys`, `remote_actors`, `repository_followers`, `federation_outbox`, `federation_inbox`, `federation_delivery`) |
+| PostgreSQL | `users`, `repositories` (metadata), `repository_pins` (per-user pinned repositories), `ssh_keys` (public keys + fingerprints), `access_tokens` (SHA-256 hashes, labels, last-used), push-mirror tables (`push_mirror` with AES-GCM-encrypted secrets, `mirror_sync` queue), federation tables (`federation_keys`, `remote_actors`, `repository_followers`, `remote_follows`, `remote_user_follows`, `received_pushes`, `federation_outbox`, `federation_inbox`, `federation_delivery`) |
 | Filesystem (`GITSHARK_STORAGE_ROOT`) | Bare Git repositories |
 | Filesystem (`GITSHARK_AVATAR_ROOT`) | Uploaded profile pictures, one file per user (UUID-named) |
 | Filesystem (`GITSHARK_SSH_HOST_KEY`) | SSH host key |
