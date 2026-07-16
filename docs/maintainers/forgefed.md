@@ -45,7 +45,7 @@ Web UI: `web/FollowingResource` + Qute template (`/following` page). Persistence
 in `model/` (`FederationKey`, `RemoteActor`, `RepositoryFollower`,
 `RemoteFollow`, `RemoteUserFollow`, `ReceivedPush`, `InboxActivity`,
 `OutboxActivity`, `FederationDelivery`), schema in `db/migration/V2__federation.sql`,
-`V9__federation_following.sql`, and `V19__federation_user_follows.sql`.
+`V9__federation_following.sql`, and `V20__federation_user_follows.sql`.
 
 ## Actor model
 
