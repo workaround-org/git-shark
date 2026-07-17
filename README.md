@@ -256,7 +256,9 @@ onboarding page.
 
 - `.github/workflows/jvm.yml` — JVM tests on every push/PR; on main, builds and pushes the
   JVM container image to GHCR as a multi-arch manifest (linux/amd64 + linux/arm64, via
-  Buildx/QEMU).
+  Buildx/QEMU), and runs a SonarQube Community Build analysis against `sonar.ha1nz.de`
+  (test coverage via the combined JaCoCo report at `target/jacoco-report/jacoco.xml`).
+  Community Build analyses the main branch only, so the `sonar` job is gated to main.
 - `.github/workflows/native.yml` — native build + integration tests on every push/PR; on
   main, builds and pushes the native container image to GHCR with a `-native` tag suffix
   (linux/amd64 only).
