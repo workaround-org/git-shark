@@ -191,7 +191,7 @@ public class MirrorService
 	}
 
 	/** Scheduled drain pass — picks up due syncs and attempts each. */
-	@Scheduled(every = "10s", concurrentExecution = Scheduled.ConcurrentExecution.SKIP)
+	@Scheduled(every = "{gitshark.mirror.drain-interval}", concurrentExecution = Scheduled.ConcurrentExecution.SKIP)
 	void drain()
 	{
 		drainOnce();

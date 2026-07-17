@@ -43,8 +43,8 @@ Same operational model as the federation delivery queue:
 - A push enqueues one sync per enabled mirror of the repository. At most **one pending
   sync per mirror** exists — rapid pushes coalesce (the sync always pushes the *current*
   state, so this is lossless).
-- A scheduled worker drains due syncs **every 10 s**. Failures retry with exponential
-  backoff (1 min, 2 min, 4 min, … capped at 1 h).
+- A scheduled worker drains due syncs **every 10 s** (`GITSHARK_MIRROR_DRAIN_INTERVAL`).
+  Failures retry with exponential backoff (1 min, 2 min, 4 min, … capped at 1 h).
 - After `GITSHARK_MIRROR_MAX_ATTEMPTS` failed attempts a sync is dead-lettered
   (`FAILED`) and retries stop. The next push to the repository (or the owner's
   *Push now*) enqueues a fresh sync.

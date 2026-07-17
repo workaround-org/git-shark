@@ -342,6 +342,7 @@ Every value below is an environment variable on the `app` service. Defaults come
 | `GITSHARK_SECRET_KEY` | — | — | Encrypts push-mirror secrets at rest; required to create mirrors (see [Push mirrors](mirrors.md)) |
 | `GITSHARK_MIRROR_MAX_ATTEMPTS` | — | `8` | Mirror-sync retry cap before dead-letter |
 | `GITSHARK_MIRROR_ALLOW_INSECURE` | — | `false` | Dev only: allow http/loopback mirror targets |
+| `GITSHARK_MIRROR_DRAIN_INTERVAL` | — | `10s` | How often the async mirror-sync drain worker runs |
 | `GITSHARK_FEDERATION_ENABLED` | — | `false` | Turn on ForgeFed/ActivityPub |
 | `GITSHARK_FEDERATION_BASE_URL` | — | — | Public HTTPS origin; permanent actor-ID base |
 | `GITSHARK_FEDERATION_PEER_ALLOWLIST` | — | — | Comma-separated peer hosts (empty denies all) |
