@@ -9,8 +9,10 @@ import de.workaround.account.CurrentUser;
 import de.workaround.git.AccessPolicy;
 import de.workaround.git.CollaboratorService;
 import de.workaround.git.GitRepositoryService;
+import de.workaround.git.IssueCommentService;
 import de.workaround.git.IssueService;
 import de.workaround.model.Issue;
+import de.workaround.model.IssueComment;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
 import io.quarkus.qute.CheckedTemplate;
@@ -44,7 +46,8 @@ public class IssueResource
 		static native TemplateInstance editIssue(Repository repo, RepoNav nav, Issue issue);
 
 		static native TemplateInstance issue(Repository repo, RepoNav nav, boolean owner, Issue issue,
-			String descriptionHtml, List<Issue.Status> statuses, List<User> assignees);
+			String descriptionHtml, List<Issue.Status> statuses, List<User> assignees, boolean loggedIn,
+			UUID currentUserId, List<IssueComment> comments);
 	}
 
 	@Inject
@@ -58,6 +61,12 @@ public class IssueResource
 
 	@Inject
 	IssueService issueService;
+
+	@Inject
+	IssueCommentService issueCommentService;
+
+	@Inject
+	IssueComment.Repo commentRepo;
 
 	@Inject
 	CollaboratorService collaboratorService;
@@ -114,9 +123,41 @@ public class IssueResource
 		Issue issue = issueService.find(repo, number).orElseThrow(NotFoundException::new);
 		User user = currentUser.get();
 		boolean isOwner = accessPolicy.canAdmin(user, repo);
+		boolean loggedIn = user != null;
+		UUID currentUserId = user == null ? null : user.id;
 		String descriptionHtml = issue.description == null ? null : Markdown.render(issue.description);
 		return Templates.issue(repo, repoNav.build(repo, uriInfo), isOwner, issue, descriptionHtml,
-			List.of(Issue.Status.values()), assignableUsers(repo));
+			List.of(Issue.Status.values()), assignableUsers(repo), loggedIn, currentUserId,
+			issueCommentService.list(issue));
+	}
+
+	@POST
+	@jakarta.ws.rs.Path("{number:\\d+}/comments")
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	public Response comment(@PathParam("owner") String owner, @PathParam("name") String name,
+		@PathParam("number") int number, @FormParam("body") String body)
+	{
+		Repository repo = requireReadable(owner, name);
+		Issue issue = issueService.find(repo, number).orElseThrow(NotFoundException::new);
+		issueCommentService.add(currentUser.require(), issue, body);
+		return Response.seeOther(issueUri(repo, issue.number)).build();
+	}
+
+	@POST
+	@jakarta.ws.rs.Path("{number:\\d+}/comments/{commentId}/delete")
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	public Response deleteComment(@PathParam("owner") String owner, @PathParam("name") String name,
+		@PathParam("number") int number, @PathParam("commentId") String commentId)
+	{
+		Repository repo = requireReadable(owner, name);
+		Issue issue = issueService.find(repo, number).orElseThrow(NotFoundException::new);
+		IssueComment comment = commentRepo.findById(parseId(commentId));
+		if (comment == null || !comment.issue.id.equals(issue.id))
+		{
+			throw new NotFoundException();
+		}
+		issueCommentService.delete(currentUser.require(), comment);
+		return Response.seeOther(issueUri(repo, issue.number)).build();
 	}
 
 	/**
@@ -214,6 +255,18 @@ public class IssueResource
 	private URI issueUri(Repository repo, int number)
 	{
 		return URI.create("/repos/" + repo.ownerHandle() + "/" + repo.name + "/issues/" + number);
+	}
+
+	private static UUID parseId(String id)
+	{
+		try
+		{
+			return UUID.fromString(id);
+		}
+		catch (IllegalArgumentException malformed)
+		{
+			throw new NotFoundException();
+		}
 	}
 
 	private static Issue.Status parseStatus(String status)

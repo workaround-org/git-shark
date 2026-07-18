@@ -29,6 +29,42 @@
                 {#else}
                 <p class="issue-nodesc muted">No description provided.</p>
                 {/if}
+
+                <section class="comments">
+                    <h3 class="comments-title">Comments <span class="ct">{comments.size()}</span></h3>
+                    {#if comments.isEmpty()}
+                    <p class="muted">No comments yet.</p>
+                    {/if}
+                    {#for c in comments}
+                    <div class="comment-row">
+                        <div class="comment">
+                            <div class="comment-head">
+                                <span class="who">{#avatar user=c.author /} <strong>{c.author.username}</strong></span>
+                                <span class="muted comment-when">{c.createdAt}</span>
+                            </div>
+                            <div class="comment-body">{c.body}</div>
+                        </div>
+                        {#if owner || c.author.id == currentUserId}
+                        <form class="comment-del-form" method="post"
+                              action="/repos/{repo.ownerHandle}/{repo.name}/issues/{issue.number}/comments/{c.id}/delete">
+                            <button type="submit" class="comment-del" title="Delete comment" aria-label="Delete comment">
+                                <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 9Z"/></svg>
+                            </button>
+                        </form>
+                        {/if}
+                    </div>
+                    {/for}
+                    {#if loggedIn}
+                    <form class="comment-form" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/issues/{issue.number}/comments">
+                        <textarea name="body" rows="3" placeholder="Leave a comment" required autocomplete="off"></textarea>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary btn-sm">Comment</button>
+                        </div>
+                    </form>
+                    {#else}
+                    <p class="muted">Log in to comment.</p>
+                    {/if}
+                </section>
             </div>
 
             <aside class="issue-side">

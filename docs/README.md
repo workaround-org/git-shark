@@ -8,6 +8,11 @@ OIDC login, and PostgreSQL metadata.
 
 ### For users
 
+- **[Comments](users/comments.md)** — leave and delete discussion comments on
+  issues and merge requests, who may comment, and how discussion differs from
+  per-line review comments.
+- **[Viewing a commit's changes](users/commits.md)** — open a commit from the
+  Commits tab to see the diff it introduced, including root commits.
 - **[Forking](users/forking.md)** — make your own copy of any repository you can
   read, what a fork carries, and the one-fork-per-name rule.
 - **[Search](users/search.md)** — the header search box: case-insensitive
@@ -61,6 +66,9 @@ OIDC login, and PostgreSQL metadata.
 
 ### For maintainers
 
+- **[Comments and per-commit diffs](maintainers/comments.md)** — how issue and
+  merge-request discussion comments and the per-commit diff view reuse the
+  existing comment and diff machinery, with their tables and endpoints.
 - **[Forking](maintainers/forking.md)** — how forks are created (clone vs copy),
   the `parent` model, visibility rules, and what works versus what is still to do.
 - **[Avatars](maintainers/avatars.md)** — profile-picture storage, validation,

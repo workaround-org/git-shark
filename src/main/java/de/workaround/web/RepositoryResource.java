@@ -22,6 +22,7 @@ import de.workaround.account.CurrentUser;
 import de.workaround.account.InvalidImageException;
 import de.workaround.git.AccessPolicy;
 import de.workaround.git.GitBrowseService;
+import de.workaround.git.GitMergeService;
 import de.workaround.git.GitRepositoryService;
 import de.workaround.git.RepositoryImageService;
 import de.workaround.git.RepositoryPinService;
@@ -66,6 +67,9 @@ public class RepositoryResource
 			List<GitBrowseService.CommitInfo> commits, int page, int prevPage, int nextPage, int size,
 			boolean hasNext);
 
+		static native TemplateInstance commit(Repository repo, RepoNav nav, GitBrowseService.CommitInfo commit,
+			List<GitMergeService.FileDiff> files, int additions, int deletions);
+
 		static native TemplateInstance branches(Repository repo, RepoNav nav,
 			List<GitBrowseService.BranchInfo> branches);
 
@@ -83,6 +87,9 @@ public class RepositoryResource
 
 	@Inject
 	GitBrowseService browse;
+
+	@Inject
+	GitMergeService mergeService;
 
 	@Inject
 	AccessPolicy accessPolicy;
@@ -233,6 +240,19 @@ public class RepositoryResource
 			.orElseThrow(NotFoundException::new);
 		return Templates.commits(repo, nav, ref, commitPage.commits(), boundedPage, boundedPage - 1, boundedPage + 1,
 			boundedSize, commitPage.hasNext());
+	}
+
+	@GET
+	@jakarta.ws.rs.Path("commit/{id}")
+	public TemplateInstance commit(@PathParam("owner") String owner, @PathParam("name") String name,
+		@PathParam("id") String id)
+	{
+		Repository repo = requireReadable(owner, name);
+		RepoNav nav = repoNav.build(repo, uriInfo);
+		Path path = service.repositoryPath(repo);
+		GitBrowseService.CommitInfo info = browse.commit(path, id).orElseThrow(NotFoundException::new);
+		GitMergeService.DiffView diff = mergeService.commitDiff(path, id).orElseThrow(NotFoundException::new);
+		return Templates.commit(repo, nav, info, diff.files(), diff.additions(), diff.deletions());
 	}
 
 	@GET

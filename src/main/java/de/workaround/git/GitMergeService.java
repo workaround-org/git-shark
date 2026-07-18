@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
+import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.CommitBuilder;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -128,6 +129,57 @@ public class GitMergeService
 				}
 			}
 			return Optional.of(new DiffView(files, totalAdd, totalDel));
+		}
+		catch (IOException e)
+		{
+			throw new UncheckedIOException(e);
+		}
+	}
+
+	/**
+	 * Computes the changes a single commit introduced, i.e. the diff from its first parent to the commit itself.
+	 * A root commit (no parent) is diffed against the empty tree, so every file shows as an addition. Returns empty
+	 * if the commit cannot be resolved.
+	 */
+	public Optional<DiffView> commitDiff(Path barePath, String commitId)
+	{
+		try (Repository repo = open(barePath); RevWalk walk = new RevWalk(repo))
+		{
+			ObjectId id = repo.resolve(commitId + "^{commit}");
+			if (id == null)
+			{
+				return Optional.empty();
+			}
+			RevCommit commit = walk.parseCommit(id);
+			RevCommit parent = commit.getParentCount() > 0 ? walk.parseCommit(commit.getParent(0)) : null;
+
+			List<FileDiff> files = new ArrayList<>();
+			int totalAdd = 0;
+			int totalDel = 0;
+			try (ObjectReader reader = repo.newObjectReader())
+			{
+				AbstractTreeIterator oldTree = parent == null ? new EmptyTreeIterator() : tree(reader, parent);
+				AbstractTreeIterator newTree = tree(reader, commit);
+				List<DiffEntry> entries;
+				try (DiffFormatter scanner = new DiffFormatter(DisabledOutputStream.INSTANCE))
+				{
+					scanner.setRepository(repo);
+					entries = scanner.scan(oldTree, newTree);
+				}
+				for (DiffEntry entry : entries)
+				{
+					FileDiff file = formatEntry(repo, entry);
+					files.add(file);
+					totalAdd += file.additions();
+					totalDel += file.deletions();
+				}
+			}
+			return Optional.of(new DiffView(files, totalAdd, totalDel));
+		}
+		catch (MissingObjectException notFound)
+		{
+			// a well-formed but unknown id (or the all-zero id) resolves to a missing object rather than null
+			return Optional.empty();
 		}
 		catch (IOException e)
 		{

@@ -54,6 +54,30 @@ public class MergeRequestCommentService
 		return comment;
 	}
 
+	/**
+	 * Adds a general (non-line) discussion comment to the merge request. Unlike {@link #add}, it is not anchored
+	 * to a diff line: {@code filePath} is left null and both line numbers stay -1.
+	 */
+	@Transactional
+	public MergeRequestComment addGeneral(User actor, MergeRequest mr, String body)
+	{
+		requireReader(actor, mr);
+		String trimmedBody = body == null ? "" : body.strip();
+		if (trimmedBody.isEmpty())
+		{
+			throw new InvalidMergeRequestException("Comment must not be empty");
+		}
+		MergeRequestComment comment = new MergeRequestComment();
+		comment.mergeRequest = mr;
+		comment.author = actor;
+		comment.filePath = null;
+		comment.oldLine = -1;
+		comment.newLine = -1;
+		comment.body = trimmedBody;
+		comment.persist();
+		return comment;
+	}
+
 	public List<MergeRequestComment> list(MergeRequest mr)
 	{
 		return comments.findByMergeRequest(mr);

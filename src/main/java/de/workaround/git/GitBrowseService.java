@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.eclipse.jgit.diff.RawText;
+import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -192,6 +193,33 @@ public class GitBrowseService
 				index++;
 			}
 			return Optional.of(new CommitPage(commits, hasNext));
+		}
+		catch (IOException e)
+		{
+			throw new UncheckedIOException(e);
+		}
+	}
+
+	public Optional<CommitInfo> commit(Path barePath, String rev)
+	{
+		try (Repository repo = open(barePath); RevWalk revWalk = new RevWalk(repo))
+		{
+			RevCommit commit = resolveCommit(repo, revWalk, rev);
+			if (commit == null)
+			{
+				return Optional.empty();
+			}
+			return Optional.of(new CommitInfo(
+				commit.name(),
+				commit.abbreviate(8).name(),
+				commit.getShortMessage(),
+				commit.getAuthorIdent().getName(),
+				commit.getAuthorIdent().getWhenAsInstant()));
+		}
+		catch (MissingObjectException notFound)
+		{
+			// a well-formed but unknown id (or the all-zero id) resolves to a missing object rather than null
+			return Optional.empty();
 		}
 		catch (IOException e)
 		{

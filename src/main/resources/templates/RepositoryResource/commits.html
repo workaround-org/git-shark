@@ -8,8 +8,8 @@
             <tr><th>Commit</th><th>Message</th><th>Author</th><th>Date</th></tr>
             {#for commit in commits}
             <tr>
-                <td><code>{commit.shortId}</code></td>
-                <td>{commit.message}</td>
+                <td><a href="/repos/{repo.ownerHandle}/{repo.name}/commit/{commit.id}"><code>{commit.shortId}</code></a></td>
+                <td><a href="/repos/{repo.ownerHandle}/{repo.name}/commit/{commit.id}">{commit.message}</a></td>
                 <td>{commit.author}</td>
                 <td>{commit.date}</td>
             </tr>

@@ -50,7 +50,7 @@ public class MergeRequestResource
 
 		static native TemplateInstance mergeRequest(Repository repo, RepoNav nav, boolean owner, boolean loggedIn,
 			UUID currentUserId, MergeRequest mr, List<FileDiffView> files, int additions, int deletions,
-			List<User> assignees);
+			List<User> assignees, List<MergeRequestComment> discussion);
 	}
 
 	/**
@@ -143,6 +143,9 @@ public class MergeRequestResource
 		MergeRequest mr = mergeRequestService.find(repo, number).orElseThrow(NotFoundException::new);
 		GitMergeService.DiffView diff = mergeRequestService.diff(mr).orElse(null);
 		List<MergeRequestComment> comments = commentService.list(mr);
+		// line-anchored review comments carry a file path; general discussion comments have none
+		List<MergeRequestComment> lineComments = comments.stream().filter(c -> c.filePath != null).toList();
+		List<MergeRequestComment> discussion = comments.stream().filter(c -> c.filePath == null).toList();
 		User user = currentUser.get();
 		boolean loggedIn = user != null;
 		UUID currentUserId = user == null ? null : user.id;
@@ -160,14 +163,14 @@ public class MergeRequestResource
 				for (GitMergeService.DiffLine line : file.lines())
 				{
 					boolean commentable = isContent(line.type());
-					List<MergeRequestComment> lineComments = commentable
-						? comments.stream()
+					List<MergeRequestComment> anchored = commentable
+						? lineComments.stream()
 							.filter(c -> c.filePath.equals(file.path()) && c.oldLine == line.oldLine()
 								&& c.newLine == line.newLine())
 							.toList()
 						: List.of();
 					String anchorId = "cl-" + fileIndex + "-" + lineIndex;
-					lines.add(new DiffLineView(anchorId, line, commentable && loggedIn, lineComments));
+					lines.add(new DiffLineView(anchorId, line, commentable && loggedIn, anchored));
 					lineIndex++;
 				}
 				files.add(new FileDiffView(file.path(), file.changeType(), file.additions(), file.deletions(), lines));
@@ -177,7 +180,7 @@ public class MergeRequestResource
 			}
 		}
 		return Templates.mergeRequest(repo, repoNav.build(repo, uriInfo), isOwner(repo), loggedIn, currentUserId, mr,
-			files, additions, deletions, assignableUsers(repo));
+			files, additions, deletions, assignableUsers(repo), discussion);
 	}
 
 	/**
@@ -217,6 +220,18 @@ public class MergeRequestResource
 		Repository repo = requireReadable(owner, name);
 		MergeRequest mr = mergeRequestService.find(repo, number).orElseThrow(NotFoundException::new);
 		commentService.add(currentUser.require(), mr, filePath, oldLine, newLine, body);
+		return Response.seeOther(detailUri(repo, mr.number)).build();
+	}
+
+	@POST
+	@jakarta.ws.rs.Path("{number:\\d+}/discussion")
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	public Response discuss(@PathParam("owner") String owner, @PathParam("name") String name,
+		@PathParam("number") int number, @FormParam("body") String body)
+	{
+		Repository repo = requireReadable(owner, name);
+		MergeRequest mr = mergeRequestService.find(repo, number).orElseThrow(NotFoundException::new);
+		commentService.addGeneral(currentUser.require(), mr, body);
 		return Response.seeOther(detailUri(repo, mr.number)).build();
 	}
 
