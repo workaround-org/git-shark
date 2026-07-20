@@ -56,6 +56,7 @@ class WebUiTest
 			.body(containsString("Use AI as a tool, not as a feature"))
 			.body(containsString("Focus on co-working, not lazy feeds"))
 			.body(containsString("Easy and painless to self-host"))
+			.body(containsString("href=\"https://docs.gitshark.de/docs/admins/getting-started\""))
 			.body(not(containsString("landing-pub")));
 	}
 
