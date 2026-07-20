@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import de.workaround.git.CollaboratorService;
 import de.workaround.git.GitRepositoryService;
 import de.workaround.git.IssueCommentService;
 import de.workaround.git.IssueService;
@@ -34,6 +35,28 @@ class IssueCommentUiTest
 
 	@Inject
 	User.Repo userRepo;
+
+	@Inject
+	CollaboratorService collaboratorService;
+
+	@Test
+	@TestSecurity(user = "ic-collab")
+	void aCollaboratorSeesTheDeleteControlOnAnotherUsersComment()
+	{
+		User collaborator = persistUser("ic-collab");
+		User owner = persistUser("ic-owner-collab-" + UUID.randomUUID().toString().substring(0, 8));
+		Repository repo = service.create(owner, "board", Repository.Visibility.PUBLIC, null);
+		addCollaborator(owner, repo, collaborator);
+		Issue issue = issueService.create(owner, repo, "Team issue", null);
+		IssueComment comment = comments.add(owner, issue, "owner wrote this");
+		String detail = "/repos/" + owner.username + "/board/issues/" + issue.number;
+
+		// a collaborator (write access, not the owner and not the author) may delete comments,
+		// so the delete control must be rendered for them
+		given().when().get(detail)
+			.then().statusCode(200)
+			.body(containsString(detail + "/comments/" + comment.id + "/delete"));
+	}
 
 	@Test
 	@TestSecurity(user = "ic-owner")
@@ -123,6 +146,12 @@ class IssueCommentUiTest
 			.then().statusCode(303);
 
 		given().when().get(detail).then().statusCode(200).body(not(containsString("temporary note")));
+	}
+
+	@Transactional
+	void addCollaborator(User owner, Repository repo, User member)
+	{
+		collaboratorService.add(owner, repo, member.username);
 	}
 
 	@Transactional

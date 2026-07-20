@@ -1,0 +1,56 @@
+{
+  "realm": "quarkus",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "roles": {
+    "realm": [
+      { "name": "user", "description": "User privileges" },
+      { "name": "admin", "description": "Administrator privileges" },
+      { "name": "confidential", "description": "Confidential privileges" }
+    ]
+  },
+  "users": [
+    {
+      "username": "alice",
+      "enabled": true,
+      "email": "alice@example.com",
+      "emailVerified": true,
+      "firstName": "Alice",
+      "lastName": "Demo",
+      "credentials": [
+        { "type": "password", "value": "alice" }
+      ],
+      "realmRoles": [ "user", "admin" ]
+    },
+    {
+      "username": "bob",
+      "enabled": true,
+      "email": "bob@example.com",
+      "emailVerified": true,
+      "firstName": "Bob",
+      "lastName": "Demo",
+      "credentials": [
+        { "type": "password", "value": "bob" }
+      ],
+      "realmRoles": [ "user" ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "quarkus-app",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "secret",
+      "clientAuthenticatorType": "client-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": [ "*" ],
+      "webOrigins": [ "*" ],
+      "defaultClientScopes": [ "profile", "email", "roles", "web-origins", "acr", "basic" ],
+      "optionalClientScopes": [ "address", "phone", "offline_access", "microprofile-jwt" ]
+    }
+  ]
+}

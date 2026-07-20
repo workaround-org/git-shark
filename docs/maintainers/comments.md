@@ -33,7 +33,10 @@ General (non-line) discussion comments on issues and merge requests.
 
 - `IssueResource`: `POST {number}/comments` and
   `POST {number}/comments/{commentId}/delete`; the detail view passes the comment
-  list plus `loggedIn` / `currentUserId` to `issue.html`.
+  list plus `loggedIn` / `currentUserId` / `canModerate` to `issue.html`. The
+  delete control renders when the viewer is the comment author or `canModerate`
+  (`AccessPolicy.canWrite` — owner, collaborator or org member), matching what the
+  service enforces; `owner` (admin) alone would hide it from collaborators.
 - `MergeRequestResource`: `POST {number}/discussion` for general comments;
   deletion reuses the existing `{number}/comments/{commentId}/delete`. `detail`
   splits `commentService.list(mr)` into line comments (`filePath != null`) and

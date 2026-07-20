@@ -49,8 +49,8 @@ public class MergeRequestResource
 			String defaultBranch);
 
 		static native TemplateInstance mergeRequest(Repository repo, RepoNav nav, boolean owner, boolean loggedIn,
-			UUID currentUserId, MergeRequest mr, List<FileDiffView> files, int additions, int deletions,
-			List<User> assignees, List<MergeRequestComment> discussion);
+			UUID currentUserId, boolean canModerate, MergeRequest mr, List<FileDiffView> files, int additions,
+			int deletions, List<User> assignees, List<MergeRequestComment> discussion);
 	}
 
 	/**
@@ -149,6 +149,8 @@ public class MergeRequestResource
 		User user = currentUser.get();
 		boolean loggedIn = user != null;
 		UUID currentUserId = user == null ? null : user.id;
+		// comment moderation (delete any comment) follows write access: owner, collaborator or org member
+		boolean canModerate = accessPolicy.canWrite(user, repo);
 
 		List<FileDiffView> files = new ArrayList<>();
 		int additions = 0;
@@ -179,8 +181,8 @@ public class MergeRequestResource
 				fileIndex++;
 			}
 		}
-		return Templates.mergeRequest(repo, repoNav.build(repo, uriInfo), isOwner(repo), loggedIn, currentUserId, mr,
-			files, additions, deletions, assignableUsers(repo), discussion);
+		return Templates.mergeRequest(repo, repoNav.build(repo, uriInfo), isOwner(repo), loggedIn, currentUserId,
+			canModerate, mr, files, additions, deletions, assignableUsers(repo), discussion);
 	}
 
 	/**

@@ -121,7 +121,7 @@
             </div>
             <div class="comment-body">{c.body}</div>
         </div>
-        {#if owner || c.author.id == currentUserId}
+        {#if canModerate || c.author.id == currentUserId}
         <form class="comment-del-form" method="post"
               action="/repos/{repo.ownerHandle}/{repo.name}/merge-requests/{mr.number}/comments/{c.id}/delete">
             <button type="submit" class="comment-del" title="Delete comment" aria-label="Delete comment">
@@ -196,7 +196,7 @@
                 </div>
                 <div class="comment-body">{c.body}</div>
             </div>
-            {#if owner || c.author.id == currentUserId}
+            {#if canModerate || c.author.id == currentUserId}
             <form class="comment-del-form" method="post"
                   action="/repos/{repo.ownerHandle}/{repo.name}/merge-requests/{mr.number}/comments/{c.id}/delete">
                 <button type="submit" class="comment-del" title="Delete comment" aria-label="Delete comment">

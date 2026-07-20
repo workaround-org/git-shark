@@ -10,10 +10,13 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.transport.RefSpec;
 import org.junit.jupiter.api.Test;
 
+import de.workaround.git.CollaboratorService;
 import de.workaround.git.GitRepositoryService;
 import de.workaround.git.GitTestSeeder;
+import de.workaround.git.MergeRequestCommentService;
 import de.workaround.git.MergeRequestService;
 import de.workaround.model.MergeRequest;
+import de.workaround.model.MergeRequestComment;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
 import io.quarkus.test.junit.QuarkusTest;
@@ -35,6 +38,30 @@ class MergeRequestDiscussionUiTest
 
 	@Inject
 	User.Repo userRepo;
+
+	@Inject
+	CollaboratorService collaboratorService;
+
+	@Inject
+	MergeRequestCommentService commentService;
+
+	@Test
+	@TestSecurity(user = "mrd-collab")
+	void aCollaboratorSeesTheDeleteControlOnAnotherUsersDiscussionComment()
+	{
+		User collaborator = persistUser("mrd-collab");
+		User owner = persistUser("mrd-owner-collab-" + UUID.randomUUID().toString().substring(0, 8));
+		MergeRequest mr = seededMr(owner, "board");
+		addCollaborator(owner, mr.repository, collaborator);
+		MergeRequestComment comment = addDiscussion(owner, mr, "owner note on the MR");
+		String detail = "/repos/" + owner.username + "/board/merge-requests/" + mr.number;
+
+		// a collaborator (write access, not the owner and not the author) may delete comments,
+		// so the delete control must be rendered for them
+		given().when().get(detail)
+			.then().statusCode(200)
+			.body(containsString(detail + "/comments/" + comment.id + "/delete"));
+	}
 
 	@Test
 	@TestSecurity(user = "mrd-owner")
@@ -96,6 +123,18 @@ class MergeRequestDiscussionUiTest
 		{
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Transactional
+	void addCollaborator(User owner, Repository repo, User member)
+	{
+		collaboratorService.add(owner, repo, member.username);
+	}
+
+	@Transactional
+	MergeRequestComment addDiscussion(User author, MergeRequest mr, String body)
+	{
+		return commentService.addGeneral(author, mr, body);
 	}
 
 	@Transactional

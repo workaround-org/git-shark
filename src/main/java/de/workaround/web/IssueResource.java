@@ -47,7 +47,7 @@ public class IssueResource
 
 		static native TemplateInstance issue(Repository repo, RepoNav nav, boolean owner, Issue issue,
 			String descriptionHtml, List<Issue.Status> statuses, List<User> assignees, boolean loggedIn,
-			UUID currentUserId, List<IssueComment> comments);
+			UUID currentUserId, boolean canModerate, List<IssueComment> comments);
 	}
 
 	@Inject
@@ -125,9 +125,11 @@ public class IssueResource
 		boolean isOwner = accessPolicy.canAdmin(user, repo);
 		boolean loggedIn = user != null;
 		UUID currentUserId = user == null ? null : user.id;
+		// comment moderation (delete any comment) follows write access: owner, collaborator or org member
+		boolean canModerate = accessPolicy.canWrite(user, repo);
 		String descriptionHtml = issue.description == null ? null : Markdown.render(issue.description);
 		return Templates.issue(repo, repoNav.build(repo, uriInfo), isOwner, issue, descriptionHtml,
-			List.of(Issue.Status.values()), assignableUsers(repo), loggedIn, currentUserId,
+			List.of(Issue.Status.values()), assignableUsers(repo), loggedIn, currentUserId, canModerate,
 			issueCommentService.list(issue));
 	}
 
