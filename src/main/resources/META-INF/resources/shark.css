@@ -2000,6 +2000,45 @@ dialog#hotkey-help kbd {
     display: flex;
 }
 
+/* empty-repo quick start */
+
+.quickstart > input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.qs-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: var(--s2);
+}
+
+.qs-tabs label {
+    font: 600 12px/1 var(--mono);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 7px 16px;
+    cursor: pointer;
+}
+
+#qs-http:checked ~ .qs-tabs label[for="qs-http"],
+#qs-ssh:checked ~ .qs-tabs label[for="qs-ssh"] {
+    color: #fff;
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.qs-cmd {
+    display: none;
+}
+
+#qs-http:checked ~ .qs-http-cmd,
+#qs-ssh:checked ~ .qs-ssh-cmd {
+    display: block;
+}
+
 /* main column */
 
 .branchbar {

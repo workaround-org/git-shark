@@ -24,7 +24,8 @@ over both `https://` and `ssh://`.
 - A **DNS name** pointing at the host (e.g. `gitshark.example.com`). OIDC redirect URIs
   and — if you enable federation — permanent actor IDs are derived from it.
 - An **OIDC provider** with an authorization-code client for git-shark. PKCE is required.
-- Ports **80/443** (reverse proxy) and **2222** (SSH git) reachable from your clients.
+- Ports **80/443** (reverse proxy) and the **SSH git** port (host **22** by default, mapped
+  to container `2222`) reachable from your clients.
 
 ---
 
@@ -201,9 +202,10 @@ services:
       GITSHARK_AVATAR_ROOT: /data/avatars
       GITSHARK_REPO_IMAGE_ROOT: /data/repo-images
       GITSHARK_SSH_HOST_KEY: /data/ssh/host-key
-      GITSHARK_SSH_PORT: "2222"
+      GITSHARK_SSH_PORT: "2222"          # bind port INSIDE the container (>1024 → no root needed)
+      GITSHARK_SSH_EXTERNAL_PORT: "22"   # port shown in clone URLs; MUST match the published host port below
     ports:
-      - "2222:2222"                 # SSH git access, published directly
+      - "22:2222"                   # publish SSH git on the standard port 22 (host 22 → container 2222)
     volumes:
       - repos:/data/repositories    # bare git repositories
       - avatars:/data/avatars       # user profile pictures
@@ -238,7 +240,18 @@ Notes:
   (plus the database) are mandatory for a stateful deployment — see
   [Persistent data](persistent-data.md) for what each holds and what breaks without it.
 - **HTTP port 8080 is not published** — it's reached through the reverse proxy on the
-  Compose network (Step 6). Only SSH (2222) is exposed directly.
+  Compose network (Step 6). Only SSH is exposed directly (host **22** → container **2222**).
+- **Two SSH port knobs, and they are independent.** `GITSHARK_SSH_PORT` is the port the
+  embedded server *binds inside the container* — keep it above 1024 (default `2222`) so the
+  process never needs root. `GITSHARK_SSH_EXTERNAL_PORT` is *display only*: it is the port
+  git-shark writes into the clone/push URLs shown in the UI (default `22`, and `22` is
+  omitted from the printed URL for a clean `ssh://git@host/...`). It changes **no** runtime
+  behaviour — the server still binds `GITSHARK_SSH_PORT`. **You are responsible for making
+  the two agree with your port publishing:** the external port must equal the host port you
+  publish. Above we bind `2222`, publish it on host `22`, and advertise `22` — consistent.
+  If the host already runs its own sshd on `22`, publish the container on `2222` instead
+  (`"2222:2222"`) **and** set `GITSHARK_SSH_EXTERNAL_PORT: "2222"` so the advertised URL
+  matches what clients can actually reach.
 - **Single app replica.** git-shark keeps git state on a `ReadWriteOnce`-style filesystem
   volume; do not scale `app` beyond one instance.
 - Flyway migrates the schema automatically at startup (`migrate-at-start=true`), so the
@@ -311,11 +324,15 @@ git clone https://gitshark.example.com/git/<owner>/<repo>.git
 **SSH** (public-key only; add your key under *SSH keys* in the UI):
 
 ```bash
-git clone ssh://git@gitshark.example.com:2222/<owner>/<repo>.git
+git clone git@gitshark.example.com:<owner>/<repo>.git
 ```
 
-> Want bare `git@gitshark.example.com` without the `:2222`? Publish the container's 2222
-> on host port 22 (`"22:2222"`) — but only if the host's own sshd isn't already using 22.
+> On the default port `GITSHARK_SSH_EXTERNAL_PORT=22` the UI shows the short scp-like form
+> above (`git@host:owner/repo.git`, exactly like GitHub) — matching the `"22:2222"` publish.
+> The scp shorthand **cannot carry a port**, so if you publish SSH on a non-standard host
+> port (e.g. `"2222:2222"`), set `GITSHARK_SSH_EXTERNAL_PORT` to that port and the UI falls
+> back to the explicit form `ssh://git@gitshark.example.com:2222/...`. The external port is
+> display-only; it must equal the reachable host port or the copy-paste clone command fails.
 
 ---
 
@@ -338,7 +355,8 @@ Every value below is an environment variable on the `app` service. Defaults come
 | `GITSHARK_AVATAR_ROOT` | — | `data/avatars` | On-disk profile-picture (avatar) storage root |
 | `GITSHARK_REPO_IMAGE_ROOT` | — | `data/repo-images` | On-disk per-repository image storage root |
 | `GITSHARK_SSH_HOST_KEY` | — | `data/ssh/host-key` | Persistent SSH host key path |
-| `GITSHARK_SSH_PORT` | — | `2222` | Embedded SSH server port |
+| `GITSHARK_SSH_PORT` | — | `2222` | Port the embedded SSH server **binds inside the container**; keep >1024 so it needs no root |
+| `GITSHARK_SSH_EXTERNAL_PORT` | — | `22` | Port advertised in clone/push URLs (display only, no runtime effect). Must match the published host port; `22` is omitted from the printed URL |
 | `GITSHARK_SECRET_KEY` | — | — | Encrypts push-mirror secrets at rest; required to create mirrors (see [Push mirrors](mirrors.md)) |
 | `GITSHARK_MIRROR_MAX_ATTEMPTS` | — | `8` | Mirror-sync retry cap before dead-letter |
 | `GITSHARK_MIRROR_ALLOW_INSECURE` | — | `false` | Dev only: allow http/loopback mirror targets |

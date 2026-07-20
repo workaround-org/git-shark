@@ -427,7 +427,22 @@ class WebUiTest
 		given().when().get("/repos/" + owner.username + "/cloneurls")
 			.then().statusCode(200)
 			.body(containsString("/git/" + owner.username + "/cloneurls.git"))
-			.body(containsString("ssh://git@"));
+			.body(containsString("git@localhost:" + owner.username + "/cloneurls.git"));
+	}
+
+	@Test
+	void emptyRepositoryQuickStartOffersBothProtocols() throws Exception
+	{
+		User owner = persistUser("ui-quick-" + unique());
+		service.create(owner, "emptyqs", Repository.Visibility.PUBLIC, null);
+
+		given().when().get("/repos/" + owner.username + "/emptyqs")
+			.then().statusCode(200)
+			.body(containsString("class=\"quickstart\""))
+			.body(containsString("id=\"qs-http\""))
+			.body(containsString("id=\"qs-ssh\""))
+			.body(containsString("git remote add origin git@localhost:" + owner.username + "/emptyqs.git"))
+			.body(containsString("git push -u origin main"));
 	}
 
 	@Test
@@ -521,7 +536,7 @@ class WebUiTest
 			// ...with both protocols selectable...
 			.body(containsString("git clone "))
 			.body(containsString("/git/" + owner.username + "/clonedialog.git"))
-			.body(containsString("ssh://git@"))
+			.body(containsString("git@localhost:" + owner.username + "/clonedialog.git"))
 			// ...and no longer pinned in the header topbar or sidebar
 			.body(not(containsString("class=\"clonecmd\"")))
 			.body(not(containsString("class=\"clone-urls\"")));

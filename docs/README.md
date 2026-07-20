@@ -66,6 +66,9 @@ OIDC login, and PostgreSQL metadata.
 
 ### For maintainers
 
+- **[SSH transport & clone URLs](maintainers/ssh-transport.md)** — the embedded
+  SSH server, the bind-port vs. advertised-external-port split, and how the
+  `ssh://` clone/push URLs are constructed.
 - **[Comments and per-commit diffs](maintainers/comments.md)** — how issue and
   merge-request discussion comments and the per-commit diff view reuse the
   existing comment and diff machinery, with their tables and endpoints.

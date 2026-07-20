@@ -45,8 +45,10 @@ public class RepoNavService
 	@Inject
 	MergeRequestService mergeRequestService;
 
-	@ConfigProperty(name = "gitshark.ssh.port")
-	int sshPort;
+	// The port shown in clone URLs. This is the port users actually connect to (e.g. 22), which may differ from
+	// gitshark.ssh.port — the port the embedded server binds inside the container (e.g. 2222, so it needs no root).
+	@ConfigProperty(name = "gitshark.ssh.external-port")
+	int sshExternalPort;
 
 	public RepoNav build(Repository repo, UriInfo uriInfo)
 	{
@@ -67,8 +69,7 @@ public class RepoNavService
 		long openMrCount = mergeRequestService.countOpen(repo);
 		String httpUrl = uriInfo.getBaseUri().resolve("/git/" + repo.ownerHandle() + "/" + repo.name + ".git")
 			.toString();
-		String sshUrl = "ssh://git@" + uriInfo.getBaseUri().getHost() + ":" + sshPort + "/" + repo.ownerHandle()
-			+ "/" + repo.name + ".git";
+		String sshUrl = CloneUrls.ssh(uriInfo.getBaseUri().getHost(), sshExternalPort, repo.ownerHandle(), repo.name);
 		return new RepoNav(repo, loggedIn, isOwner, pinned, empty, defaultBranch, commitCount, branchCount, tagCount,
 			openIssueCount, openMrCount, httpUrl, sshUrl, uriInfo.getRequestUri().getRawPath(), parentVisible);
 	}

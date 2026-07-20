@@ -9,8 +9,18 @@
         {#if nav.empty}
         <h2>Quick start</h2>
         <p>This repository is empty. Push an existing repository:</p>
-        <pre>git remote add origin {nav.httpUrl}
+        <div class="quickstart">
+            <input type="radio" name="qs-proto" id="qs-http" checked>
+            <input type="radio" name="qs-proto" id="qs-ssh">
+            <div class="qs-tabs">
+                <label for="qs-http">HTTPS</label>
+                <label for="qs-ssh">SSH</label>
+            </div>
+            <pre class="qs-cmd qs-http-cmd">git remote add origin {nav.httpUrl}
 git push -u origin main</pre>
+            <pre class="qs-cmd qs-ssh-cmd">git remote add origin {nav.sshUrl}
+git push -u origin main</pre>
+        </div>
         {#else}
         <div class="branchbar">
             <a class="branchsel" href="/repos/{repo.ownerHandle}/{repo.name}/branches"><span class="g">⑂</span> {nav.defaultBranch} <span class="car">▾</span></a>
