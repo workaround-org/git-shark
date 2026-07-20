@@ -11,7 +11,9 @@ the box and press **Comment**. You must be logged in; visitors see a *Log in to
 comment* note instead of the form.
 
 Comments are plain text and appear in the order they were posted, each showing the
-author's avatar, username, and the time it was posted.
+author's avatar, username, and a relative post time (*just now*, *10min ago*,
+*6h ago*, or a date for anything older than a day); hover the time to see the exact
+timestamp.
 
 Any authenticated user who can read the repository may comment — you do not need to
 be the owner or a collaborator. On a private repository, only users who can read it

@@ -85,7 +85,11 @@ class MergeRequestDiscussionUiTest
 		given().when().get(detail)
 			.then().statusCode(200)
 			.body(containsString("general remark on this MR"))
-			.body(containsString("mrd-owner"));
+			.body(containsString("mrd-owner"))
+			// the just-posted comment shows a friendly relative time (via the {createdAt.since}
+			// template extension) with the exact instant kept in a hover tooltip
+			.body(containsString(">just now</span>"))
+			.body(containsString("class=\"muted comment-when\" title=\""));
 	}
 
 	@Test

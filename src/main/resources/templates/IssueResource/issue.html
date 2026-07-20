@@ -40,7 +40,7 @@
                         <div class="comment">
                             <div class="comment-head">
                                 <span class="who">{#avatar user=c.author /} <strong>{c.author.username}</strong></span>
-                                <span class="muted comment-when">{c.createdAt}</span>
+                                <span class="muted comment-when" title="{c.createdAt}">{c.createdAt.since}</span>
                             </div>
                             <div class="comment-body">{c.body}</div>
                         </div>

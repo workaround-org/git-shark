@@ -889,6 +889,11 @@ pre code {
     gap: var(--s2);
 }
 
+/* the discussion comment box and its submit button would otherwise touch */
+.comment-form .form-actions {
+    margin-top: var(--s3);
+}
+
 details.archive {
     margin-top: var(--s5);
 }
@@ -1535,6 +1540,27 @@ pre.issue-desc {
     background: var(--surface);
     border-top: 1px dashed var(--border);
     font-family: var(--font);
+}
+
+/* discussion comments render as distinct cards (author/time header + message body); the
+   inline diff-anchored variant (.dl-comment-row) keeps its own styling and is unaffected */
+.comment-row {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--s2);
+    margin-bottom: var(--s3);
+}
+
+.comment-row .comment {
+    padding: var(--s3);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.comment-row:hover .comment-del,
+.comment-row:focus-within .comment-del {
+    opacity: 1;
 }
 
 .comment {
