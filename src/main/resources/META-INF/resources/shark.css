@@ -943,6 +943,13 @@ details.archive > .panel {
     word-break: break-word;
 }
 
+/* the merge-request description is raw pre text; wrap long lines instead of forcing a
+   page-wide horizontal scrollbar */
+pre.issue-desc {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
 .md-toggle {
     display: flex;
     gap: var(--s2);

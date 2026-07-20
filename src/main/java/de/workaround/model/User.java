@@ -80,6 +80,11 @@ public class User implements PanacheEntity.Managed
 		@Find
 		Optional<User> findByUsername(String username);
 
+		// Maps a commit author's email to a platform account (case-insensitive) so repository
+		// contributors can be surfaced as assignee/reviewer suggestions.
+		@HQL("where email is not null and lower(email) = lower(:email)")
+		Optional<User> findByEmailIgnoreCase(String email);
+
 		// Onboarded users only (username set); case-insensitive LIKE on handle and display name. The
 		// caller supplies the already-lowercased %pattern% so the wildcards live in one place.
 		@HQL("where username is not null and (lower(username) like :pattern or lower(displayName) like :pattern)"

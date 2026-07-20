@@ -6,7 +6,10 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 import org.eclipse.jgit.diff.RawText;
@@ -49,6 +52,10 @@ public class GitBrowseService
 	}
 
 	public record BranchInfo(String name, boolean defaultBranch)
+	{
+	}
+
+	public record Contributor(String name, String email, int commits)
 	{
 	}
 
@@ -243,6 +250,42 @@ public class GitBrowseService
 				count++;
 			}
 			return count;
+		}
+		catch (IOException e)
+		{
+			throw new UncheckedIOException(e);
+		}
+	}
+
+	/**
+	 * The most prolific commit authors on the given ref, most commits first (ties broken by email for a
+	 * stable order). Authors are keyed by lower-cased email so one person committing under varying display
+	 * names is counted once; the display name kept is the one seen on their newest commit reached first.
+	 */
+	public List<Contributor> contributors(Path barePath, String ref, int limit)
+	{
+		try (Repository repo = open(barePath); RevWalk revWalk = new RevWalk(repo))
+		{
+			RevCommit start = resolveCommit(repo, revWalk, ref);
+			if (start == null)
+			{
+				return List.of();
+			}
+			revWalk.markStart(start);
+			Map<String, Integer> counts = new HashMap<>();
+			Map<String, String> names = new HashMap<>();
+			for (RevCommit commit : revWalk)
+			{
+				var ident = commit.getAuthorIdent();
+				String email = ident.getEmailAddress() == null ? "" : ident.getEmailAddress().toLowerCase(Locale.ROOT);
+				counts.merge(email, 1, Integer::sum);
+				names.putIfAbsent(email, ident.getName());
+			}
+			return counts.entrySet().stream()
+				.map(entry -> new Contributor(names.get(entry.getKey()), entry.getKey(), entry.getValue()))
+				.sorted(Comparator.comparingInt(Contributor::commits).reversed().thenComparing(Contributor::email))
+				.limit(limit)
+				.toList();
 		}
 		catch (IOException e)
 		{

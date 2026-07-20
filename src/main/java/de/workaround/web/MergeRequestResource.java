@@ -4,7 +4,9 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import de.workaround.account.CurrentUser;
 import de.workaround.git.AccessPolicy;
@@ -87,6 +89,9 @@ public class MergeRequestResource
 
 	@Inject
 	CollaboratorService collaboratorService;
+
+	@Inject
+	User.Repo userRepo;
 
 	@Inject
 	MergeRequestComment.Repo commentRepo;
@@ -185,9 +190,14 @@ public class MergeRequestResource
 			canModerate, mr, files, additions, deletions, assignableUsers(repo), discussion);
 	}
 
+	/** How many of a repository's top commit authors the pickers offer as suggestions. */
+	private static final int TOP_CONTRIBUTORS = 5;
+
 	/**
-	 * Suggestions offered by the assignee/reviewer pickers: the repository owner (for personal repos) plus
-	 * every collaborator. Assignment itself accepts any username; this list only powers the picker menus.
+	 * Suggestions offered by the assignee/reviewer pickers: the repository owner (for personal repos), every
+	 * collaborator, and the repository's most prolific commit authors — a reviewer is often best drawn from
+	 * the people who actually wrote the code. Assignment itself accepts any username; this list only powers
+	 * the picker menus.
 	 */
 	private List<User> assignableUsers(Repository repo)
 	{
@@ -197,7 +207,37 @@ public class MergeRequestResource
 			users.add(repo.ownerUser);
 		}
 		collaboratorService.list(repo).forEach(collaborator -> users.add(collaborator.user));
+		appendTopContributors(repo, users);
 		return users;
+	}
+
+	/**
+	 * Appends the repository's top commit authors whose email maps to a platform account and who are not
+	 * already suggested. Only authors on the default branch are considered; empty repositories add nothing.
+	 */
+	private void appendTopContributors(Repository repo, List<User> users)
+	{
+		Path path = service.repositoryPath(repo);
+		if (browse.isEmpty(path))
+		{
+			return;
+		}
+		Set<UUID> present = users.stream().map(user -> user.id).collect(Collectors.toSet());
+		for (GitBrowseService.Contributor contributor : browse.contributors(path, browse.defaultBranch(path),
+			TOP_CONTRIBUTORS))
+		{
+			if (contributor.email() == null || contributor.email().isBlank())
+			{
+				continue;
+			}
+			userRepo.findByEmailIgnoreCase(contributor.email()).ifPresent(user ->
+			{
+				if (user.username != null && present.add(user.id))
+				{
+					users.add(user);
+				}
+			});
+		}
 	}
 
 	/** Merge requests were originally addressed by UUID; keep old bookmarks and federated links working. */

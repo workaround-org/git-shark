@@ -145,6 +145,26 @@ class MergeRequestUiTest
 	}
 
 	@Test
+	@TestSecurity(user = "mru-contrib")
+	void pickerSuggestsTopContributorsOfTheRepo()
+	{
+		User owner = persistUser("mru-contrib");
+		// a platform account whose email matches the commit author seeded on the default branch,
+		// but who is neither owner nor collaborator
+		User contributor = persistUserWithEmail("mru-topdev", "seed@example.com");
+		seed(owner, "contribboard");
+		String base = "/repos/" + owner.username + "/contribboard/merge-requests";
+		String location = given().redirects().follow(false).contentType("application/x-www-form-urlencoded")
+			.formParam("title", "Suggest me").formParam("sourceBranch", "feature").formParam("targetBranch", "main")
+			.when().post(base).then().statusCode(303).extract().header("Location");
+
+		// the picker suggests the top contributor even though they are not a collaborator
+		given().when().get(location).then().statusCode(200)
+			.body(containsString("value=\"" + contributor.username + "\""))
+			.body(containsString("name=\"reviewer\" value=\"" + contributor.username + "\""));
+	}
+
+	@Test
 	@TestSecurity(user = "mru-badassign")
 	void assigningAnUnknownUsernameIsRejected()
 	{
@@ -302,6 +322,15 @@ class MergeRequestUiTest
 		User user = new User();
 		user.oidcSub = name;
 		user.username = name;
+		user.persist();
+		return user;
+	}
+
+	@Transactional
+	User persistUserWithEmail(String name, String email)
+	{
+		User user = persistUser(name);
+		user.email = email;
 		user.persist();
 		return user;
 	}
