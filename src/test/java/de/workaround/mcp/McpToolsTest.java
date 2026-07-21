@@ -152,6 +152,52 @@ class McpToolsTest
 			.thenAssertResults();
 	}
 
+	@Test
+	void updateIssueToolEditsTitleAndDescription()
+	{
+		User owner = persistUser("mcp-iupd-" + shortId());
+		Repository repo = service.create(owner, "mcpissueupdate", Repository.Visibility.PUBLIC, null);
+		int issueNumber = createIssue(owner, repo, "original title");
+		String token = tokenService.create(owner, "mcp").plaintext();
+
+		McpStreamableTestClient client = McpAssured.newStreamableClient()
+			.setMcpPath("/mcp")
+			.setAdditionalHeaders(json -> MultiMap.caseInsensitiveMultiMap().add("Authorization", "Bearer " + token))
+			.build().connect();
+
+		client.when()
+			.toolsCall("updateIssue", Map.of("owner", owner.username, "name", "mcpissueupdate",
+				"number", issueNumber, "title", "edited title", "description", "edited body"), response -> {
+					assertFalse(response.isError());
+					assertTrue(response.firstContent().asText().text().contains("edited title"));
+					assertTrue(response.firstContent().asText().text().contains("edited body"));
+				})
+			.thenAssertResults();
+	}
+
+	@Test
+	void assignIssueToolSetsTheAssignee()
+	{
+		User owner = persistUser("mcp-iasg-" + shortId());
+		User assignee = persistUser("mcp-iasgee-" + shortId());
+		Repository repo = service.create(owner, "mcpissueassign", Repository.Visibility.PUBLIC, null);
+		int issueNumber = createIssue(owner, repo, "needs owner");
+		String token = tokenService.create(owner, "mcp").plaintext();
+
+		McpStreamableTestClient client = McpAssured.newStreamableClient()
+			.setMcpPath("/mcp")
+			.setAdditionalHeaders(json -> MultiMap.caseInsensitiveMultiMap().add("Authorization", "Bearer " + token))
+			.build().connect();
+
+		client.when()
+			.toolsCall("assignIssue", Map.of("owner", owner.username, "name", "mcpissueassign",
+				"number", issueNumber, "username", assignee.username), response -> {
+					assertFalse(response.isError());
+					assertTrue(response.firstContent().asText().text().contains(assignee.username));
+				})
+			.thenAssertResults();
+	}
+
 	@Transactional
 	int createIssue(User owner, Repository repo, String title)
 	{

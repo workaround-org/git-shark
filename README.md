@@ -166,7 +166,7 @@ MCP tools. Client setup (Claude Code, Claude Desktop, others) is described in
 | Area | Tools |
 |---|---|
 | Repositories | `listRepositories`, `getRepository`, `createRepository`, `forkRepository`, `deleteRepository` |
-| Issues | `listIssues`, `getIssue`, `createIssue`, `updateIssueStatus`, `deleteIssue` |
+| Issues | `listIssues`, `getIssue`, `createIssue`, `updateIssue`, `assignIssue`, `updateIssueStatus`, `deleteIssue` |
 | Merge requests | `listMergeRequests`, `getMergeRequest`, `createMergeRequest`, `mergeMergeRequest`, `closeMergeRequest`, `listMergeRequestComments`, `addMergeRequestComment` |
 | User | `currentUser` |
 

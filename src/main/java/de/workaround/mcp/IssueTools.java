@@ -18,8 +18,9 @@ import jakarta.transaction.Transactional;
 
 /**
  * MCP tools mirroring the issue REST endpoints, including free-text discussion comments. Issues are
- * addressed by their per-repository number. Reading follows repository visibility; creating, transitioning
- * and deleting require a token and ownership, while commenting only requires read access.
+ * addressed by their per-repository number. Reading follows repository visibility; creating, editing,
+ * assigning, transitioning and deleting require a token and ownership, while commenting only requires read
+ * access.
  */
 @Singleton
 public class IssueTools
@@ -62,6 +63,33 @@ public class IssueTools
 		Repository repo = access.requireReadable(user, owner, name);
 		Issue issue = issues.create(user, repo, title, description == null || description.isBlank() ? null : description);
 		return ApiModels.IssueView.of(issue);
+	}
+
+	@Tool(description = "Edit an issue's title and description. Requires a token and ownership.")
+	@Transactional
+	public ApiModels.IssueView updateIssue(@ToolArg(description = "Owner username") String owner,
+		@ToolArg(description = "Repository name") String name, @ToolArg(description = "Issue number") int number,
+		@ToolArg(description = "New title") String title,
+		@ToolArg(description = "New description; empty clears it", defaultValue = "") String description)
+	{
+		User user = principal.require();
+		Repository repo = access.requireReadable(user, owner, name);
+		Issue issue = requireIssue(repo, number);
+		issues.update(user, issue, title, description == null || description.isBlank() ? null : description);
+		return ApiModels.IssueView.of(requireIssue(repo, number));
+	}
+
+	@Tool(description = "Assign an issue to a user, or unassign it when the username is empty. Requires a token and ownership.")
+	@Transactional
+	public ApiModels.IssueView assignIssue(@ToolArg(description = "Owner username") String owner,
+		@ToolArg(description = "Repository name") String name, @ToolArg(description = "Issue number") int number,
+		@ToolArg(description = "Assignee username; empty to unassign", defaultValue = "") String username)
+	{
+		User user = principal.require();
+		Repository repo = access.requireReadable(user, owner, name);
+		Issue issue = requireIssue(repo, number);
+		issues.assign(user, issue, username);
+		return ApiModels.IssueView.of(requireIssue(repo, number));
 	}
 
 	@Tool(description = "Update an issue's status. Requires a token and ownership.")
