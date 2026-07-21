@@ -145,6 +145,7 @@ unchanged; `GET /api/v1/version` reports the emulated Gitea version (`GITSHARK_G
 | GET | `/api/v1/repos` | Repositories visible to the caller (Gitea repository objects) |
 | POST | `/api/v1/repos` | Create a repository (`400` invalid name, `409` duplicate) |
 | GET | `/api/v1/repos/{owner}/{name}` | Repository detail in Gitea shape (`full_name`, `default_branch`, `clone_url`, `permissions`, …) |
+| GET | `/api/v1/repos/{owner}/{name}/branches/{branch}` | Branch tip in Gitea shape (`name`, `commit.id`, `protected`); slash-bearing names supported |
 | DELETE | `/api/v1/repos/{owner}/{name}` | Delete a repository (owner only) |
 | GET, POST | `/api/v1/repos/{owner}/{name}/issues` | List / create issues |
 | GET, PATCH, DELETE | `/api/v1/repos/{owner}/{name}/issues/{number}` | Get / update status / delete an issue |

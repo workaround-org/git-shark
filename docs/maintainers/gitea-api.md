@@ -63,10 +63,12 @@ confined to the DTO/resource layer in `de.workaround.api`.
 - `GET /api/v1/repos` and `GET /api/v1/repos/{owner}/{name}` — Gitea repository
   objects, including `default_branch` (live git read), `clone_url`/`html_url`
   (from the request base URL), `permissions`, `fork`/`parent`, and merge flags.
+- `GET /api/v1/repos/{owner}/{name}/branches/{branch}` — branch object
+  (`name`, `commit.id`, `protected`); the branch segment is matched greedily so
+  slash-bearing names resolve, and only real branch refs count (tag/SHA → 404).
 
 ## What still needs to be implemented
 
-- `GET /api/v1/repos/{owner}/{name}/branches/{branch}` — branch object.
 - `pulls` resource: rename `merge-requests` → `pulls`, reshape to Gitea pull
   requests, add find-by-branch (`GET pulls/{base}/{head}`), `PATCH pulls/{index}`
   (title/body/state), keep create/get/list/merge.

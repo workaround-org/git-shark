@@ -142,6 +142,17 @@ public final class ApiModels
 	}
 
 	/**
+	 * A branch in the Gitea contract. Clients (Renovate) read {@code commit.id} as the branch tip SHA.
+	 * git-shark has no branch protection, so {@code protected} is always false.
+	 */
+	public record BranchView(String name, CommitRef commit, @JsonProperty("protected") boolean isProtected)
+	{
+		public record CommitRef(String id)
+		{
+		}
+	}
+
+	/**
 	 * A person in a listing where the caller's read access is unknown (search is open to anonymous callers).
 	 * Deliberately omits {@code email}: unlike the self-scoped {@code /api/v1/user}, a search response would
 	 * otherwise disclose every matched user's address to unauthenticated callers.
