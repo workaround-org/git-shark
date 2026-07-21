@@ -3,6 +3,7 @@ package de.workaround.mcp;
 import java.util.List;
 
 import de.workaround.api.ApiModels;
+import de.workaround.git.GitBrowseService;
 import de.workaround.git.GitRepositoryService;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
@@ -23,6 +24,9 @@ public class RepositoryTools
 	GitRepositoryService service;
 
 	@Inject
+	GitBrowseService browse;
+
+	@Inject
 	McpRepoAccess access;
 
 	@Inject
@@ -34,7 +38,7 @@ public class RepositoryTools
 	@Tool(description = "List repositories visible to the caller: all public repositories, plus your own private ones when a valid token is supplied.")
 	public List<ApiModels.RepositoryView> listRepositories()
 	{
-		return service.listVisibleTo(principal.orNull()).stream().map(ApiModels.RepositoryView::of).toList();
+		return service.listVisibleTo(principal.orNull()).stream().map(this::view).toList();
 	}
 
 	@Tool(description = "Get a single repository by owner username and repository name.")
@@ -42,7 +46,7 @@ public class RepositoryTools
 		@ToolArg(description = "Repository name") String name)
 	{
 		Repository repo = access.requireReadable(principal.orNull(), owner, name);
-		return ApiModels.RepositoryView.of(repo, canSeeParent(repo));
+		return view(repo);
 	}
 
 	@Tool(description = "Create a new repository owned by the authenticated user. Requires a personal access token.")
@@ -57,7 +61,7 @@ public class RepositoryTools
 			? Repository.Visibility.PRIVATE : Repository.Visibility.PUBLIC;
 		Repository repo = service.create(user, name, parsed,
 			description == null || description.isBlank() ? null : description);
-		return ApiModels.RepositoryView.of(repo);
+		return view(repo);
 	}
 
 	@Tool(description = "Fork a repository you can read into your own namespace, copying all branches and tags. Requires a personal access token.")
@@ -68,12 +72,24 @@ public class RepositoryTools
 		User user = principal.require();
 		Repository source = access.requireReadable(user, owner, name);
 		Repository forked = service.fork(user, source);
-		return ApiModels.RepositoryView.of(forked, canSeeParent(forked));
+		return view(forked);
 	}
 
 	private boolean canSeeParent(Repository repo)
 	{
 		return repo.parent != null && accessPolicy.canRead(principal.orNull(), repo.parent);
+	}
+
+	/** MCP has no request base URL, so clone/html URLs are left null; the git-derived fields and permissions
+	 *  are still populated so AI clients see the same shape the REST API serves. */
+	private ApiModels.RepositoryView view(Repository repo)
+	{
+		java.nio.file.Path path = service.repositoryPath(repo);
+		User caller = principal.orNull();
+		ApiModels.PermissionsView permissions = new ApiModels.PermissionsView(accessPolicy.canAdmin(caller, repo),
+			accessPolicy.canWrite(caller, repo), accessPolicy.canRead(caller, repo));
+		return ApiModels.RepositoryView.of(repo, canSeeParent(repo), browse.isEmpty(path),
+			browse.defaultBranch(path), null, null, permissions);
 	}
 
 	@Tool(description = "Delete a repository you own. Requires a personal access token. This is irreversible.")

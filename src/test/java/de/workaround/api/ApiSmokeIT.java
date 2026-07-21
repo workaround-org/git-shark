@@ -38,9 +38,11 @@ class ApiSmokeIT
 			.then()
 			.statusCode(200)
 			.contentType("application/json")
-			.body("owner", equalTo("alice"))
+			.body("owner.login", equalTo("alice"))
 			.body("name", equalTo("demo"))
-			.body("visibility", equalTo("PUBLIC"));
+			.body("full_name", equalTo("alice/demo"))
+			.body("private", org.hamcrest.CoreMatchers.is(false))
+			.body("clone_url", org.hamcrest.Matchers.endsWith("/git/alice/demo.git"));
 	}
 
 	@Test

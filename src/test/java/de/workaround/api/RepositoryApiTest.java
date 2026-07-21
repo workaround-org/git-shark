@@ -35,22 +35,27 @@ class RepositoryApiTest
 		User owner = persistUser("api-repo-owner");
 		String token = mintToken(owner);
 
-		// create
+		// create — response is in the Gitea repository shape
 		String location = given().header("Authorization", "Bearer " + token)
 			.contentType("application/json")
 			.body(Map.of("name", "widgets", "visibility", "PUBLIC", "description", "gadgets"))
 			.when().post("/api/v1/repos")
 			.then().statusCode(201)
 			.body("name", equalTo("widgets"))
-			.body("owner", equalTo(owner.username))
-			.body("visibility", equalTo("PUBLIC"))
+			.body("full_name", equalTo(owner.username + "/widgets"))
+			.body("owner.login", equalTo(owner.username))
+			.body("private", is(false))
 			.body("description", equalTo("gadgets"))
+			.body("default_branch", equalTo("main"))
+			.body("clone_url", org.hamcrest.Matchers.endsWith("/git/" + owner.username + "/widgets.git"))
+			.body("permissions.admin", is(true))
 			.extract().header("Location");
 
 		// get via Location
 		given().when().get(location)
 			.then().statusCode(200)
-			.body("name", equalTo("widgets"));
+			.body("name", equalTo("widgets"))
+			.body("full_name", equalTo(owner.username + "/widgets"));
 
 		// list includes it (public, visible even anonymously)
 		given().when().get("/api/v1/repos")
@@ -144,10 +149,11 @@ class RepositoryApiTest
 		given().header("Authorization", "Bearer " + token)
 			.when().post("/api/v1/repos/" + owner.username + "/tocopy/fork")
 			.then().statusCode(201)
-			.body("owner", equalTo(forker.username))
+			.body("owner.login", equalTo(forker.username))
 			.body("name", equalTo("tocopy"))
-			.body("parentOwner", equalTo(owner.username))
-			.body("parentName", equalTo("tocopy"));
+			.body("fork", is(true))
+			.body("parent.owner.login", equalTo(owner.username))
+			.body("parent.name", equalTo("tocopy"));
 	}
 
 	@Test
@@ -161,7 +167,7 @@ class RepositoryApiTest
 		given().header("Authorization", "Bearer " + token)
 			.when().post("/api/v1/repos/" + owner.username + "/flip/fork")
 			.then().statusCode(201)
-			.body("parentOwner", equalTo(owner.username));
+			.body("parent.owner.login", equalTo(owner.username));
 
 		// owner makes the source private; the forker can no longer read it
 		service.changeVisibility(owner, source, Repository.Visibility.PRIVATE);
@@ -169,8 +175,8 @@ class RepositoryApiTest
 		given().header("Authorization", "Bearer " + token)
 			.when().get("/api/v1/repos/" + forker.username + "/flip")
 			.then().statusCode(200)
-			.body("parentOwner", org.hamcrest.Matchers.nullValue())
-			.body("parentName", org.hamcrest.Matchers.nullValue());
+			.body("fork", is(true))
+			.body("parent", org.hamcrest.Matchers.nullValue());
 	}
 
 	@Test

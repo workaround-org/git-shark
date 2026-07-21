@@ -89,6 +89,9 @@ OIDC login, and PostgreSQL metadata.
 - **[CI/CD runner protocol](maintainers/ci-runners.md)** — how the Forgejo/Gitea
   `runner.v1` server side is built (Connect-over-JAX-RS, protobuf codegen), the
   decisions behind it, and the works/gaps list toward full workflow execution.
+- **[Gitea-compatible REST API](maintainers/gitea-api.md)** — the migration of
+  `/api/v1` to the Gitea contract (so Renovate/`tea` can drive git-shark), the
+  component map, key decisions, and the works/gaps list.
 
 ## Where else to look
 

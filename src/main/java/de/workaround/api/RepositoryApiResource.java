@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.List;
 
 import de.workaround.git.AccessPolicy;
+import de.workaround.git.GitBrowseService;
 import de.workaround.git.GitRepositoryService;
 import de.workaround.git.InvalidRepositoryNameException;
 import de.workaround.git.RepositoryAlreadyExistsException;
@@ -18,8 +19,10 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 
 /**
  * JSON REST access to repositories under {@code /api/v1/repos}. Reads follow the same visibility rule as the
@@ -34,15 +37,21 @@ public class RepositoryApiResource
 	GitRepositoryService service;
 
 	@Inject
+	GitBrowseService browse;
+
+	@Inject
 	AccessPolicy accessPolicy;
 
 	@Inject
 	ApiPrincipal principal;
 
+	@Context
+	UriInfo uriInfo;
+
 	@GET
 	public List<ApiModels.RepositoryView> list()
 	{
-		return service.listVisibleTo(principal.orNull()).stream().map(ApiModels.RepositoryView::of).toList();
+		return service.listVisibleTo(principal.orNull()).stream().map(this::view).toList();
 	}
 
 	@POST
@@ -58,7 +67,7 @@ public class RepositoryApiResource
 		{
 			Repository repo = service.create(user, request.name(), visibility, description);
 			return Response.created(URI.create("/api/v1/repos/" + user.username + "/" + repo.name))
-				.entity(ApiModels.RepositoryView.of(repo)).build();
+				.entity(view(repo)).build();
 		}
 		catch (InvalidRepositoryNameException e)
 		{
@@ -77,7 +86,7 @@ public class RepositoryApiResource
 	public ApiModels.RepositoryView get(@PathParam("owner") String owner, @PathParam("name") String name)
 	{
 		Repository repo = requireReadable(owner, name);
-		return ApiModels.RepositoryView.of(repo, canSeeParent(repo));
+		return view(repo);
 	}
 
 	@POST
@@ -90,7 +99,7 @@ public class RepositoryApiResource
 		{
 			Repository forked = service.fork(user, source);
 			return Response.created(URI.create("/api/v1/repos/" + user.username + "/" + forked.name))
-				.entity(ApiModels.RepositoryView.of(forked, canSeeParent(forked))).build();
+				.entity(view(forked)).build();
 		}
 		catch (RepositoryAlreadyExistsException e)
 		{
@@ -108,6 +117,24 @@ public class RepositoryApiResource
 		// delegate ownership enforcement to the service (throws ForbiddenOperationException -> 403)
 		service.delete(user, repo);
 		return Response.noContent().build();
+	}
+
+	/** Build the Gitea repository view, filling the fields that need a git read (default branch, emptiness),
+	 *  the request's external base URL (clone/html URLs) and the caller's effective permissions. */
+	private ApiModels.RepositoryView view(Repository repo)
+	{
+		java.nio.file.Path path = service.repositoryPath(repo);
+		boolean empty = browse.isEmpty(path);
+		String defaultBranch = browse.defaultBranch(path);
+		String base = uriInfo.getBaseUri().toString();
+		String handle = repo.ownerHandle();
+		String cloneUrl = base + "git/" + handle + "/" + repo.name + ".git";
+		String htmlUrl = base + "repos/" + handle + "/" + repo.name;
+		User caller = principal.orNull();
+		ApiModels.PermissionsView permissions = new ApiModels.PermissionsView(accessPolicy.canAdmin(caller, repo),
+			accessPolicy.canWrite(caller, repo), accessPolicy.canRead(caller, repo));
+		return ApiModels.RepositoryView.of(repo, canSeeParent(repo), empty, defaultBranch, cloneUrl, htmlUrl,
+			permissions);
 	}
 
 	/** Whether the caller may see this repo's fork parent — true only when it is a fork of a repo they can read. */

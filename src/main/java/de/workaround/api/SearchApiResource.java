@@ -29,7 +29,7 @@ public class SearchApiResource
 	{
 		SearchResults results = search.search(principal.orNull(), q);
 		return new ApiModels.SearchView(
-			results.repositories().stream().map(ApiModels.RepositoryView::of).toList(),
+			results.repositories().stream().map(ApiModels.RepositoryView::shallow).toList(),
 			results.persons().stream().map(ApiModels.PersonView::of).toList());
 	}
 }

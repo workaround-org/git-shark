@@ -25,25 +25,59 @@ public final class ApiModels
 
 	// -- responses --
 
-	public record RepositoryView(String owner, String name, Repository.Visibility visibility, String description,
-		Instant createdAt, String parentOwner, String parentName)
+	/** A repository owner (user or organisation) as Gitea's nested owner object; clients read {@code login}. */
+	public record OwnerView(long id, String login, String username)
 	{
-		/** Projection with the parent hidden — safe default for listings where the viewer's read access is unknown. */
-		public static RepositoryView of(Repository repo)
+		public static OwnerView of(Repository repo)
 		{
-			return of(repo, false);
+			return new OwnerView(GiteaIds.of(repo.ownerId()), repo.ownerHandle(), repo.ownerHandle());
+		}
+	}
+
+	/** The caller's effective rights on a repository; Gitea clients gate writes (e.g. automerge) on {@code push}. */
+	public record PermissionsView(boolean admin, boolean push, boolean pull)
+	{
+	}
+
+	/**
+	 * A repository in the Gitea contract. git-shark has no archive feature and its push-mirrors are outbound,
+	 * so {@code archived}/{@code mirror} are always false; only merge-commit merges are implemented, so the
+	 * {@code allow_*} flags advertise merge commits only. {@code cloneUrl}/{@code htmlUrl}/{@code defaultBranch}
+	 * are supplied by the caller because they need the request's external base URL and a live git read.
+	 */
+	public record RepositoryView(long id, String name, @JsonProperty("full_name") String fullName, OwnerView owner,
+		String description, @JsonProperty("private") boolean isPrivate, boolean fork, boolean mirror,
+		boolean archived, boolean empty, @JsonProperty("default_branch") String defaultBranch,
+		@JsonProperty("clone_url") String cloneUrl, @JsonProperty("html_url") String htmlUrl, RepositoryView parent,
+		PermissionsView permissions, @JsonProperty("allow_merge_commits") boolean allowMergeCommits,
+		@JsonProperty("allow_rebase") boolean allowRebase, @JsonProperty("allow_squash_merge") boolean allowSquashMerge,
+		Instant createdAt)
+	{
+		/**
+		 * A shallow projection used only as a fork's {@code parent}: DB-derived fields only, no git read or URLs.
+		 * Its own parent is always null so the shape never recurses.
+		 */
+		public static RepositoryView shallow(Repository repo)
+		{
+			return new RepositoryView(GiteaIds.of(repo.id), repo.name, repo.ownerHandle() + "/" + repo.name,
+				OwnerView.of(repo), repo.description, repo.visibility == Repository.Visibility.PRIVATE,
+				repo.parent != null, false, false, false, null, null, null, null, null, true, false, false,
+				repo.createdAt);
 		}
 
 		/**
-		 * @param showParent whether the caller may see the fork's parent; when false (or the repo is not a
-		 *   fork) {@code parentOwner}/{@code parentName} are null, so a source turned private is never
-		 *   disclosed through its forks.
+		 * @param showParent whether the caller may see this fork's parent; when false (or the repo is not a
+		 *   fork) {@code parent} is null, so a source turned private is never disclosed through its forks.
 		 */
-		public static RepositoryView of(Repository repo, boolean showParent)
+		public static RepositoryView of(Repository repo, boolean showParent, boolean empty, String defaultBranch,
+			String cloneUrl, String htmlUrl, PermissionsView permissions)
 		{
-			boolean parent = showParent && repo.parent != null;
-			return new RepositoryView(repo.ownerHandle(), repo.name, repo.visibility, repo.description,
-				repo.createdAt, parent ? repo.parent.ownerHandle() : null, parent ? repo.parent.name : null);
+			boolean fork = repo.parent != null;
+			RepositoryView parent = showParent && fork ? shallow(repo.parent) : null;
+			return new RepositoryView(GiteaIds.of(repo.id), repo.name, repo.ownerHandle() + "/" + repo.name,
+				OwnerView.of(repo), repo.description, repo.visibility == Repository.Visibility.PRIVATE, fork, false,
+				false, empty, defaultBranch, cloneUrl, htmlUrl, parent, permissions, true, false, false,
+				repo.createdAt);
 		}
 	}
 
