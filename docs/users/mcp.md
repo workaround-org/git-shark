@@ -70,8 +70,9 @@ same way: endpoint `https://<your-instance>/mcp`, header
 |---|---|---|
 | Repositories | `listRepositories`, `getRepository` | no (public repos) |
 | | `createRepository`, `forkRepository`, `deleteRepository` | yes |
-| Issues | `listIssues`, `getIssue` | no (public repos) |
+| Issues | `listIssues`, `getIssue`, `listIssueComments` | no (public repos) |
 | | `createIssue`, `updateIssueStatus`, `deleteIssue` | yes (owner or collaborator) |
+| | `addIssueComment` | yes (any reader of the repository) |
 | Merge requests | `listMergeRequests`, `getMergeRequest`, `listMergeRequestComments` | no (public repos) |
 | | `createMergeRequest`, `mergeMergeRequest`, `closeMergeRequest` | yes (owner or collaborator) |
 | | `addMergeRequestComment` | yes (any reader of the repository) |

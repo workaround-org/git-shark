@@ -6,7 +6,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 import de.workaround.git.GitRepositoryService;
+import de.workaround.git.IssueService;
 import de.workaround.http.AccessTokenService;
+import de.workaround.model.Issue;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
 import io.quarkiverse.mcp.server.test.McpAssured;
@@ -28,6 +30,9 @@ class McpToolsTest
 
 	@Inject
 	AccessTokenService tokenService;
+
+	@Inject
+	IssueService issueService;
 
 	@Inject
 	User.Repo userRepo;
@@ -118,6 +123,40 @@ class McpToolsTest
 				assertTrue(response.firstContent().asText().text().contains(owner.username));
 			})
 			.thenAssertResults();
+	}
+
+	@Test
+	void addAndListIssueCommentTools()
+	{
+		User owner = persistUser("mcp-icmt-" + shortId());
+		Repository repo = service.create(owner, "mcpissuecomments", Repository.Visibility.PUBLIC, null);
+		int issueNumber = createIssue(owner, repo, "needs discussion");
+		String token = tokenService.create(owner, "mcp").plaintext();
+
+		McpStreamableTestClient client = McpAssured.newStreamableClient()
+			.setMcpPath("/mcp")
+			.setAdditionalHeaders(json -> MultiMap.caseInsensitiveMultiMap().add("Authorization", "Bearer " + token))
+			.build().connect();
+
+		client.when()
+			.toolsCall("addIssueComment", Map.of("owner", owner.username, "name", "mcpissuecomments",
+				"number", issueNumber, "body", "first thought"), response -> {
+					assertFalse(response.isError());
+					assertTrue(response.firstContent().asText().text().contains("first thought"));
+				})
+			.toolsCall("listIssueComments", Map.of("owner", owner.username, "name", "mcpissuecomments",
+				"number", issueNumber), response -> {
+					assertFalse(response.isError());
+					assertTrue(response.firstContent().asText().text().contains("first thought"));
+				})
+			.thenAssertResults();
+	}
+
+	@Transactional
+	int createIssue(User owner, Repository repo, String title)
+	{
+		Issue issue = issueService.create(owner, repo, title, null);
+		return issue.number;
 	}
 
 	private static String shortId()

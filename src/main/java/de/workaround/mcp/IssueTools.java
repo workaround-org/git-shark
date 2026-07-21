@@ -3,8 +3,10 @@ package de.workaround.mcp;
 import java.util.List;
 
 import de.workaround.api.ApiModels;
+import de.workaround.git.IssueCommentService;
 import de.workaround.git.IssueService;
 import de.workaround.model.Issue;
+import de.workaround.model.IssueComment;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
 import io.quarkiverse.mcp.server.Tool;
@@ -15,14 +17,18 @@ import jakarta.inject.Singleton;
 import jakarta.transaction.Transactional;
 
 /**
- * MCP tools mirroring the issue REST endpoints. Issues are addressed by their per-repository number.
- * Reading follows repository visibility; creating, transitioning and deleting require a token and ownership.
+ * MCP tools mirroring the issue REST endpoints, including free-text discussion comments. Issues are
+ * addressed by their per-repository number. Reading follows repository visibility; creating, transitioning
+ * and deleting require a token and ownership, while commenting only requires read access.
  */
 @Singleton
 public class IssueTools
 {
 	@Inject
 	IssueService issues;
+
+	@Inject
+	IssueCommentService comments;
 
 	@Inject
 	McpRepoAccess access;
@@ -81,6 +87,28 @@ public class IssueTools
 		Issue issue = requireIssue(repo, number);
 		issues.delete(user, issue);
 		return "Deleted issue #" + number;
+	}
+
+	@Tool(description = "List the discussion comments of an issue.")
+	public List<ApiModels.IssueCommentView> listIssueComments(@ToolArg(description = "Owner username") String owner,
+		@ToolArg(description = "Repository name") String name, @ToolArg(description = "Issue number") int number)
+	{
+		Repository repo = access.requireReadable(principal.orNull(), owner, name);
+		Issue issue = requireIssue(repo, number);
+		return comments.list(issue).stream().map(ApiModels.IssueCommentView::of).toList();
+	}
+
+	@Tool(description = "Add a discussion comment to an issue. Requires a token; any reader may comment.")
+	@Transactional
+	public ApiModels.IssueCommentView addIssueComment(@ToolArg(description = "Owner username") String owner,
+		@ToolArg(description = "Repository name") String name, @ToolArg(description = "Issue number") int number,
+		@ToolArg(description = "Comment body") String body)
+	{
+		User user = principal.require();
+		Repository repo = access.requireReadable(user, owner, name);
+		Issue issue = requireIssue(repo, number);
+		IssueComment comment = comments.add(user, issue, body);
+		return ApiModels.IssueCommentView.of(comment);
 	}
 
 	private Issue requireIssue(Repository repo, int number)

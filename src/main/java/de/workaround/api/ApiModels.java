@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.List;
 
 import de.workaround.model.Issue;
+import de.workaround.model.IssueComment;
 import de.workaround.model.MergeRequest;
 import de.workaround.model.MergeRequestComment;
 import de.workaround.model.Repository;
@@ -72,6 +73,15 @@ public final class ApiModels
 		{
 			return new CommentView(comment.id.toString(), comment.filePath, comment.oldLine, comment.newLine,
 				comment.body, comment.author.username, comment.createdAt);
+		}
+	}
+
+	public record IssueCommentView(String id, String body, String author, Instant createdAt)
+	{
+		public static IssueCommentView of(IssueComment comment)
+		{
+			return new IssueCommentView(comment.id.toString(), comment.body, comment.author.username,
+				comment.createdAt);
 		}
 	}
 
