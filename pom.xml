@@ -25,7 +25,7 @@
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.6</surefire-plugin.version>
-        <jacoco.version>0.8.13</jacoco.version>
+        <jacoco.version>0.8.15</jacoco.version>
         <!-- Combined coverage report consumed by SonarQube (git-shark project). -->
         <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/jacoco-report/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
     </properties>
