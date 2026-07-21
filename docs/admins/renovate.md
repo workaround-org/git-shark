@@ -60,6 +60,26 @@ Notes and current limitations:
 - Release-notes retrieval logs a warning without a `github.com` token; it does
   not block PR creation.
 
+## Scheduled runs via GitHub Actions
+
+This repository ships `.github/workflows/renovate.yml`, which runs Renovate on
+a weekly schedule (Mondays 06:00 UTC) and on manual dispatch. The workflow runs
+on GitHub (via the mirror) and reaches back to `https://gitshark.de/api/v1` to
+open PRs on `workaround/Gitshark`.
+
+To enable it, add repository secrets on the GitHub mirror:
+
+- **`RENOVATE_TOKEN`** (required) — a git-shark personal access token for an
+  account with write access to the target repository.
+- **`RENOVATE_GITHUB_COM_TOKEN`** (optional) — a `github.com` read-only token so
+  Renovate can fetch changelogs/release notes and avoid public rate limits.
+
+Trigger a first run manually from the **Actions → Renovate → Run workflow**
+button rather than waiting for the schedule. Tune what gets updated via the
+repository's root `renovate.json`; widen coverage by adding repositories to
+`RENOVATE_REPOSITORIES` in the workflow (keep `RENOVATE_AUTODISCOVER=false` to
+stay explicit).
+
 ## Verifying
 
 With `LOG_LEVEL=debug`, a successful run clones the repo, extracts the

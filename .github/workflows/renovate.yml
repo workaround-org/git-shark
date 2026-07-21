@@ -1,0 +1,47 @@
+name: Renovate
+
+# Runs Renovate against the self-hosted git-shark instance (Gitea-compatible
+# /api/v1) once a week, opening dependency-update pull requests on gitshark.de.
+# This workflow runs on GitHub (via the mirror); Renovate reaches back to
+# gitshark.de over public HTTPS to create the PRs.
+#
+# Required repository secret:
+#   RENOVATE_TOKEN — a git-shark personal access token (Settings → Access tokens)
+#                    for an account with write access to workaround/Gitshark.
+# Optional:
+#   RENOVATE_GITHUB_COM_TOKEN — a github.com read token so Renovate can fetch
+#                    changelogs/release notes and avoid public rate limits.
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # Mondays, 06:00 UTC
+  workflow_dispatch: {}    # allow manual runs from the Actions tab
+
+concurrency:
+  group: renovate
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Renovate
+        uses: renovatebot/github-action@v46.1.20
+        with:
+          token: ${{ secrets.RENOVATE_TOKEN }}
+        env:
+          RENOVATE_PLATFORM: gitea
+          RENOVATE_ENDPOINT: https://gitshark.de/api/v1
+          RENOVATE_AUTODISCOVER: "false"
+          RENOVATE_REPOSITORIES: workaround/Gitshark
+          RENOVATE_ONBOARDING: "false"
+          RENOVATE_DEPENDENCY_DASHBOARD: "false"
+          RENOVATE_REQUIRE_CONFIG: optional
+          # Do NOT set RENOVATE_GIT_URL: git-shark serves git under
+          # /git/<owner>/<repo>.git, so Renovate must clone from the repo's
+          # clone_url (the default), not from the API endpoint path.
+          LOG_LEVEL: debug
+          GITHUB_COM_TOKEN: ${{ secrets.RENOVATE_GITHUB_COM_TOKEN }}
