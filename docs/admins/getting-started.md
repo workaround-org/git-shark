@@ -368,6 +368,7 @@ Every value below is an environment variable on the `app` service. Defaults come
 | `GITSHARK_FEDERATION_USER_RESYNC_INTERVAL` | — | `5m` | Re-scan followed users for new public repos |
 | `GITSHARK_FEDERATION_DEV_ALLOW_INSECURE` | — | `false` | Dev only: allow http/loopback peers |
 | `GITSHARK_ADMIN_HANDLES` | — | — | Comma-separated handles allowed into `/admin/*` (CI runner management); empty means no admins (see [CI runners](ci-runners.md)) |
+| `GITSHARK_GITEA_API_VERSION` | — | `1.13.0` | Version string reported by `GET /api/v1/version`. The `/api/v1` surface is Gitea-compatible; Gitea clients (Renovate, `tea`) gate features on this. Kept below `1.14.0` so they only call implemented endpoints — raise it as reviewer/label/status support lands |
 
 ### Optional: push mirrors
 

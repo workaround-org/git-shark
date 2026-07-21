@@ -11,15 +11,18 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.ext.Provider;
 
 /**
- * Authenticates {@code /api/**} requests from an {@code Authorization: Bearer <token>} header, where the
- * token is a personal access token (the same secret used for Git-over-HTTP). A valid token populates
- * {@link ApiPrincipal}; a present-but-invalid token is rejected with 401. Requests without a token continue
- * anonymously — resources decide whether anonymous access is enough (public reads) or not (mutations).
+ * Authenticates {@code /api/**} requests from an {@code Authorization} header carrying a personal access
+ * token (the same secret used for Git-over-HTTP), under either the {@code Bearer <token>} or the
+ * {@code token <token>} scheme — the latter is what Gitea clients (Renovate, tea) send. A valid token
+ * populates {@link ApiPrincipal}; a present-but-invalid token is rejected with 401. Requests without a token
+ * continue anonymously — resources decide whether anonymous access is enough (public reads) or not (mutations).
  */
 @Provider
 public class ApiTokenAuthFilter implements ContainerRequestFilter
 {
 	private static final String BEARER = "Bearer ";
+
+	private static final String TOKEN = "token ";
 
 	@Inject
 	AccessTokenService tokens;
@@ -37,11 +40,23 @@ public class ApiTokenAuthFilter implements ContainerRequestFilter
 			return;
 		}
 		String header = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION);
-		if (header == null || !header.regionMatches(true, 0, BEARER, 0, BEARER.length()))
+		if (header == null)
 		{
 			return;
 		}
-		String token = header.substring(BEARER.length()).trim();
+		String token;
+		if (header.regionMatches(true, 0, BEARER, 0, BEARER.length()))
+		{
+			token = header.substring(BEARER.length()).trim();
+		}
+		else if (header.regionMatches(true, 0, TOKEN, 0, TOKEN.length()))
+		{
+			token = header.substring(TOKEN.length()).trim();
+		}
+		else
+		{
+			return;
+		}
 		tokens.authenticate(token)
 			.ifPresentOrElse(principal::set, () -> {
 				throw new NotAuthorizedException("Bearer realm=\"git-shark-api\"");

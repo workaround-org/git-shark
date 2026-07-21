@@ -62,7 +62,9 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
   (guest read / member write / owner admin) on org repositories, public world-readable,
   private repositories visible only to whoever holds a read grant
 - **JSON REST API** under `/api/v1`, authenticated with the same personal access tokens as
-  git-over-HTTP (`Authorization: Bearer <token>`), auto-documented via OpenAPI/Swagger UI (see below)
+  git-over-HTTP (`Authorization: Bearer <token>` or the Gitea-style `Authorization: token <token>`),
+  auto-documented via OpenAPI/Swagger UI. The contract is **Gitea-compatible**, so Gitea tooling
+  (Renovate, `tea`) can drive it (see below)
 - **MCP server** at `/mcp` (Streamable HTTP), exposing the same feature set as the REST API as
   MCP tools so an AI client can manage repositories, issues, merge requests, and MR line-comments
   (see below)
@@ -125,10 +127,12 @@ and merge requests exist locally but are **not** federated yet.
 ## REST API
 
 A JSON REST API is served under `/api/v1`, auto-documented via the existing
-`quarkus-smallrye-openapi` extension (`GET /q/openapi`, `GET /q/swagger-ui`).
+`quarkus-smallrye-openapi` extension (`GET /q/openapi`, `GET /q/swagger-ui`). The surface is being
+migrated to a **Gitea-compatible contract** so Gitea tooling (Renovate, `tea`) can consume it
+unchanged; `GET /api/v1/version` reports the emulated Gitea version (`GITSHARK_GITEA_API_VERSION`).
 
-- Authenticated with the **same personal access tokens** used for git-over-HTTP, but sent as
-  `Authorization: Bearer <token>` (not HTTP Basic)
+- Authenticated with the **same personal access tokens** used for git-over-HTTP, sent as either
+  `Authorization: Bearer <token>` or the Gitea-style `Authorization: token <token>` (not HTTP Basic)
 - Anonymous requests are allowed for public reads only; mutations require a token and write
   access (owner or collaborator; posting a comment only requires read access, deleting a
   repository stays owner-only)
@@ -136,7 +140,8 @@ A JSON REST API is served under `/api/v1`, auto-documented via the existing
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/api/v1/user` | The token owner (`401` without a valid token) |
+| GET | `/api/v1/version` | Emulated Gitea version (anonymous; gates Gitea-client feature use) |
+| GET | `/api/v1/user` | The token owner in Gitea user shape (`401` without a valid token) |
 | GET | `/api/v1/repos` | Repositories visible to the caller |
 | POST | `/api/v1/repos` | Create a repository (`400` invalid name, `409` duplicate) |
 | GET | `/api/v1/repos/{owner}/{name}` | Repository detail |

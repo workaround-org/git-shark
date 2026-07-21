@@ -3,11 +3,14 @@ package de.workaround.api;
 import java.time.Instant;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import de.workaround.model.Issue;
 import de.workaround.model.IssueComment;
 import de.workaround.model.MergeRequest;
 import de.workaround.model.MergeRequestComment;
 import de.workaround.model.Repository;
+import de.workaround.model.User;
 
 /**
  * JSON request and response shapes for the {@code /api/v1} surface. Response records are projected from
@@ -85,11 +88,40 @@ public final class ApiModels
 		}
 	}
 
-	public record UserView(String username, String displayName)
+	/**
+	 * A user in the Gitea contract. Renovate (and other Gitea clients) read {@code login} as the handle and
+	 * {@code full_name}/{@code email} for commit metadata; {@code username} is emitted too as Gitea's historical
+	 * alias for {@code login}. Null display name/email surface as empty strings so consumers never NPE on them.
+	 */
+	public record UserView(long id, String login, String username, @JsonProperty("full_name") String fullName,
+		String email)
+	{
+		public static UserView of(User user)
+		{
+			return new UserView(GiteaIds.of(user.id), user.username, user.username,
+				user.displayName == null ? "" : user.displayName, user.email == null ? "" : user.email);
+		}
+	}
+
+	public record VersionView(String version)
 	{
 	}
 
-	public record SearchView(List<RepositoryView> repositories, List<UserView> persons)
+	/**
+	 * A person in a listing where the caller's read access is unknown (search is open to anonymous callers).
+	 * Deliberately omits {@code email}: unlike the self-scoped {@code /api/v1/user}, a search response would
+	 * otherwise disclose every matched user's address to unauthenticated callers.
+	 */
+	public record PersonView(long id, String login, String username, @JsonProperty("full_name") String fullName)
+	{
+		public static PersonView of(User user)
+		{
+			return new PersonView(GiteaIds.of(user.id), user.username, user.username,
+				user.displayName == null ? "" : user.displayName);
+		}
+	}
+
+	public record SearchView(List<RepositoryView> repositories, List<PersonView> persons)
 	{
 	}
 

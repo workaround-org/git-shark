@@ -13,6 +13,7 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.not;
 
@@ -41,6 +42,19 @@ class SearchApiTest
 	}
 
 	@Test
+	void anonymousSearchDoesNotLeakPersonEmail()
+	{
+		String tok = "apimail" + shortId();
+		String email = tok + "@secret.example";
+		persistUserWithEmail("owner-" + tok, email);
+
+		given().when().get("/api/v1/search?q=" + tok)
+			.then().statusCode(200)
+			.body("persons.username", hasItem("owner-" + tok))
+			.body(not(containsString(email)));
+	}
+
+	@Test
 	void blankQueryReturnsEmptyArrays()
 	{
 		given().when().get("/api/v1/search?q=")
@@ -60,6 +74,17 @@ class SearchApiTest
 		User user = new User();
 		user.oidcSub = name;
 		user.username = name;
+		user.persist();
+		return user;
+	}
+
+	@Transactional
+	User persistUserWithEmail(String name, String email)
+	{
+		User user = new User();
+		user.oidcSub = name;
+		user.username = name;
+		user.email = email;
 		user.persist();
 		return user;
 	}

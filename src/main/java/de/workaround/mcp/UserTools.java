@@ -20,6 +20,6 @@ public class UserTools
 	public ApiModels.UserView currentUser()
 	{
 		User user = principal.require();
-		return new ApiModels.UserView(user.username, user.displayName);
+		return ApiModels.UserView.of(user);
 	}
 }

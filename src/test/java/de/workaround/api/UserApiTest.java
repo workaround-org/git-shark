@@ -10,6 +10,7 @@ import jakarta.transaction.Transactional;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.notNullValue;
 
 @QuarkusTest
 class UserApiTest
@@ -21,7 +22,7 @@ class UserApiTest
 	User.Repo userRepo;
 
 	@Test
-	void currentUserReturnsTheTokenOwner()
+	void currentUserReturnsTheTokenOwnerInGiteaShape()
 	{
 		User user = persistUser("api-me");
 		String token = tokenService.create(user, "api-test").plaintext();
@@ -29,7 +30,23 @@ class UserApiTest
 		given().header("Authorization", "Bearer " + token)
 			.when().get("/api/v1/user")
 			.then().statusCode(200)
-			.body("username", equalTo("api-me"));
+			.body("login", equalTo("api-me"))
+			.body("username", equalTo("api-me"))
+			.body("id", notNullValue())
+			.body("full_name", notNullValue())
+			.body("email", notNullValue());
+	}
+
+	@Test
+	void tokenSchemeAlsoAuthenticates()
+	{
+		User user = persistUser("api-token-scheme");
+		String token = tokenService.create(user, "api-test").plaintext();
+
+		given().header("Authorization", "token " + token)
+			.when().get("/api/v1/user")
+			.then().statusCode(200)
+			.body("login", equalTo("api-token-scheme"));
 	}
 
 	@Test
