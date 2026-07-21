@@ -418,6 +418,35 @@ class WebUiTest
 	}
 
 	@Test
+	void treeAndCommitsResolveBranchNamesContainingSlashes() throws Exception
+	{
+		User owner = persistUser("ui-slash-" + unique());
+		Repository repo = service.create(owner, "slashy", Repository.Visibility.PUBLIC, null);
+		GitTestSeeder.seed(service.repositoryPath(repo),
+			Map.of("README.md", "root\n".getBytes(StandardCharsets.UTF_8)));
+		GitTestSeeder.seedBranch(service.repositoryPath(repo), "feat/federation-user-follow",
+			Map.of("FEATURE.md", "on the feature branch\n".getBytes(StandardCharsets.UTF_8),
+				"docs/note.txt", "nested\n".getBytes(StandardCharsets.UTF_8)));
+
+		String base = "/repos/" + owner.username + "/slashy";
+
+		// tree of a slash-named branch must resolve the whole ref, not just "feat"
+		given().when().get(base + "/tree/feat/federation-user-follow")
+			.then().statusCode(200)
+			.body(containsString("FEATURE.md"));
+
+		// a path under that branch still works: ref = feat/federation-user-follow, path = docs
+		given().when().get(base + "/tree/feat/federation-user-follow/docs")
+			.then().statusCode(200)
+			.body(containsString("note.txt"));
+
+		// the commits view shares the same ref parsing
+		given().when().get(base + "/commits/feat/federation-user-follow")
+			.then().statusCode(200)
+			.body(containsString("branch feat/federation-user-follow"));
+	}
+
+	@Test
 	void repositoryPageShowsCloneUrls() throws Exception
 	{
 		User owner = persistUser("ui-gina-" + unique());

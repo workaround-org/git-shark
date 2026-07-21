@@ -44,6 +44,24 @@ public final class GitTestSeeder
 		}
 	}
 
+	/** Seeds a branch (which may contain slashes, e.g. {@code feat/x}) with the given files. */
+	public static void seedBranch(Path barePath, String branch, Map<String, byte[]> files) throws Exception
+	{
+		Path work = Files.createTempDirectory("seed");
+		try (Git git = Git.cloneRepository().setURI(barePath.toUri().toString()).setDirectory(work.toFile()).call())
+		{
+			for (Map.Entry<String, byte[]> file : files.entrySet())
+			{
+				Path target = work.resolve(file.getKey());
+				Files.createDirectories(target.getParent() == null ? work : target.getParent());
+				Files.write(target, file.getValue());
+			}
+			git.add().addFilepattern(".").call();
+			commit(git, "branch " + branch);
+			git.push().setRefSpecs(new RefSpec("HEAD:refs/heads/" + branch)).call();
+		}
+	}
+
 	/** Pushes a single commit with the given message to refs/heads/main and returns its object id. */
 	public static ObjectId seedCommit(Path barePath, String message) throws Exception
 	{

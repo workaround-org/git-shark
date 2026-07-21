@@ -200,33 +200,37 @@ public class RepositoryResource
 	}
 
 	@GET
-	@jakarta.ws.rs.Path("tree/{ref}{path:(/.*)?}")
+	@jakarta.ws.rs.Path("tree/{rest:.+}")
 	public TemplateInstance tree(@PathParam("owner") String owner, @PathParam("name") String name,
-		@PathParam("ref") String ref, @PathParam("path") String rawPath)
+		@PathParam("rest") String rest)
 	{
-		String path = rawPath == null || rawPath.isEmpty() ? "" : rawPath.substring(1);
 		Repository repo = requireReadable(owner, name);
 		RepoNav nav = repoNav.build(repo, uriInfo);
 		Path repoPath = service.repositoryPath(repo);
+		RefPath refPath = resolveRefPath(repoPath, rest);
+		String ref = refPath.ref();
+		String path = refPath.path();
 		return browse.listTree(repoPath, ref, path)
 			.map(entries -> Templates.tree(repo, nav, ref, path, entries, breadcrumbs(repo, ref, path)))
 			.orElseGet(() -> blobView(repo, nav, repoPath, ref, path));
 	}
 
 	@GET
-	@jakarta.ws.rs.Path("raw/{ref}/{path:.*}")
+	@jakarta.ws.rs.Path("raw/{rest:.+}")
 	@Produces(MediaType.APPLICATION_OCTET_STREAM)
 	public Response raw(@PathParam("owner") String owner, @PathParam("name") String name,
-		@PathParam("ref") String ref, @PathParam("path") String path)
+		@PathParam("rest") String rest)
 	{
 		Repository repo = requireReadable(owner, name);
-		GitBrowseService.BlobView blob = browse.blob(service.repositoryPath(repo), ref, path)
+		Path repoPath = service.repositoryPath(repo);
+		RefPath refPath = resolveRefPath(repoPath, rest);
+		GitBrowseService.BlobView blob = browse.blob(repoPath, refPath.ref(), refPath.path())
 			.orElseThrow(NotFoundException::new);
 		return Response.ok(blob.content()).build();
 	}
 
 	@GET
-	@jakarta.ws.rs.Path("commits/{ref}")
+	@jakarta.ws.rs.Path("commits/{ref:.+}")
 	public TemplateInstance commits(@PathParam("owner") String owner, @PathParam("name") String name,
 		@PathParam("ref") String ref, @QueryParam("page") @DefaultValue("0") int page,
 		@QueryParam("size") @DefaultValue("50") int size)
@@ -520,6 +524,46 @@ public class RepositoryResource
 	/** A single segment of the path breadcrumb. {@code href} is {@code null} for the current location (rendered plain). */
 	public record Crumb(String label, String href)
 	{
+	}
+
+	/** A ref name paired with an in-tree path, split out of a {@code tree/…} or {@code raw/…} URL remainder. */
+	private record RefPath(String ref, String path)
+	{
+	}
+
+	/**
+	 * Splits a {@code tree/…}/{@code raw/…} URL remainder into a ref and an in-tree path. Branch and tag names may
+	 * contain slashes (e.g. {@code feat/federation-user-follow}), so the boundary cannot be inferred from the URL
+	 * alone: the longest known branch or tag that the remainder matches wins. When nothing matches (a raw commit
+	 * SHA, or a non-existent ref that will 404 downstream) the first path segment is treated as the ref.
+	 */
+	private RefPath resolveRefPath(Path repoPath, String rest)
+	{
+		String best = null;
+		for (GitBrowseService.BranchInfo branch : browse.branches(repoPath))
+		{
+			best = longerMatch(best, branch.name(), rest);
+		}
+		for (String tag : browse.tags(repoPath))
+		{
+			best = longerMatch(best, tag, rest);
+		}
+		if (best == null)
+		{
+			int slash = rest.indexOf('/');
+			return slash < 0 ? new RefPath(rest, "") : new RefPath(rest.substring(0, slash), rest.substring(slash + 1));
+		}
+		return new RefPath(best, rest.length() > best.length() ? rest.substring(best.length() + 1) : "");
+	}
+
+	/** Returns {@code candidate} if it matches {@code rest} (whole, or up to a {@code /}) and is longer than {@code best}. */
+	private static String longerMatch(String best, String candidate, String rest)
+	{
+		if (!rest.equals(candidate) && !rest.startsWith(candidate + "/"))
+		{
+			return best;
+		}
+		return best == null || candidate.length() > best.length() ? candidate : best;
 	}
 
 	/**
