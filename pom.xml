@@ -20,7 +20,7 @@
         <bouncycastle.version>1.84</bouncycastle.version>
         <commonmark.version>0.24.0</commonmark.version>
         <quarkus-mcp-server.version>1.13.1</quarkus-mcp-server.version>
-        <protobuf.version>3.25.5</protobuf.version>
+        <protobuf.version>4.35.1</protobuf.version>
         <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
         <skipITs>true</skipITs>
