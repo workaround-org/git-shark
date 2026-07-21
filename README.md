@@ -154,6 +154,9 @@ unchanged; `GET /api/v1/version` reports the emulated Gitea version (`GITSHARK_G
 | POST | `/api/v1/repos/{owner}/{name}/pulls/{number}/merge` | Merge |
 | GET, POST | `/api/v1/repos/{owner}/{name}/pulls/{number}/comments` | List / add line-level review comments (any reader may comment) |
 | DELETE | `/api/v1/repos/{owner}/{name}/pulls/{number}/comments/{commentId}` | Delete a comment (author, repo owner, or collaborator) |
+| GET | `/api/v1/repos/{owner}/{name}/labels` | Labels (empty — no label model yet) |
+| GET | `/api/v1/repos/{owner}/{name}/commits/{ref}/status` | Combined commit status (all-clear stub — no status store yet) |
+| GET, POST | `/api/v1/repos/{owner}/{name}/commits/{ref}/statuses` · `/statuses/{sha}` | List statuses (empty) / post a status (echoed, not persisted; needs write) |
 
 ## MCP server
 

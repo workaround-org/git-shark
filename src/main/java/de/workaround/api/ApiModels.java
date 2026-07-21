@@ -212,6 +212,35 @@ public final class ApiModels
 	{
 	}
 
+	/**
+	 * A Gitea commit status. git-shark has no status store yet, so {@code POST /statuses/{sha}} echoes the
+	 * posted status back (nothing is persisted) and the list/ combined endpoints report an empty, all-clear set.
+	 */
+	public record CommitStatusView(long id, String state, String context, String description,
+		@JsonProperty("target_url") String targetUrl)
+	{
+	}
+
+	/**
+	 * The Gitea combined commit status. With no status store, the combined {@code state} is reported as
+	 * {@code success} (both under the current field name and the legacy {@code worstStatus}) so a Gitea client
+	 * treats the ref as passing and proceeds; the merge endpoint still rejects a real conflict.
+	 */
+	public record CombinedStatusView(String state, @JsonProperty("worstStatus") String worstStatus, String sha,
+		@JsonProperty("total_count") int totalCount, List<CommitStatusView> statuses)
+	{
+		public static CombinedStatusView allClear(String sha)
+		{
+			return new CombinedStatusView("success", "success", sha, 0, List.of());
+		}
+	}
+
+	/** Gitea create-status payload posted to {@code /statuses/{sha}}. */
+	public record NewStatus(String state, String context, String description,
+		@JsonProperty("target_url") String targetUrl)
+	{
+	}
+
 	public record NewComment(String filePath, int oldLine, int newLine, String body)
 	{
 	}

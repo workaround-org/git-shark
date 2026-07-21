@@ -29,6 +29,8 @@ confined to the DTO/resource layer in `de.workaround.api`.
 | Version probe | `VersionApiResource` | `GET /api/v1/version`; string from `gitshark.gitea-api.version` |
 | Repositories | `RepositoryApiResource` | Gitea repository object incl. `owner`, `full_name`, `default_branch`, `clone_url`, `html_url`, `permissions`, merge flags |
 | Pulls | `PullApiResource` | Merge requests as Gitea pull requests (list/create/get/PATCH/merge + line-review comments); domain stays `MergeRequest*` |
+| Labels | `LabelApiResource` | Always `[]` — no label model yet |
+| Statuses | `CommitStatusApiResource` | All-clear combined status + echoing `POST /statuses/{sha}`; no status store yet |
 | User | `UserApiResource` | Self identity in Gitea user shape |
 | Search | `SearchApiResource` | git-shark-specific (not a Gitea endpoint); returns the email-free `PersonView` and a shallow repository projection |
 
@@ -80,14 +82,18 @@ confined to the DTO/resource layer in `de.workaround.api`.
   merge commits). List supports `?state=open|closed|all` and pagination (page
   size capped at 50 so Renovate's paging terminates). The line-review comments
   are git-shark's own feature, kept under `pulls/{number}/comments`.
+- `GET labels` → `[]` (no label model yet; Renovate skips labels when empty).
+- Commit-status stubs: `GET commits/{ref}/status` reports an all-clear combined
+  status, `GET commits/{ref}/statuses` is empty, and `POST statuses/{sha}` echoes
+  the posted status without persisting (no status store yet). Enough for Renovate
+  to treat a branch as passing and proceed; `ref` is matched greedily for slashes.
 
 ## What still needs to be implemented
 
 - Find-by-branch `GET pulls/{base}/{head}` — deliberately skipped: Renovate finds
   a branch's pull by listing and filtering client-side, and the two-segment route
   would collide with `pulls/{index}` / `pulls/{index}/comments`.
-- `GET labels` → `[]` stub and commit-status stubs (`POST /statuses/{sha}`,
-  `GET /commits/{ref}/statuses`) so Renovate proceeds.
+- A real commit-status store wired to the CI runners (replace the stubs above).
 - `GET /repos/{owner}/{name}/contents/{path}` (Renovate mostly clones, so low
   priority).
 - Issue open/closed mapping + issue-comment REST endpoints (dependency dashboard);
