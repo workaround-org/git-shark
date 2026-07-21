@@ -138,12 +138,18 @@ class McpToolsTest
 			.setAdditionalHeaders(json -> MultiMap.caseInsensitiveMultiMap().add("Authorization", "Bearer " + token))
 			.build().connect();
 
+		// Add the comment and await its result before listing. Chaining both calls in one when() block
+		// dispatches them concurrently (they land on different MCP worker threads), so the list can race
+		// the add's commit and come back empty. A real MCP client calls sequentially — await, then list.
 		client.when()
 			.toolsCall("addIssueComment", Map.of("owner", owner.username, "name", "mcpissuecomments",
 				"number", issueNumber, "body", "first thought"), response -> {
 					assertFalse(response.isError());
 					assertTrue(response.firstContent().asText().text().contains("first thought"));
 				})
+			.thenAssertResults();
+
+		client.when()
 			.toolsCall("listIssueComments", Map.of("owner", owner.username, "name", "mcpissuecomments",
 				"number", issueNumber), response -> {
 					assertFalse(response.isError());
