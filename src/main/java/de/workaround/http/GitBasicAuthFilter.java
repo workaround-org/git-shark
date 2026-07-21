@@ -2,7 +2,9 @@ package de.workaround.http;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.Optional;
 
 import de.workaround.model.User;
@@ -16,8 +18,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 
 /**
- * HTTP Basic authentication for Git smart HTTP. The Basic password is a personal access
- * token; the username part is informational only (like GitHub PATs). Requests without
+ * HTTP Basic authentication for Git smart HTTP. The personal access token may be supplied as the
+ * Basic password (the git default, with any username) or as the Basic username (as Renovate and
+ * other Gitea clients send it) — either position is accepted, like a GitHub PAT. Requests without
  * credentials continue anonymously — the GitServlet decides whether anonymous is enough.
  * Invalid credentials are rejected immediately. All 401 responses carry a Basic challenge
  * so Git clients prompt for credentials and retry.
@@ -37,7 +40,7 @@ public class GitBasicAuthFilter extends HttpFilter
 		String header = request.getHeader("Authorization");
 		if (header != null && header.regionMatches(true, 0, "Basic ", 0, 6))
 		{
-			Optional<User> user = decodePassword(header).flatMap(tokenService::authenticate);
+			Optional<User> user = authenticate(header);
 			if (user.isEmpty())
 			{
 				response.setHeader("WWW-Authenticate", CHALLENGE);
@@ -49,18 +52,43 @@ public class GitBasicAuthFilter extends HttpFilter
 		chain.doFilter(request, new ChallengeOn401(response));
 	}
 
-	private static Optional<String> decodePassword(String header)
+	/** Tries the token in both Basic positions — password first (git default), then username. */
+	private Optional<User> authenticate(String header)
+	{
+		for (String candidate : credentialCandidates(header))
+		{
+			Optional<User> user = tokenService.authenticate(candidate);
+			if (user.isPresent())
+			{
+				return user;
+			}
+		}
+		return Optional.empty();
+	}
+
+	private static List<String> credentialCandidates(String header)
 	{
 		try
 		{
 			String decoded = new String(Base64.getDecoder().decode(header.substring(6).trim()),
 				StandardCharsets.UTF_8);
 			int colon = decoded.indexOf(':');
-			return colon >= 0 ? Optional.of(decoded.substring(colon + 1)) : Optional.empty();
+			String username = colon >= 0 ? decoded.substring(0, colon) : decoded;
+			String password = colon >= 0 ? decoded.substring(colon + 1) : "";
+			List<String> candidates = new ArrayList<>(2);
+			if (!password.isEmpty())
+			{
+				candidates.add(password);
+			}
+			if (!username.isEmpty())
+			{
+				candidates.add(username);
+			}
+			return candidates;
 		}
 		catch (IllegalArgumentException e)
 		{
-			return Optional.empty();
+			return List.of();
 		}
 	}
 

@@ -11,6 +11,8 @@ import de.workaround.git.GitRepositoryService;
 import de.workaround.git.IssueService;
 import de.workaround.git.MergeRequestCommentService;
 import de.workaround.git.MergeRequestService;
+import de.workaround.http.AccessTokenService;
+import de.workaround.model.AccessToken;
 import de.workaround.model.Issue;
 import de.workaround.model.MergeRequest;
 import de.workaround.model.Repository;
@@ -36,6 +38,13 @@ public class DevDataSeeder
 	private static final String DEMO_REPO = "demo";
 	private static final String DEMO_BRANCH = "feature";
 
+	/**
+	 * A fixed personal access token seeded for the demo user so local API/Renovate testing needs no UI login.
+	 * DEV ONLY: seeded exclusively under the {@code %dev} profile (guarded by {@code gitshark.dev.seed-data},
+	 * true only in {@code %dev}), so it never exists in a production database.
+	 */
+	public static final String DEV_ACCESS_TOKEN = "gs_dev-only-local-renovate-token-0123456789";
+
 	@Inject
 	GitRepositoryService repositories;
 
@@ -53,6 +62,12 @@ public class DevDataSeeder
 
 	@Inject
 	IssueService issueService;
+
+	@Inject
+	AccessTokenService accessTokens;
+
+	@Inject
+	AccessToken.Repo accessTokenRepo;
 
 	@ConfigProperty(name = "gitshark.dev.seed-data", defaultValue = "false")
 	boolean enabled;
@@ -98,6 +113,27 @@ public class DevDataSeeder
 
 		seedMergeRequest(alice, demo, bare);
 		seedIssues(alice, demo);
+		seedDevAccessToken(alice);
+	}
+
+	/**
+	 * Seeds the fixed {@link #DEV_ACCESS_TOKEN} for the given user so local API and Renovate testing needs no
+	 * UI login. Idempotent: skipped when the user already has any token. DEV ONLY — see {@link #DEV_ACCESS_TOKEN}.
+	 */
+	@Transactional
+	public void seedDevAccessToken(User user)
+	{
+		if (!accessTokenRepo.findByUser(user).isEmpty())
+		{
+			return;
+		}
+		AccessToken token = new AccessToken();
+		token.user = user;
+		token.label = "dev (local API/Renovate testing)";
+		token.tokenHash = accessTokens.hash(DEV_ACCESS_TOKEN);
+		token.persist();
+		LOG.warnf("Seeded DEV access token for %s: %s  (DEV ONLY — never enable gitshark.dev.seed-data in production)",
+			user.username, DEV_ACCESS_TOKEN);
 	}
 
 	/**

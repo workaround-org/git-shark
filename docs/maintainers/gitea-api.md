@@ -23,7 +23,8 @@ confined to the DTO/resource layer in `de.workaround.api`.
 
 | Concern | Type | Notes |
 |---|---|---|
-| Auth | `ApiTokenAuthFilter` | Accepts both `Authorization: Bearer <PAT>` and the Gitea-style `Authorization: token <PAT>`; same personal access tokens as git-over-HTTP |
+| Auth (REST) | `ApiTokenAuthFilter` | Accepts both `Authorization: Bearer <PAT>` and the Gitea-style `Authorization: token <PAT>`; same personal access tokens as git-over-HTTP |
+| Auth (git) | `GitBasicAuthFilter` | Basic auth for git-over-HTTP: the PAT is accepted as the **password or the username** (Renovate clones with the token in the username, empty password — like a GitHub PAT) |
 | DTOs | `ApiModels` | All response records are Gitea-shaped; snake_case fields via `@JsonProperty`. **Shared with the MCP tools** — reshaping the REST body reshapes MCP tool output too (accepted; see decisions) |
 | Surrogate ids | `GiteaIds` | Folds a `UUID` PK into a stable non-negative `long` for Gitea's int64 `id` |
 | Version probe | `VersionApiResource` | `GET /api/v1/version`; string from `gitshark.gitea-api.version` |
@@ -52,7 +53,12 @@ confined to the DTO/resource layer in `de.workaround.api`.
 - **Fields git-shark has no feature for are hard-coded:** `archived` and `mirror`
   are always false (no archive feature; push-mirrors are outbound, not incoming
   mirrors), and the `allow_*` merge flags advertise merge commits only, matching
-  the one merge strategy the merge service implements.
+  the one merge strategy the merge service implements. `default_merge_style` is
+  reported as `merge` and is **load-bearing, not cosmetic**: Renovate picks a
+  merge method by running `default_merge_style` first through a `.find`, and its
+  `isAllowed` *throws* on an unrecognized style — so omitting the field (leaving
+  it undefined on the wire) makes Renovate block the whole repository with
+  "unknown merge style" before it ever checks `allow_merge_commits`.
 - **`mergeable` is a placeholder** = "the pull is open", not a real conflict
   check. Computing true mergeability needs a live trial-merge per pull; Renovate
   only needs a hint, and the actual `POST {number}/merge` still rejects a real
@@ -98,5 +104,19 @@ confined to the DTO/resource layer in `de.workaround.api`.
   priority).
 - Issue open/closed mapping + issue-comment REST endpoints (dependency dashboard);
   deferred — run Renovate with `dependencyDashboard: false`.
-- A real Renovate `LOG_LEVEL=debug` end-to-end run to validate JSON fidelity
-  (field-name mismatches fail silently).
+
+## Validation
+
+A real Renovate `LOG_LEVEL=debug` run (`platform: gitea`, `endpoint:
+http://localhost:8080/api/v1`, `git-url` unset so it clones via `clone_url`)
+against a seeded repo with an outdated npm dependency **opened dependency PRs
+end to end**, and merging one via `POST /pulls/{number}/merge` advanced `main`.
+Two field-fidelity bugs surfaced and were fixed as part of this:
+
+- **`default_merge_style` must be present** (see decisions) — Renovate blocked
+  the whole repo without it.
+- **git auth must accept the token as the Basic username** — Renovate clones
+  with the PAT in the username and an empty password.
+
+The npm registry lookup for the dependency needs outbound network; Release-notes
+retrieval warns without a `github.com` token but does not block PR creation.

@@ -47,6 +47,7 @@ class RepositoryApiTest
 			.body("private", is(false))
 			.body("description", equalTo("gadgets"))
 			.body("default_branch", equalTo("main"))
+			.body("default_merge_style", equalTo("merge"))
 			.body("clone_url", org.hamcrest.Matchers.endsWith("/git/" + owner.username + "/widgets.git"))
 			.body("permissions.admin", is(true))
 			.extract().header("Location");

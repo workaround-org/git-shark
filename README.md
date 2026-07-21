@@ -16,7 +16,7 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
   [for users](docs/users/organisations.md), [for admins](docs/admins/organisations.md)
 - Clone/fetch/push over `https://<host>/git/<owner>/<repo>.git`
   - anonymous read on public repositories
-  - push and private read authenticate with **personal access tokens** (HTTP Basic password)
+  - push and private read authenticate with **personal access tokens** (HTTP Basic username or password, like a GitHub PAT)
 - Clone/fetch/push over SSH — scp shorthand `git@<host>:<owner>/<repo>.git` on the standard
   port, or `ssh://git@<host>:<port>/<owner>/<repo>.git` when the advertised port isn't 22
   - public-key authentication only; keys managed per user in the UI

@@ -174,6 +174,24 @@ public class GitSmartHttpTest
 	}
 
 	@Test
+	void tokenSuppliedAsUsernameAuthenticates() throws Exception
+	{
+		// Renovate (and Gitea clients) put the PAT in the Basic username with an empty password;
+		// git-shark must accept the token in either position, like a GitHub PAT.
+		User owner = persistUser();
+		Repository repo = createRepo(owner, "token-as-username", Repository.Visibility.PRIVATE);
+		seedCommit(service.repositoryPath(repo));
+
+		String token = createToken(owner);
+		Path target = Files.createTempDirectory("token-username");
+		try (Git clone = cloneOver(httpUrl(owner, "token-as-username"), target,
+			new UsernamePasswordCredentialsProvider(token, "")))
+		{
+			assertTrue(Files.exists(target.resolve("README.md")));
+		}
+	}
+
+	@Test
 	void revokedTokenIsRejected() throws Exception
 	{
 		User owner = persistUser();

@@ -63,6 +63,9 @@ OIDC login, and PostgreSQL metadata.
 - **[CI/CD runners](admins/ci-runners.md)** — register Forgejo/Gitea runners via
   the `runner.v1` Connect endpoints: admin handles, registration tokens, the
   `/api/actions` paths, reverse-proxy notes, and the runner tables.
+- **[Renovate](admins/renovate.md)** — point Renovate's `gitea` platform driver
+  at git-shark's Gitea-compatible `/api/v1` for automated dependency-update PRs:
+  token, config, and current limitations.
 
 ### For maintainers
 

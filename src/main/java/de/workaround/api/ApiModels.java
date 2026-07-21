@@ -51,7 +51,7 @@ public final class ApiModels
 		@JsonProperty("clone_url") String cloneUrl, @JsonProperty("html_url") String htmlUrl, RepositoryView parent,
 		PermissionsView permissions, @JsonProperty("allow_merge_commits") boolean allowMergeCommits,
 		@JsonProperty("allow_rebase") boolean allowRebase, @JsonProperty("allow_squash_merge") boolean allowSquashMerge,
-		Instant createdAt)
+		@JsonProperty("default_merge_style") String defaultMergeStyle, Instant createdAt)
 	{
 		/**
 		 * A shallow projection used only as a fork's {@code parent}: DB-derived fields only, no git read or URLs.
@@ -61,7 +61,7 @@ public final class ApiModels
 		{
 			return new RepositoryView(GiteaIds.of(repo.id), repo.name, repo.ownerHandle() + "/" + repo.name,
 				OwnerView.of(repo), repo.description, repo.visibility == Repository.Visibility.PRIVATE,
-				repo.parent != null, false, false, false, null, null, null, null, null, true, false, false,
+				repo.parent != null, false, false, false, null, null, null, null, null, true, false, false, "merge",
 				repo.createdAt);
 		}
 
@@ -76,7 +76,7 @@ public final class ApiModels
 			RepositoryView parent = showParent && fork ? shallow(repo.parent) : null;
 			return new RepositoryView(GiteaIds.of(repo.id), repo.name, repo.ownerHandle() + "/" + repo.name,
 				OwnerView.of(repo), repo.description, repo.visibility == Repository.Visibility.PRIVATE, fork, false,
-				false, empty, defaultBranch, cloneUrl, htmlUrl, parent, permissions, true, false, false,
+				false, empty, defaultBranch, cloneUrl, htmlUrl, parent, permissions, true, false, false, "merge",
 				repo.createdAt);
 		}
 	}

@@ -10,9 +10,11 @@ import de.workaround.git.GitBrowseService;
 import de.workaround.git.GitRepositoryService;
 import de.workaround.git.IssueService;
 import de.workaround.git.MergeRequestCommentService;
+import de.workaround.http.AccessTokenService;
 import de.workaround.model.Issue;
 import de.workaround.model.MergeRequest;
 import de.workaround.model.Repository;
+import de.workaround.model.User;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 
@@ -40,6 +42,20 @@ class DevDataSeederTest
 
 	@Inject
 	IssueService issues;
+
+	@Inject
+	AccessTokenService tokens;
+
+	@Test
+	void seedsAFixedDevAccessTokenForAliceIdempotently()
+	{
+		seeder.seed();
+		seeder.seed();
+
+		User authenticated = tokens.authenticate(DevDataSeeder.DEV_ACCESS_TOKEN).orElse(null);
+		assertTrue(authenticated != null, "the seeded dev token must authenticate");
+		assertEquals("alice", authenticated.username);
+	}
 
 	@Test
 	void seedsAliceWithDemoRepoContainingACommit()
