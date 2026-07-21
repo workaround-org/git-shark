@@ -16,7 +16,7 @@
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.version>3.37.3</quarkus.platform.version>
         <jgit.version>7.7.0.202606012155-r</jgit.version>
-        <sshd.version>2.18.0</sshd.version>
+        <sshd.version>2.19.0</sshd.version>
         <bouncycastle.version>1.84</bouncycastle.version>
         <commonmark.version>0.24.0</commonmark.version>
         <quarkus-mcp-server.version>1.13.1</quarkus-mcp-server.version>
