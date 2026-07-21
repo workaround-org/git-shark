@@ -91,15 +91,33 @@ public final class ApiModels
 		}
 	}
 
-	public record MergeRequestView(int number, String title, String description, String sourceBranch,
-		String targetBranch, MergeRequest.Status status, String author, String assignee, String reviewer,
-		Instant createdAt, Instant mergedAt)
+	/**
+	 * A merge request projected as a Gitea pull request. State maps {@code OPEN→open} and
+	 * {@code MERGED/CLOSED→closed}, with a separate {@code merged} flag; {@code head}/{@code base} carry the
+	 * source/target branches. {@code user}/{@code assignee} use the email-free {@link PersonView} because a
+	 * public repository's pulls are world-readable. git-shark stores no update or close timestamp, so
+	 * {@code updated_at} mirrors {@code created_at} and {@code closed_at} falls back to it for closed pulls.
+	 */
+	public record PullView(long id, int number, String title, String body, String state, boolean merged,
+		BranchRef base, BranchRef head, PersonView user, PersonView assignee, List<Object> labels, boolean mergeable,
+		@JsonProperty("created_at") Instant createdAt, @JsonProperty("updated_at") Instant updatedAt,
+		@JsonProperty("closed_at") Instant closedAt, @JsonProperty("merged_at") Instant mergedAt)
 	{
-		public static MergeRequestView of(MergeRequest mr)
+		public record BranchRef(String ref, String label)
 		{
-			return new MergeRequestView(mr.number, mr.title, mr.description, mr.sourceBranch, mr.targetBranch,
-				mr.status, mr.author.username, mr.assignee == null ? null : mr.assignee.username,
-				mr.reviewer == null ? null : mr.reviewer.username, mr.createdAt, mr.mergedAt);
+		}
+
+		public static PullView of(MergeRequest mr)
+		{
+			boolean open = mr.status == MergeRequest.Status.OPEN;
+			boolean merged = mr.status == MergeRequest.Status.MERGED;
+			String owner = mr.repository.ownerHandle();
+			BranchRef base = new BranchRef(mr.targetBranch, owner + ":" + mr.targetBranch);
+			BranchRef head = new BranchRef(mr.sourceBranch, owner + ":" + mr.sourceBranch);
+			Instant closedAt = open ? null : mr.mergedAt != null ? mr.mergedAt : mr.createdAt;
+			return new PullView(GiteaIds.of(mr.id), mr.number, mr.title, mr.description, open ? "open" : "closed",
+				merged, base, head, PersonView.of(mr.author), mr.assignee == null ? null : PersonView.of(mr.assignee),
+				List.of(), open, mr.createdAt, mr.createdAt, closedAt, mr.mergedAt);
 		}
 	}
 
@@ -184,7 +202,13 @@ public final class ApiModels
 	{
 	}
 
-	public record NewMergeRequest(String title, String description, String sourceBranch, String targetBranch)
+	/** Gitea pull-creation payload: {@code head}/{@code base} are branch names, {@code body} the description. */
+	public record NewPull(String title, String body, String head, String base)
+	{
+	}
+
+	/** Gitea pull edit: any null field is left unchanged; {@code state} is {@code open} or {@code closed}. */
+	public record PullEdit(String title, String body, String state)
 	{
 	}
 

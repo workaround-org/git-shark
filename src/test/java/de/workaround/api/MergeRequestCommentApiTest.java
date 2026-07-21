@@ -45,7 +45,7 @@ class MergeRequestCommentApiTest
 	{
 		User owner = persistUser("api-c-owner");
 		int number = seedRepoWithMergeRequest(owner, "cboard");
-		String base = "/api/v1/repos/" + owner.username + "/cboard/merge-requests/" + number + "/comments";
+		String base = "/api/v1/repos/" + owner.username + "/cboard/pulls/" + number + "/comments";
 
 		// a different authenticated user (reader of the public repo) can comment
 		User reader = persistUser("api-c-reader");
@@ -80,7 +80,7 @@ class MergeRequestCommentApiTest
 
 		given().contentType("application/json")
 			.body(anchor("sneaky"))
-			.when().post("/api/v1/repos/" + owner.username + "/cboard/merge-requests/" + number + "/comments")
+			.when().post("/api/v1/repos/" + owner.username + "/cboard/pulls/" + number + "/comments")
 			.then().statusCode(401);
 	}
 
@@ -100,7 +100,7 @@ class MergeRequestCommentApiTest
 		given().header("Authorization", "Bearer " + token)
 			.contentType("application/json")
 			.body(body)
-			.when().post("/api/v1/repos/" + owner.username + "/cboard/merge-requests/" + number + "/comments")
+			.when().post("/api/v1/repos/" + owner.username + "/cboard/pulls/" + number + "/comments")
 			.then().statusCode(400);
 	}
 
@@ -110,7 +110,7 @@ class MergeRequestCommentApiTest
 		User owner = persistUser("api-c-owner2-" + shortId());
 		String ownerToken = mintToken(owner);
 		int number = seedRepoWithMergeRequest(owner, "cboard");
-		String base = "/api/v1/repos/" + owner.username + "/cboard/merge-requests/" + number + "/comments";
+		String base = "/api/v1/repos/" + owner.username + "/cboard/pulls/" + number + "/comments";
 
 		User reader = persistUser("api-c-reader2-" + shortId());
 		String readerToken = mintToken(reader);
@@ -128,7 +128,7 @@ class MergeRequestCommentApiTest
 	{
 		User owner = persistUser("api-c-owner3-" + shortId());
 		int number = seedRepoWithMergeRequest(owner, "cboard");
-		String base = "/api/v1/repos/" + owner.username + "/cboard/merge-requests/" + number + "/comments";
+		String base = "/api/v1/repos/" + owner.username + "/cboard/pulls/" + number + "/comments";
 
 		User reader = persistUser("api-c-reader3-" + shortId());
 		String readerToken = mintToken(reader);

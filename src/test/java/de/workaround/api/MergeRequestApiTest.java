@@ -21,6 +21,7 @@ import jakarta.transaction.Transactional;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 
 @QuarkusTest
 class MergeRequestApiTest
@@ -40,20 +41,20 @@ class MergeRequestApiTest
 		User owner = persistUser("api-mr-owner");
 		String token = mintToken(owner);
 		seed(owner, "board");
-		String base = "/api/v1/repos/" + owner.username + "/board/merge-requests";
+		String base = "/api/v1/repos/" + owner.username + "/board/pulls";
 
 		int number = given().header("Authorization", "Bearer " + token)
 			.contentType("application/json")
-			.body(Map.of("title", "Ship it", "description", "adds feature",
-				"sourceBranch", "feature", "targetBranch", "main"))
+			.body(Map.of("title", "Ship it", "body", "adds feature", "head", "feature", "base", "main"))
 			.when().post(base)
 			.then().statusCode(201)
 			.body("title", equalTo("Ship it"))
-			.body("status", equalTo("OPEN"))
-			.body("sourceBranch", equalTo("feature"))
-			.body("targetBranch", equalTo("main"))
+			.body("state", equalTo("open"))
+			.body("merged", is(false))
+			.body("head.ref", equalTo("feature"))
+			.body("base.ref", equalTo("main"))
+			.body("mergeable", is(true))
 			.body("assignee", org.hamcrest.Matchers.nullValue())
-			.body("reviewer", org.hamcrest.Matchers.nullValue())
 			.extract().path("number");
 
 		given().when().get(base)
@@ -62,32 +63,131 @@ class MergeRequestApiTest
 
 		given().when().get(base + "/" + number)
 			.then().statusCode(200)
-			.body("title", equalTo("Ship it"));
+			.body("title", equalTo("Ship it"))
+			.body("body", equalTo("adds feature"));
 
 		given().header("Authorization", "Bearer " + token)
 			.when().post(base + "/" + number + "/merge")
 			.then().statusCode(200)
-			.body("status", equalTo("MERGED"));
+			.body("state", equalTo("closed"))
+			.body("merged", is(true));
 	}
 
 	@Test
-	void openMergeRequestCanBeClosed()
+	void openMergeRequestCanBeClosedViaPatch()
 	{
 		User owner = persistUser("api-mr-closer");
 		String token = mintToken(owner);
 		seed(owner, "closeboard");
-		String base = "/api/v1/repos/" + owner.username + "/closeboard/merge-requests";
+		String base = "/api/v1/repos/" + owner.username + "/closeboard/pulls";
 
 		int number = given().header("Authorization", "Bearer " + token)
 			.contentType("application/json")
-			.body(Map.of("title", "Never mind", "sourceBranch", "feature", "targetBranch", "main"))
+			.body(Map.of("title", "Never mind", "head", "feature", "base", "main"))
 			.when().post(base)
 			.then().statusCode(201).extract().path("number");
 
 		given().header("Authorization", "Bearer " + token)
-			.when().post(base + "/" + number + "/close")
+			.contentType("application/json")
+			.body(Map.of("state", "closed"))
+			.when().patch(base + "/" + number)
 			.then().statusCode(200)
-			.body("status", equalTo("CLOSED"));
+			.body("state", equalTo("closed"))
+			.body("merged", is(false));
+	}
+
+	@Test
+	void closedPullCanBeReopenedViaPatch()
+	{
+		User owner = persistUser("api-mr-reopener");
+		String token = mintToken(owner);
+		seed(owner, "reopenboard");
+		String base = "/api/v1/repos/" + owner.username + "/reopenboard/pulls";
+
+		int number = given().header("Authorization", "Bearer " + token)
+			.contentType("application/json")
+			.body(Map.of("title", "Later", "head", "feature", "base", "main"))
+			.when().post(base)
+			.then().statusCode(201).extract().path("number");
+
+		given().header("Authorization", "Bearer " + token).contentType("application/json")
+			.body(Map.of("state", "closed")).when().patch(base + "/" + number)
+			.then().statusCode(200).body("state", equalTo("closed"));
+
+		given().header("Authorization", "Bearer " + token).contentType("application/json")
+			.body(Map.of("state", "open")).when().patch(base + "/" + number)
+			.then().statusCode(200)
+			.body("state", equalTo("open"))
+			.body("merged", is(false));
+	}
+
+	@Test
+	void mergedPullCannotBeReopened()
+	{
+		User owner = persistUser("api-mr-nomereopen");
+		String token = mintToken(owner);
+		seed(owner, "nomereopen");
+		String base = "/api/v1/repos/" + owner.username + "/nomereopen/pulls";
+
+		int number = given().header("Authorization", "Bearer " + token)
+			.contentType("application/json")
+			.body(Map.of("title", "Ship", "head", "feature", "base", "main"))
+			.when().post(base)
+			.then().statusCode(201).extract().path("number");
+
+		given().header("Authorization", "Bearer " + token)
+			.when().post(base + "/" + number + "/merge")
+			.then().statusCode(200).body("merged", is(true));
+
+		// reopening a merged pull is a no-op: it stays merged/closed
+		given().header("Authorization", "Bearer " + token).contentType("application/json")
+			.body(Map.of("state", "open")).when().patch(base + "/" + number)
+			.then().statusCode(200)
+			.body("state", equalTo("closed"))
+			.body("merged", is(true));
+	}
+
+	@Test
+	void patchWithBlankTitleIsRejected()
+	{
+		User owner = persistUser("api-mr-blanktitle");
+		String token = mintToken(owner);
+		seed(owner, "blankboard");
+		String base = "/api/v1/repos/" + owner.username + "/blankboard/pulls";
+
+		int number = given().header("Authorization", "Bearer " + token)
+			.contentType("application/json")
+			.body(Map.of("title", "Keep", "head", "feature", "base", "main"))
+			.when().post(base)
+			.then().statusCode(201).extract().path("number");
+
+		given().header("Authorization", "Bearer " + token).contentType("application/json")
+			.body(Map.of("title", "   ")).when().patch(base + "/" + number)
+			.then().statusCode(400);
+	}
+
+	@Test
+	void patchUpdatesTitleAndBody()
+	{
+		User owner = persistUser("api-mr-editor");
+		String token = mintToken(owner);
+		seed(owner, "editboard");
+		String base = "/api/v1/repos/" + owner.username + "/editboard/pulls";
+
+		int number = given().header("Authorization", "Bearer " + token)
+			.contentType("application/json")
+			.body(Map.of("title", "Original", "body", "old", "head", "feature", "base", "main"))
+			.when().post(base)
+			.then().statusCode(201).extract().path("number");
+
+		given().header("Authorization", "Bearer " + token)
+			.contentType("application/json")
+			.body(Map.of("title", "Renamed", "body", "new"))
+			.when().patch(base + "/" + number)
+			.then().statusCode(200)
+			.body("title", equalTo("Renamed"))
+			.body("body", equalTo("new"))
+			.body("state", equalTo("open"));
 	}
 
 	@Test
@@ -99,8 +199,8 @@ class MergeRequestApiTest
 
 		given().header("Authorization", "Bearer " + token)
 			.contentType("application/json")
-			.body(Map.of("title", "bad", "sourceBranch", "ghost", "targetBranch", "main"))
-			.when().post("/api/v1/repos/" + owner.username + "/bb/merge-requests")
+			.body(Map.of("title", "bad", "head", "ghost", "base", "main"))
+			.when().post("/api/v1/repos/" + owner.username + "/bb/pulls")
 			.then().statusCode(400);
 	}
 
@@ -111,8 +211,8 @@ class MergeRequestApiTest
 		seed(owner, "board");
 
 		given().contentType("application/json")
-			.body(Map.of("title", "sneaky", "sourceBranch", "feature", "targetBranch", "main"))
-			.when().post("/api/v1/repos/" + owner.username + "/board/merge-requests")
+			.body(Map.of("title", "sneaky", "head", "feature", "base", "main"))
+			.when().post("/api/v1/repos/" + owner.username + "/board/pulls")
 			.then().statusCode(401);
 	}
 

@@ -201,6 +201,46 @@ public class MergeRequestService
 		}
 	}
 
+	/** Reopens a previously CLOSED merge request. A MERGED request cannot be reopened. */
+	@Transactional
+	public void reopen(User actor, MergeRequest mr)
+	{
+		requireWrite(actor, mr.repository);
+		MergeRequest managed = mergeRequests.findById(mr.id);
+		if (managed != null && managed.status == MergeRequest.Status.CLOSED)
+		{
+			managed.status = MergeRequest.Status.OPEN;
+		}
+	}
+
+	/**
+	 * Updates a merge request's title and/or description; a null field is left unchanged. A blank title is
+	 * rejected. Requires write access.
+	 */
+	@Transactional
+	public void update(User actor, MergeRequest mr, String title, String description)
+	{
+		requireWrite(actor, mr.repository);
+		MergeRequest managed = mergeRequests.findById(mr.id);
+		if (managed == null)
+		{
+			return;
+		}
+		if (title != null)
+		{
+			String trimmed = title.strip();
+			if (trimmed.isEmpty())
+			{
+				throw new InvalidMergeRequestException("Merge request title must not be empty");
+			}
+			managed.title = trimmed;
+		}
+		if (description != null)
+		{
+			managed.description = description.isBlank() ? null : description.strip();
+		}
+	}
+
 	private void requireWrite(User actor, Repository repository)
 	{
 		if (!accessPolicy.canWrite(actor, repository))

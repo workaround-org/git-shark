@@ -15,24 +15,33 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 /**
- * JSON REST access to a repository's merge requests under {@code /api/v1/repos/{owner}/{name}/merge-requests}.
- * Merge requests are addressed by their per-repository number. Listing/reading follow repository read-visibility;
- * creating, merging and closing require a token and repository ownership (enforced by {@link MergeRequestService}).
+ * Gitea-compatible pull requests under {@code /api/v1/repos/{owner}/{name}/pulls}. Internally these are
+ * git-shark merge requests; only the wire speaks Gitea's "pull request". A pull is addressed by its
+ * per-repository {@code number} (Gitea's {@code index}). Listing/reading follow repository read-visibility;
+ * creating, editing, merging and closing require a token and write access (enforced by {@link MergeRequestService}).
+ * The line-level review comments are a git-shark feature (not Gitea PR review comments) kept under
+ * {@code pulls/{number}/comments}.
  */
-@Path("/api/v1/repos/{owner}/{name}/merge-requests")
+@Path("/api/v1/repos/{owner}/{name}/pulls")
 @Produces(MediaType.APPLICATION_JSON)
-public class MergeRequestApiResource
+public class PullApiResource
 {
+	/** Renovate pages until a request returns fewer than a full page; cap the page size so paging terminates. */
+	private static final int MAX_PAGE_SIZE = 50;
+
 	@Inject
 	GitRepositoryService repositories;
 
@@ -52,58 +61,79 @@ public class MergeRequestApiResource
 	ApiPrincipal principal;
 
 	@GET
-	public List<ApiModels.MergeRequestView> list(@PathParam("owner") String owner, @PathParam("name") String name)
+	public List<ApiModels.PullView> list(@PathParam("owner") String owner, @PathParam("name") String name,
+		@QueryParam("state") @DefaultValue("open") String state, @QueryParam("page") @DefaultValue("1") int page,
+		@QueryParam("limit") @DefaultValue("50") int limit)
 	{
 		Repository repo = requireReadable(owner, name);
-		return mergeRequests.list(repo).stream().map(ApiModels.MergeRequestView::of).toList();
+		List<ApiModels.PullView> all = mergeRequests.list(repo).stream()
+			.filter(mr -> matchesState(mr, state)).map(ApiModels.PullView::of).toList();
+		int size = Math.min(Math.max(limit, 1), MAX_PAGE_SIZE);
+		int from = Math.max(page - 1, 0) * size;
+		if (from >= all.size())
+		{
+			return List.of();
+		}
+		return all.subList(from, Math.min(from + size, all.size()));
 	}
 
 	@POST
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response create(@PathParam("owner") String owner, @PathParam("name") String name,
-		ApiModels.NewMergeRequest request)
+		ApiModels.NewPull request)
 	{
 		User user = principal.require();
 		Repository repo = requireReadable(owner, name);
-		MergeRequest mr = mergeRequests.create(user, repo, request.title(), request.description(),
-			request.sourceBranch(), request.targetBranch());
-		return Response.status(Response.Status.CREATED)
-			.entity(ApiModels.MergeRequestView.of(mr)).build();
+		MergeRequest mr = mergeRequests.create(user, repo, request.title(), request.body(),
+			request.head(), request.base());
+		return Response.status(Response.Status.CREATED).entity(ApiModels.PullView.of(mr)).build();
 	}
 
 	@GET
 	@Path("{number}")
-	public ApiModels.MergeRequestView get(@PathParam("owner") String owner, @PathParam("name") String name,
+	public ApiModels.PullView get(@PathParam("owner") String owner, @PathParam("name") String name,
 		@PathParam("number") int number)
 	{
 		Repository repo = requireReadable(owner, name);
-		return ApiModels.MergeRequestView.of(require(repo, number));
+		return ApiModels.PullView.of(require(repo, number));
+	}
+
+	@PATCH
+	@Path("{number}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Transactional
+	public ApiModels.PullView update(@PathParam("owner") String owner, @PathParam("name") String name,
+		@PathParam("number") int number, ApiModels.PullEdit request)
+	{
+		User user = principal.require();
+		Repository repo = requireReadable(owner, name);
+		MergeRequest mr = require(repo, number);
+		if (request.title() != null || request.body() != null)
+		{
+			mergeRequests.update(user, mr, request.title(), request.body());
+		}
+		if ("closed".equalsIgnoreCase(request.state()))
+		{
+			mergeRequests.close(user, mr);
+		}
+		else if ("open".equalsIgnoreCase(request.state()))
+		{
+			mergeRequests.reopen(user, mr);
+		}
+		return ApiModels.PullView.of(require(repo, number));
 	}
 
 	@POST
 	@Path("{number}/merge")
 	@Transactional
-	public ApiModels.MergeRequestView merge(@PathParam("owner") String owner, @PathParam("name") String name,
+	public ApiModels.PullView merge(@PathParam("owner") String owner, @PathParam("name") String name,
 		@PathParam("number") int number)
 	{
 		User user = principal.require();
 		Repository repo = requireReadable(owner, name);
 		MergeRequest mr = require(repo, number);
 		mergeRequests.merge(user, mr);
-		return ApiModels.MergeRequestView.of(require(repo, number));
-	}
-
-	@POST
-	@Path("{number}/close")
-	@Transactional
-	public ApiModels.MergeRequestView close(@PathParam("owner") String owner, @PathParam("name") String name,
-		@PathParam("number") int number)
-	{
-		User user = principal.require();
-		Repository repo = requireReadable(owner, name);
-		MergeRequest mr = require(repo, number);
-		mergeRequests.close(user, mr);
-		return ApiModels.MergeRequestView.of(require(repo, number));
+		return ApiModels.PullView.of(require(repo, number));
 	}
 
 	@GET
@@ -146,6 +176,16 @@ public class MergeRequestApiResource
 		}
 		comments.delete(user, comment);
 		return Response.noContent().build();
+	}
+
+	private static boolean matchesState(MergeRequest mr, String state)
+	{
+		if (state == null || "all".equalsIgnoreCase(state))
+		{
+			return true;
+		}
+		boolean open = mr.status == MergeRequest.Status.OPEN;
+		return "closed".equalsIgnoreCase(state) ? !open : open;
 	}
 
 	private static UUID parseId(String id)

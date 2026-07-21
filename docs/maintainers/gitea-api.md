@@ -28,6 +28,7 @@ confined to the DTO/resource layer in `de.workaround.api`.
 | Surrogate ids | `GiteaIds` | Folds a `UUID` PK into a stable non-negative `long` for Gitea's int64 `id` |
 | Version probe | `VersionApiResource` | `GET /api/v1/version`; string from `gitshark.gitea-api.version` |
 | Repositories | `RepositoryApiResource` | Gitea repository object incl. `owner`, `full_name`, `default_branch`, `clone_url`, `html_url`, `permissions`, merge flags |
+| Pulls | `PullApiResource` | Merge requests as Gitea pull requests (list/create/get/PATCH/merge + line-review comments); domain stays `MergeRequest*` |
 | User | `UserApiResource` | Self identity in Gitea user shape |
 | Search | `SearchApiResource` | git-shark-specific (not a Gitea endpoint); returns the email-free `PersonView` and a shallow repository projection |
 
@@ -50,6 +51,10 @@ confined to the DTO/resource layer in `de.workaround.api`.
   are always false (no archive feature; push-mirrors are outbound, not incoming
   mirrors), and the `allow_*` merge flags advertise merge commits only, matching
   the one merge strategy the merge service implements.
+- **`mergeable` is a placeholder** = "the pull is open", not a real conflict
+  check. Computing true mergeability needs a live trial-merge per pull; Renovate
+  only needs a hint, and the actual `POST {number}/merge` still rejects a real
+  conflict, so the cheap approximation is safe.
 - **PII:** the self-scoped `UserView` carries `email`; the search `PersonView`
   omits it, because search is anonymous and would otherwise disclose every
   matched user's address.
@@ -66,12 +71,21 @@ confined to the DTO/resource layer in `de.workaround.api`.
 - `GET /api/v1/repos/{owner}/{name}/branches/{branch}` — branch object
   (`name`, `commit.id`, `protected`); the branch segment is matched greedily so
   slash-bearing names resolve, and only real branch refs count (tag/SHA → 404).
+- `pulls` resource (`/api/v1/repos/{owner}/{name}/pulls`) — merge requests
+  projected as Gitea pull requests (`number`/index, `id`, `title`, `body`,
+  `state` open/closed + `merged`, `head`/`base` refs, `mergeable`, email-free
+  `user`/`assignee`, empty `labels`). Create takes `{title, body, head, base}`;
+  `PATCH {number}` edits `title`/`body` and closes (`state:"closed"`) or reopens
+  (`state:"open"`); `POST {number}/merge` merges (strategy body ignored — only
+  merge commits). List supports `?state=open|closed|all` and pagination (page
+  size capped at 50 so Renovate's paging terminates). The line-review comments
+  are git-shark's own feature, kept under `pulls/{number}/comments`.
 
 ## What still needs to be implemented
 
-- `pulls` resource: rename `merge-requests` → `pulls`, reshape to Gitea pull
-  requests, add find-by-branch (`GET pulls/{base}/{head}`), `PATCH pulls/{index}`
-  (title/body/state), keep create/get/list/merge.
+- Find-by-branch `GET pulls/{base}/{head}` — deliberately skipped: Renovate finds
+  a branch's pull by listing and filtering client-side, and the two-segment route
+  would collide with `pulls/{index}` / `pulls/{index}/comments`.
 - `GET labels` → `[]` stub and commit-status stubs (`POST /statuses/{sha}`,
   `GET /commits/{ref}/statuses`) so Renovate proceeds.
 - `GET /repos/{owner}/{name}/contents/{path}` (Renovate mostly clones, so low

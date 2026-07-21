@@ -61,7 +61,7 @@ class ApiSmokeIT
 	{
 		// the seeder creates one demo merge request with a line comment; both must serialize under native
 		int number = given()
-			.when().get("/api/v1/repos/alice/demo/merge-requests")
+			.when().get("/api/v1/repos/alice/demo/pulls")
 			.then()
 			.statusCode(200)
 			.contentType("application/json")
@@ -69,7 +69,7 @@ class ApiSmokeIT
 			.extract().path("[0].number");
 
 		given()
-			.when().get("/api/v1/repos/alice/demo/merge-requests/" + number + "/comments")
+			.when().get("/api/v1/repos/alice/demo/pulls/" + number + "/comments")
 			.then()
 			.statusCode(200)
 			.contentType("application/json")
