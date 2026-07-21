@@ -629,6 +629,15 @@
     ]
   },
   {
+    "name": "org.eclipse.jgit.lib.GcConfig$PackRefsMode",
+    "methods": [
+      {
+        "name": "values",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
     "name": "org.eclipse.jgit.lib.GpgConfig$GpgFormat",
     "methods": [
       {
