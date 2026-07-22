@@ -65,7 +65,7 @@ public class TaskDispatchService
 	EntityManager em;
 
 	public record Fetched(Optional<ActionTask> task, long tasksVersion, Map<String, String> secrets,
-		Map<String, String> vars)
+		Map<String, String> vars, Map<String, ActionRun.Status> needs)
 	{
 	}
 
@@ -89,7 +89,8 @@ public class TaskDispatchService
 		});
 		Map<String, String> secretMap = next.map(task -> secretsFor(task.run.repository)).orElse(Map.of());
 		Map<String, String> varMap = next.map(task -> variablesFor(task.run.repository)).orElse(Map.of());
-		return new Fetched(next, tasks.maxSeq(), secretMap, varMap);
+		Map<String, ActionRun.Status> needsMap = next.map(this::needsResults).orElse(Map.of());
+		return new Fetched(next, tasks.maxSeq(), secretMap, varMap, needsMap);
 	}
 
 	/** Decrypted repository secrets by name; a secret that cannot be decrypted is dropped, never leaked as ciphertext. */
@@ -163,6 +164,10 @@ public class TaskDispatchService
 				continue;
 			}
 			UUID id = (UUID) candidate[0];
+			if (!needsSatisfied(tasks.findById(id)))
+			{
+				continue;
+			}
 			@SuppressWarnings("unchecked")
 			List<UUID> locked = em.createNativeQuery(
 				"select id from action_task where id = :id and status = 'PENDING' for update skip locked")
@@ -174,6 +179,48 @@ public class TaskDispatchService
 			}
 		}
 		return Optional.empty();
+	}
+
+	/** A task is dispatchable only once every job it needs (in the same run) has succeeded. */
+	private boolean needsSatisfied(ActionTask task)
+	{
+		Set<String> needed = splitLabels(task.needs);
+		if (needed.isEmpty())
+		{
+			return true;
+		}
+		Map<String, ActionRun.Status> siblings = statusByJob(task.run);
+		return needed.stream().allMatch(name -> siblings.get(name) == ActionRun.Status.SUCCESS);
+	}
+
+	private Map<String, ActionRun.Status> statusByJob(ActionRun run)
+	{
+		Map<String, ActionRun.Status> byJob = new HashMap<>();
+		for (ActionTask sibling : tasks.findByRun(run))
+		{
+			byJob.put(sibling.name, sibling.status);
+		}
+		return byJob;
+	}
+
+	/** The results of the jobs a task needs, for the runner's {@code needs} context. */
+	private Map<String, ActionRun.Status> needsResults(ActionTask task)
+	{
+		Set<String> needed = splitLabels(task.needs);
+		if (needed.isEmpty())
+		{
+			return Map.of();
+		}
+		Map<String, ActionRun.Status> siblings = statusByJob(task.run);
+		Map<String, ActionRun.Status> results = new HashMap<>();
+		for (String name : needed)
+		{
+			if (siblings.containsKey(name))
+			{
+				results.put(name, siblings.get(name));
+			}
+		}
+		return results;
 	}
 
 	/** Whether the runner advertises every label the task's {@code runs-on} requires (empty = any). */

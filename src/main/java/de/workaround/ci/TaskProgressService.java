@@ -1,7 +1,10 @@
 package de.workaround.ci;
 
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.google.protobuf.Timestamp;
 
@@ -119,6 +122,7 @@ public class TaskProgressService
 	public void rollUpRun(ActionRun run)
 	{
 		List<ActionTask> all = tasks.findByRun(run);
+		cancelUnsatisfiableDependents(all);
 		boolean anyRunning = all.stream().anyMatch(t -> !t.status.isTerminal());
 		if (anyRunning)
 		{
@@ -131,6 +135,53 @@ public class TaskProgressService
 			: anyCancelled ? ActionRun.Status.CANCELLED
 			: ActionRun.Status.SUCCESS;
 		run.finishedAt = Instant.now();
+	}
+
+	/**
+	 * Cancel any PENDING task whose {@code needs} can no longer all succeed — a needed job finished
+	 * FAILURE or CANCELLED. Iterates to a fixpoint so a cancellation cascades down the dependency chain,
+	 * ensuring the run reaches a terminal state instead of hanging on unreachable tasks.
+	 */
+	private static void cancelUnsatisfiableDependents(List<ActionTask> all)
+	{
+		Map<String, ActionRun.Status> byJob = new HashMap<>();
+		for (ActionTask task : all)
+		{
+			byJob.put(task.name, task.status);
+		}
+		boolean changed = true;
+		while (changed)
+		{
+			changed = false;
+			for (ActionTask task : all)
+			{
+				if (task.status != ActionRun.Status.PENDING)
+				{
+					continue;
+				}
+				boolean blocked = needsOf(task).stream().anyMatch(name ->
+				{
+					ActionRun.Status dep = byJob.get(name);
+					return dep == ActionRun.Status.FAILURE || dep == ActionRun.Status.CANCELLED;
+				});
+				if (blocked)
+				{
+					task.status = ActionRun.Status.CANCELLED;
+					task.finishedAt = Instant.now();
+					byJob.put(task.name, task.status);
+					changed = true;
+				}
+			}
+		}
+	}
+
+	private static List<String> needsOf(ActionTask task)
+	{
+		if (task.needs == null || task.needs.isBlank())
+		{
+			return List.of();
+		}
+		return Arrays.stream(task.needs.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList();
 	}
 
 	private static ActionRun.Status map(Result result)

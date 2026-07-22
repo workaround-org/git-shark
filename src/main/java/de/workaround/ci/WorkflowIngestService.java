@@ -401,7 +401,8 @@ public class WorkflowIngestService
 			for (Iterator<String> it = jobs.fieldNames(); it.hasNext();)
 			{
 				String name = it.next();
-				specs.add(new WorkflowRunFactory.JobSpec(name, runsOn(jobs.get(name))));
+				JsonNode job = jobs.get(name);
+				specs.add(new WorkflowRunFactory.JobSpec(name, runsOn(job), needs(job)));
 			}
 		}
 		return specs;
@@ -410,26 +411,38 @@ public class WorkflowIngestService
 	/** The job's {@code runs-on} as comma-joined labels; string or list, empty when absent. */
 	private static String runsOn(JsonNode job)
 	{
-		JsonNode runsOn = job == null ? null : job.get("runs-on");
-		if (runsOn == null)
+		return scalarOrList(job, "runs-on");
+	}
+
+	/** The job's {@code needs} as comma-joined job names; string or list, empty when absent. */
+	private static String needs(JsonNode job)
+	{
+		return scalarOrList(job, "needs");
+	}
+
+	/** A workflow field that may be a single string or a list of strings, returned comma-joined. */
+	private static String scalarOrList(JsonNode job, String field)
+	{
+		JsonNode node = job == null ? null : job.get(field);
+		if (node == null)
 		{
 			return "";
 		}
-		if (runsOn.isTextual())
+		if (node.isTextual())
 		{
-			return runsOn.asText();
+			return node.asText();
 		}
-		if (runsOn.isArray())
+		if (node.isArray())
 		{
-			List<String> labels = new ArrayList<>();
-			for (JsonNode label : runsOn)
+			List<String> values = new ArrayList<>();
+			for (JsonNode value : node)
 			{
-				if (label.isTextual())
+				if (value.isTextual())
 				{
-					labels.add(label.asText());
+					values.add(value.asText());
 				}
 			}
-			return String.join(",", labels);
+			return String.join(",", values);
 		}
 		return "";
 	}

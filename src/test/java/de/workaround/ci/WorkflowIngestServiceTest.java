@@ -94,18 +94,27 @@ class WorkflowIngestServiceTest
 			    steps: [{ run: echo hi }]
 			  multi:
 			    runs-on: [self-hosted, linux]
+			    needs: single
 			    steps: [{ run: echo hi }]
 			  anywhere:
+			    needs: [single, multi]
 			    steps: [{ run: echo hi }]
 			""";
 		pushWorkflows(repo, Map.of(".forgejo/workflows/ci.yml", yaml));
 
 		ActionRun run = runs.findByRepository(repo).get(0);
-		java.util.Map<String, String> byJob = tasks.findByRun(run).stream()
+		List<ActionTask> jobs = tasks.findByRun(run);
+		java.util.Map<String, String> runsOnByJob = jobs.stream()
 			.collect(java.util.stream.Collectors.toMap(t -> t.name, t -> t.runsOn));
-		assertEquals("ubuntu-latest", byJob.get("single"));
-		assertEquals("self-hosted,linux", byJob.get("multi"), "list runs-on is comma-joined");
-		assertEquals("", byJob.get("anywhere"), "absent runs-on means no constraint");
+		assertEquals("ubuntu-latest", runsOnByJob.get("single"));
+		assertEquals("self-hosted,linux", runsOnByJob.get("multi"), "list runs-on is comma-joined");
+		assertEquals("", runsOnByJob.get("anywhere"), "absent runs-on means no constraint");
+
+		java.util.Map<String, String> needsByJob = jobs.stream()
+			.collect(java.util.stream.Collectors.toMap(t -> t.name, t -> t.needs));
+		assertEquals("", needsByJob.get("single"), "no needs");
+		assertEquals("single", needsByJob.get("multi"), "string needs");
+		assertEquals("single,multi", needsByJob.get("anywhere"), "list needs is comma-joined");
 	}
 
 	@Test

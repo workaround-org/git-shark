@@ -54,6 +54,9 @@ public class ActionTask implements PanacheEntity.Managed
 	/** The job's {@code runs-on} labels, comma-joined; empty means no constraint (any runner). */
 	public String runsOn = "";
 
+	/** Names of the jobs this task depends on (comma-joined); empty means none. */
+	public String needs = "";
+
 	/** The expanded single-job workflow payload delivered to the runner in FetchTask; null until materialized. */
 	public String payload;
 

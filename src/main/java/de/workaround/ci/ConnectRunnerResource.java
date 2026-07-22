@@ -21,6 +21,7 @@ import de.workaround.ci.proto.runner.v1.RegisterResponse;
 import de.workaround.ci.proto.runner.v1.Runner;
 import de.workaround.ci.proto.runner.v1.RunnerStatus;
 import de.workaround.ci.proto.runner.v1.Task;
+import de.workaround.ci.proto.runner.v1.TaskNeed;
 import de.workaround.ci.proto.runner.v1.TaskState;
 import de.workaround.ci.proto.runner.v1.UpdateLogRequest;
 import de.workaround.ci.proto.runner.v1.UpdateLogResponse;
@@ -122,7 +123,8 @@ public class ConnectRunnerResource
 			TaskDispatchService.Fetched fetched = dispatchService.fetch(uuid, token);
 			FetchTaskResponse.Builder response = FetchTaskResponse.newBuilder()
 				.setTasksVersion(fetched.tasksVersion());
-			fetched.task().ifPresent(task -> response.setTask(toProto(task, fetched.secrets(), fetched.vars())));
+			fetched.task().ifPresent(task ->
+				response.setTask(toProto(task, fetched.secrets(), fetched.vars(), fetched.needs())));
 			return ok(response.build().toByteArray());
 		}
 		catch (RunnerAuthenticationException e)
@@ -178,7 +180,8 @@ public class ConnectRunnerResource
 		}
 	}
 
-	private static Task toProto(ActionTask task, Map<String, String> secrets, Map<String, String> vars)
+	private static Task toProto(ActionTask task, Map<String, String> secrets, Map<String, String> vars,
+		Map<String, ActionRun.Status> needs)
 	{
 		Task.Builder builder = Task.newBuilder().setId(task.seq);
 		if (task.payload != null)
@@ -188,7 +191,20 @@ public class ConnectRunnerResource
 		builder.setContext(githubContext(task));
 		builder.putAllSecrets(secrets);
 		builder.putAllVars(vars);
+		needs.forEach((job, status) -> builder.putNeeds(job,
+			TaskNeed.newBuilder().setResult(toResult(status)).build()));
 		return builder.build();
+	}
+
+	private static de.workaround.ci.proto.runner.v1.Result toResult(ActionRun.Status status)
+	{
+		return switch (status)
+		{
+			case SUCCESS -> de.workaround.ci.proto.runner.v1.Result.RESULT_SUCCESS;
+			case FAILURE -> de.workaround.ci.proto.runner.v1.Result.RESULT_FAILURE;
+			case CANCELLED -> de.workaround.ci.proto.runner.v1.Result.RESULT_CANCELLED;
+			default -> de.workaround.ci.proto.runner.v1.Result.RESULT_UNSPECIFIED;
+		};
 	}
 
 	/**

@@ -7,8 +7,8 @@ workflows use the familiar GitHub-Actions-compatible YAML format in `.forgejo/wo
 > **Available today:** an **instance administrator** registers runners against this instance, and a
 > push that adds a workflow to `.forgejo/workflows/` (or `.gitea/workflows/`) starts a run that a
 > connected runner picks up and executes, with logs and results shown on the repository's **Actions**
-> tab. Runs are triggered by `push` (with branch/tag/path filters); other events and `needs`/`matrix`
-> arrive in later phases.
+> tab. Runs are triggered by `push` (with branch/tag/path filters) and jobs can be ordered with
+> `needs`; other events, `needs` outputs and `matrix` arrive in later phases.
 
 ## Running a workflow
 
@@ -66,8 +66,27 @@ are delivered to the runner executing the repo's workflows and are available in 
   an encryption key configured.
 - **Variables** are plain configuration and their values are visible on the settings page.
 
+## Job ordering with `needs`
+
+A job can depend on others with `needs`. A dependent job runs only after every job it needs has
+succeeded; if one fails, the dependent (and anything downstream of it) is cancelled.
+
+```yaml
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps: [{ run: make }]
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps: [{ run: make deploy }]
+```
+
+The result of each needed job is available to the runner. Passing a job's `outputs` to its dependents
+(`needs.build.outputs.*`) and `matrix` expansion are not implemented yet.
+
 ## What's coming
 
-- Non-push events (`pull_request`, scheduled, manual), `needs`/`matrix`.
+- Non-push events (`pull_request`, scheduled, manual), `matrix`, `needs` outputs.
 - Run cancellation / re-run.
 - Artifacts and commit/merge-request status integration.

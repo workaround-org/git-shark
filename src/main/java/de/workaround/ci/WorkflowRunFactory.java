@@ -56,14 +56,15 @@ public class WorkflowRunFactory
 			task.run = run;
 			task.name = job.name();
 			task.runsOn = job.runsOn();
+			task.needs = job.needs();
 			task.payload = payload;
 			task.persist();
 		}
 		return run;
 	}
 
-	/** A job discovered in a workflow: its id and comma-joined {@code runs-on} labels. */
-	public record JobSpec(String name, String runsOn)
+	/** A job discovered in a workflow: its id, comma-joined {@code runs-on} labels and {@code needs}. */
+	public record JobSpec(String name, String runsOn, String needs)
 	{
 	}
 
