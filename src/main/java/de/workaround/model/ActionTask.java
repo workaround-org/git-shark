@@ -51,6 +51,9 @@ public class ActionTask implements PanacheEntity.Managed
 	/** Job identifier from the workflow file, e.g. {@code build}. */
 	public String name;
 
+	/** The job's {@code runs-on} labels, comma-joined; empty means no constraint (any runner). */
+	public String runsOn = "";
+
 	/** The expanded single-job workflow payload delivered to the runner in FetchTask; null until materialized. */
 	public String payload;
 

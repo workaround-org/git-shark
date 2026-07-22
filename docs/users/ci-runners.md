@@ -52,6 +52,9 @@ Use `branches-ignore` / `tags-ignore` / `paths-ignore` to invert. A block with o
 tag pushes and not on branch pushes. `paths` runs when any changed file matches; `paths-ignore` runs
 unless every changed file is ignored. Non-push events are not evaluated yet.
 
+A job runs only on a runner that advertises every label in its `runs-on` (e.g. `runs-on: ubuntu-latest`
+needs a runner registered with the `ubuntu-latest` label); a job with no `runs-on` runs on any runner.
+
 ## What's coming
 
 - Non-push events (`pull_request`, scheduled, manual).

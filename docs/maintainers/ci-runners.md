@@ -17,7 +17,7 @@ covers how the server side is built and what is / isn't done.
 | Zombie reclaim | `ci/ZombieReclaimService.java` | Scheduled sweep failing RUNNING tasks past their deadline (vanished runner) and rolling up their runs. |
 | Actions UI | `web/ActionResource.java` + `templates/ActionResource/` | Read-only per-repo run list + run detail (jobs and their log rows); sidebar `Actions` tab. |
 | Entities | `model/CiRunner.java`, `model/CiRunnerRegistrationToken.java` | Runner state (migration `V19`). |
-| Run entities | `model/ActionRun.java`, `model/ActionTask.java`, `model/ActionLog.java` | Run/job/log-row persistence (migrations `V23`, `V24`). `ActionTask.seq` (`bigserial`) is the surrogate int64 `Task.id` for the wire. |
+| Run entities | `model/ActionRun.java`, `model/ActionTask.java`, `model/ActionLog.java` | Run/job/log-row persistence (migrations `V23`–`V25`). `ActionTask.seq` (`bigserial`) is the surrogate int64 `Task.id` for the wire; `ActionTask.runs_on` holds the job's labels for matching. |
 | Workflow ingest | `ci/WorkflowIngestService.java`, `ci/WorkflowRunFactory.java` | Post-receive hook: parse `.forgejo`/`.gitea` workflows at the pushed head, evaluate `on: push`, persist a run + its PENDING tasks (drained by FetchTask). |
 | Admin UI | `ci/AdminRunnerResource.java` + `templates/AdminRunnerResource/` | Token generation, runner list, deletion. |
 | Admin gate | `account/AdminAccess.java` | Config-driven instance-admin check. |
@@ -76,6 +76,11 @@ covers how the server side is built and what is / isn't done.
   context (`job`, `ref`, `sha`, `repository`, `run_id`, …) built in `ConnectRunnerResource.toProto` —
   without it the runner cannot select the job from the workflow and nil-derefs. Auth failures return
   the Connect `unauthenticated` error. No long-poll; `tasks_version` is a coarse max-`seq`.
+- **Label matching:** a task carries its job's `runs-on` labels (`action_task.runs_on`, parsed at
+  ingest). Dispatch scans PENDING tasks oldest-first and claims the first whose labels are all
+  advertised by the fetching runner (empty `runs-on` = any runner); an incompatible task is left for a
+  runner that can serve it. The claim still locks the chosen row `FOR UPDATE SKIP LOCKED` and re-checks
+  PENDING, so label filtering doesn't weaken the no-double-dispatch guarantee.
 - **`UpdateTask` / `UpdateLog` progress (`TaskProgressService`):** UpdateTask records the reported
   result, sends a finished task's runner back to IDLE, and rolls the owning run's status up from all
   its tasks (RUNNING until every task is terminal, then the worst outcome). UpdateLog appends log rows
@@ -91,7 +96,9 @@ covers how the server side is built and what is / isn't done.
   changed files are ignored),
   `FetchTaskTest` (claim oldest pending over the wire, empty queue, bad credentials, and two runners
   racing one task → claimed at most once), `TaskProgressTest` (UpdateTask success rolls up task+run
-  and frees the runner, UpdateLog append + dedup/resume, cross-runner and bad-credential rejection).
+  and frees the runner, UpdateLog append + dedup/resume, cross-runner and bad-credential rejection),
+  `LabelMatchingTest` (runner claims a compatible task and skips an incompatible older one, gets
+  nothing when none match, unconstrained task runs anywhere).
 - **Zombie reclaim (`ZombieReclaimService`):** a scheduled sweep
   (`gitshark.ci.zombie-reclaim-interval`, default 1m) fails any RUNNING task whose
   `action_task.deadline` has passed — the runner is presumed gone — rolls its run up, and flags the
@@ -118,8 +125,8 @@ covers how the server side is built and what is / isn't done.
   isolated/expanded into its own payload. No `needs`/`matrix` yet.
 - **Non-push events:** only `push` is evaluated; `pull_request`, scheduled and manual triggers are
   not. (`!`-negation within a single pattern list is also not supported.)
-- **Later phases:** secrets/variables delivery, label-based matching, concurrency/cancellation,
-  artifacts (`ACTIONS_RESULTS_URL`), repo/org-scoped and ephemeral runners, commit/MR status.
+- **Later phases:** secrets/variables delivery, concurrency/cancellation, artifacts
+  (`ACTIONS_RESULTS_URL`), repo/org-scoped and ephemeral runners, commit/MR status.
 
 ## References
 

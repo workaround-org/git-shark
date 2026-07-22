@@ -77,6 +77,35 @@ class WorkflowIngestServiceTest
 		assertEquals(1, jobs.size());
 		assertEquals("build", jobs.get(0).name);
 		assertEquals(ActionRun.Status.PENDING, jobs.get(0).status);
+		assertEquals("ubuntu-latest", jobs.get(0).runsOn, "string runs-on is stored verbatim");
+	}
+
+	@Test
+	void parsesRunsOnStringListAndAbsent() throws Exception
+	{
+		User owner = persistUser("wf-dave-" + UUID.randomUUID().toString().substring(0, 8));
+		Repository repo = repositories.create(owner, "wf", Repository.Visibility.PUBLIC, null);
+
+		String yaml = """
+			on: push
+			jobs:
+			  single:
+			    runs-on: ubuntu-latest
+			    steps: [{ run: echo hi }]
+			  multi:
+			    runs-on: [self-hosted, linux]
+			    steps: [{ run: echo hi }]
+			  anywhere:
+			    steps: [{ run: echo hi }]
+			""";
+		pushWorkflows(repo, Map.of(".forgejo/workflows/ci.yml", yaml));
+
+		ActionRun run = runs.findByRepository(repo).get(0);
+		java.util.Map<String, String> byJob = tasks.findByRun(run).stream()
+			.collect(java.util.stream.Collectors.toMap(t -> t.name, t -> t.runsOn));
+		assertEquals("ubuntu-latest", byJob.get("single"));
+		assertEquals("self-hosted,linux", byJob.get("multi"), "list runs-on is comma-joined");
+		assertEquals("", byJob.get("anywhere"), "absent runs-on means no constraint");
 	}
 
 	@Test

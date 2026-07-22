@@ -35,7 +35,7 @@ public class WorkflowRunFactory
 
 	@Transactional
 	public ActionRun create(Repository repository, UUID pusherUserId, String ref, String commitSha,
-		String workflowName, String workflowFile, List<String> jobNames, String payload)
+		String workflowName, String workflowFile, List<JobSpec> jobs, String payload)
 	{
 		Repository repo = repositories.findById(repository.id);
 
@@ -50,15 +50,21 @@ public class WorkflowRunFactory
 		run.triggeredBy = pusherUserId == null ? null : users.findById(pusherUserId);
 		run.persist();
 
-		for (String jobName : jobNames)
+		for (JobSpec job : jobs)
 		{
 			ActionTask task = new ActionTask();
 			task.run = run;
-			task.name = jobName;
+			task.name = job.name();
+			task.runsOn = job.runsOn();
 			task.payload = payload;
 			task.persist();
 		}
 		return run;
+	}
+
+	/** A job discovered in a workflow: its id and comma-joined {@code runs-on} labels. */
+	public record JobSpec(String name, String runsOn)
+	{
 	}
 
 }

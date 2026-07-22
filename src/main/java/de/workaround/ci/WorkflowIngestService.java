@@ -114,7 +114,7 @@ public class WorkflowIngestService
 				{
 					continue;
 				}
-				List<String> jobs = jobNames(root);
+				List<WorkflowRunFactory.JobSpec> jobs = jobs(root);
 				if (jobs.isEmpty())
 				{
 					continue;
@@ -392,18 +392,46 @@ public class WorkflowIngestService
 		return regex.toString();
 	}
 
-	private static List<String> jobNames(JsonNode root)
+	private static List<WorkflowRunFactory.JobSpec> jobs(JsonNode root)
 	{
-		List<String> names = new ArrayList<>();
+		List<WorkflowRunFactory.JobSpec> specs = new ArrayList<>();
 		JsonNode jobs = root.get("jobs");
 		if (jobs != null && jobs.isObject())
 		{
 			for (Iterator<String> it = jobs.fieldNames(); it.hasNext();)
 			{
-				names.add(it.next());
+				String name = it.next();
+				specs.add(new WorkflowRunFactory.JobSpec(name, runsOn(jobs.get(name))));
 			}
 		}
-		return names;
+		return specs;
+	}
+
+	/** The job's {@code runs-on} as comma-joined labels; string or list, empty when absent. */
+	private static String runsOn(JsonNode job)
+	{
+		JsonNode runsOn = job == null ? null : job.get("runs-on");
+		if (runsOn == null)
+		{
+			return "";
+		}
+		if (runsOn.isTextual())
+		{
+			return runsOn.asText();
+		}
+		if (runsOn.isArray())
+		{
+			List<String> labels = new ArrayList<>();
+			for (JsonNode label : runsOn)
+			{
+				if (label.isTextual())
+				{
+					labels.add(label.asText());
+				}
+			}
+			return String.join(",", labels);
+		}
+		return "";
 	}
 
 	private static String workflowName(JsonNode root, String path)
