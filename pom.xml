@@ -64,6 +64,11 @@
             <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
         <dependency>
+            <!-- Parsing .forgejo/.gitea workflow YAML (CI ingest); otherwise only transitive via OpenAPI. -->
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkiverse.mcp</groupId>
             <artifactId>quarkus-mcp-server-http</artifactId>
             <version>${quarkus-mcp-server.version}</version>

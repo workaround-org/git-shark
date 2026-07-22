@@ -37,6 +37,9 @@ public class GitSshCommandFactory implements CommandFactory
 	de.workaround.git.IssueCommitCloser issueCloser;
 
 	@Inject
+	de.workaround.ci.WorkflowIngestService workflowIngest;
+
+	@Inject
 	de.workaround.mirror.MirrorService mirrorService;
 
 	@Override
@@ -151,6 +154,7 @@ public class GitSshCommandFactory implements CommandFactory
 							receivePack.setPostReceiveHook((rp, commands) -> {
 								pushService.onPush(ownerName, repoName, userId, rp.getRepository(), commands);
 								issueCloser.onPush(ownerName, repoName, userId, rp.getRepository(), commands);
+								workflowIngest.onPush(ownerName, repoName, userId, rp.getRepository(), commands);
 								mirrorService.onPush(ownerName, repoName, commands);
 							});
 						}

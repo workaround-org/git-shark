@@ -13,7 +13,8 @@ covers how the server side is built and what is / isn't done.
 | Connect endpoint | `ci/ConnectRunnerResource.java` | JAX-RS resource serving the Connect unary RPCs under `/api/actions`. |
 | Registration/presence | `ci/RunnerRegistrationService.java` | Token issue, runner register/declare/authenticate, list/delete. |
 | Entities | `model/CiRunner.java`, `model/CiRunnerRegistrationToken.java` | Runner state (migration `V19`). |
-| Run entities | `model/ActionRun.java`, `model/ActionTask.java`, `model/ActionLog.java` | Run/job/log-row persistence (migration `V23`). Not yet wired to a run loop. |
+| Run entities | `model/ActionRun.java`, `model/ActionTask.java`, `model/ActionLog.java` | Run/job/log-row persistence (migration `V23`). |
+| Workflow ingest | `ci/WorkflowIngestService.java`, `ci/WorkflowRunFactory.java` | Post-receive hook: parse `.forgejo`/`.gitea` workflows at the pushed head, evaluate `on: push`, persist a run + its tasks. Rows are created but not yet dispatched. |
 | Admin UI | `ci/AdminRunnerResource.java` + `templates/AdminRunnerResource/` | Token generation, runner list, deletion. |
 | Admin gate | `account/AdminAccess.java` | Config-driven instance-admin check. |
 
@@ -50,18 +51,25 @@ covers how the server side is built and what is / isn't done.
   `/admin/*` authenticated policy.
 - **Run-persistence tables:** `action_run`, `action_task`, `action_log` (migration `V23`) with their
   Panache entities. `action_task.log_length` is the durable log-row count that doubles as the
-  UpdateLog resume/ack offset; `action_task.deadline` is the zombie-timeout anchor. Schema and
-  entities only — nothing writes to them yet.
+  UpdateLog resume/ack offset; `action_task.deadline` is the zombie-timeout anchor.
+- **Workflow ingest on push:** the post-receive hooks (HTTP + SSH) call `WorkflowIngestService`,
+  which reads `.forgejo/workflows/*.{yml,yaml}` and `.gitea/workflows/*` at the new commit of each
+  updated branch, parses them (Jackson `YAMLMapper`), and for those triggered by `push` persists one
+  `action_run` (per-repo `number`, PENDING) with one PENDING `action_task` per job via
+  `WorkflowRunFactory` (`@Transactional`). Handles the YAML-1.1 `on:`→boolean-`true` key coercion.
 - Tests: `RunnerRegistrationServiceTest` (service), `ConnectRunnerResourceTest` (protobuf-over-HTTP
   round-trip for Ping/Register/Declare + auth failures), `AdminAccessTest` (admin gate),
-  `ActionRunPersistenceTest` (run/task/log persistence, per-repo run numbering, pending-task lookup).
+  `ActionRunPersistenceTest` (run/task/log persistence, per-repo run numbering, pending-task lookup),
+  `WorkflowIngestServiceTest` (push → run/task creation, non-push trigger and no-workflow are no-ops).
 
 ## What still needs to be implemented
 
 - **Run loop:** `FetchTask` (long-poll with `tasks_version`), `UpdateTask`, `UpdateLog` (offset /
-  `ack_index` resume). Not served yet — the tables above are the foundation for it.
-- **Workflow pipeline:** parse `.forgejo/workflows/*.yml` at the pushed head, evaluate `on:` triggers
-  (push only for the MVP), expand a single job into a Task payload. No `needs`/`matrix` yet.
+  `ack_index` resume). Not served yet — the ingested PENDING tasks are the queue it will drain.
+- **Per-job payload expansion:** ingest stores the raw workflow YAML in `action_task.payload`;
+  `Task.workflow_payload` needs the single job isolated/expanded. No `needs`/`matrix` yet.
+- **Trigger refinement:** only bare `on: push` is honored; branch/tag/path filters and other events
+  (tag push, `pull_request`) are not evaluated.
 - **Run UI:** per-repository run list + run detail with live per-step status and logs.
 - **Task state machine:** timeout / zombie handling when a runner vanishes mid-task.
 - **Real-runner integration test:** protocol round-trip against an actual `forgejo-runner` container
