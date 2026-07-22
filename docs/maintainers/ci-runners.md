@@ -13,6 +13,7 @@ covers how the server side is built and what is / isn't done.
 | Connect endpoint | `ci/ConnectRunnerResource.java` | JAX-RS resource serving the Connect unary RPCs under `/api/actions`. |
 | Registration/presence | `ci/RunnerRegistrationService.java` | Token issue, runner register/declare/authenticate, list/delete. |
 | Task dispatch | `ci/TaskDispatchService.java` | FetchTask: authenticate, claim the oldest PENDING task, flip task+run to RUNNING, set the runner ACTIVE and the task deadline — atomically. |
+| Task progress | `ci/TaskProgressService.java` | UpdateTask (result → task status + run roll-up, runner back to IDLE) and UpdateLog (resume-safe log-row append, `ack_index`). |
 | Entities | `model/CiRunner.java`, `model/CiRunnerRegistrationToken.java` | Runner state (migration `V19`). |
 | Run entities | `model/ActionRun.java`, `model/ActionTask.java`, `model/ActionLog.java` | Run/job/log-row persistence (migrations `V23`, `V24`). `ActionTask.seq` (`bigserial`) is the surrogate int64 `Task.id` for the wire. |
 | Workflow ingest | `ci/WorkflowIngestService.java`, `ci/WorkflowRunFactory.java` | Post-receive hook: parse `.forgejo`/`.gitea` workflows at the pushed head, evaluate `on: push`, persist a run + its tasks. Rows are created but not yet dispatched. |
@@ -64,18 +65,25 @@ covers how the server side is built and what is / isn't done.
   row is locked `FOR UPDATE SKIP LOCKED` (id-only select, to keep the lock off the nullable `runner`
   join) so concurrent fetchers never claim the same task. Auth failures return the Connect
   `unauthenticated` error. No long-poll; `tasks_version` is a coarse max-`seq`.
+- **`UpdateTask` / `UpdateLog` progress (`TaskProgressService`):** UpdateTask records the reported
+  result, sends a finished task's runner back to IDLE, and rolls the owning run's status up from all
+  its tasks (RUNNING until every task is terminal, then the worst outcome). UpdateLog appends log rows
+  with resume-safe contiguous semantics — rows below `action_task.log_length` are ignored, a gap above
+  it stops the append, and the returned `ack_index` is the durable row count. Both reject a task not
+  assigned to the calling runner (`unauthenticated`) and an unknown task id (`not_found`).
 - Tests: `RunnerRegistrationServiceTest` (service), `ConnectRunnerResourceTest` (protobuf-over-HTTP
   round-trip for Ping/Register/Declare + auth failures), `AdminAccessTest` (admin gate),
   `ActionRunPersistenceTest` (run/task/log persistence, per-repo run numbering, pending-task lookup),
   `WorkflowIngestServiceTest` (push → run/task creation, non-push trigger and no-workflow are no-ops),
   `FetchTaskTest` (claim oldest pending over the wire, empty queue, bad credentials, and two runners
-  racing one task → claimed at most once).
+  racing one task → claimed at most once), `TaskProgressTest` (UpdateTask success rolls up task+run
+  and frees the runner, UpdateLog append + dedup/resume, cross-runner and bad-credential rejection).
 
 ## What still needs to be implemented
 
-- **Run loop (remaining):** `UpdateTask` (step/task state) and `UpdateLog` (offset / `ack_index`
-  resume). `FetchTask` is served; these two report progress back. Add long-poll and a real
-  state-driven `tasks_version` when they land.
+- **Long-poll & real `tasks_version`:** `FetchTask` returns immediately and `tasks_version` is a
+  coarse max-`seq` (bumps on creation, not state change), so with several simultaneous PENDING tasks a
+  runner may under-poll. Add server-side long-poll and a state-driven version counter.
 - **Per-job payload expansion:** ingest/dispatch deliver the raw workflow YAML as `workflow_payload`;
   it needs the single job isolated/expanded. No `needs`/`matrix` yet.
 - **Trigger refinement:** only bare `on: push` is honored; branch/tag/path filters and other events

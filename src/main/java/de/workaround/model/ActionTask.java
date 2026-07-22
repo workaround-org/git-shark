@@ -89,6 +89,9 @@ public class ActionTask implements PanacheEntity.Managed
 		@Find
 		Optional<ActionTask> findByIdAndRunner(UUID id, CiRunner runner);
 
+		@Find
+		Optional<ActionTask> findBySeq(long seq);
+
 		/** The highest surrogate id issued so far; the coarse {@code tasks_version} handed to runners. */
 		@HQL("select coalesce(max(t.seq), 0) from ActionTask t")
 		long maxSeq();

@@ -1,5 +1,6 @@
 package de.workaround.ci;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
@@ -17,6 +18,11 @@ import de.workaround.ci.proto.runner.v1.RegisterResponse;
 import de.workaround.ci.proto.runner.v1.Runner;
 import de.workaround.ci.proto.runner.v1.RunnerStatus;
 import de.workaround.ci.proto.runner.v1.Task;
+import de.workaround.ci.proto.runner.v1.TaskState;
+import de.workaround.ci.proto.runner.v1.UpdateLogRequest;
+import de.workaround.ci.proto.runner.v1.UpdateLogResponse;
+import de.workaround.ci.proto.runner.v1.UpdateTaskRequest;
+import de.workaround.ci.proto.runner.v1.UpdateTaskResponse;
 import de.workaround.model.ActionTask;
 import de.workaround.model.CiRunner;
 import jakarta.inject.Inject;
@@ -50,6 +56,9 @@ public class ConnectRunnerResource
 
 	@Inject
 	TaskDispatchService dispatchService;
+
+	@Inject
+	TaskProgressService progressService;
 
 	@POST
 	@Path("/ping.v1.PingService/Ping")
@@ -114,6 +123,53 @@ public class ConnectRunnerResource
 		catch (RunnerAuthenticationException e)
 		{
 			return connectError(Response.Status.UNAUTHORIZED, "unauthenticated", e.getMessage());
+		}
+	}
+
+	@POST
+	@Path("/runner.v1.RunnerService/UpdateTask")
+	public Response updateTask(@HeaderParam("x-runner-uuid") String uuid, @HeaderParam("x-runner-token") String token,
+		byte[] body) throws InvalidProtocolBufferException
+	{
+		UpdateTaskRequest request = UpdateTaskRequest.parseFrom(body);
+		TaskState state = request.getState();
+		Instant stoppedAt = state.hasStoppedAt()
+			? Instant.ofEpochSecond(state.getStoppedAt().getSeconds(), state.getStoppedAt().getNanos())
+			: null;
+		try
+		{
+			progressService.updateTask(uuid, token, state.getId(), state.getResult(), stoppedAt);
+			return ok(UpdateTaskResponse.newBuilder().setState(state).build().toByteArray());
+		}
+		catch (RunnerAuthenticationException e)
+		{
+			return connectError(Response.Status.UNAUTHORIZED, "unauthenticated", e.getMessage());
+		}
+		catch (TaskNotFoundException e)
+		{
+			return connectError(Response.Status.NOT_FOUND, "not_found", e.getMessage());
+		}
+	}
+
+	@POST
+	@Path("/runner.v1.RunnerService/UpdateLog")
+	public Response updateLog(@HeaderParam("x-runner-uuid") String uuid, @HeaderParam("x-runner-token") String token,
+		byte[] body) throws InvalidProtocolBufferException
+	{
+		UpdateLogRequest request = UpdateLogRequest.parseFrom(body);
+		try
+		{
+			long ackIndex = progressService.appendLog(uuid, token, request.getTaskId(), request.getIndex(),
+				request.getRowsList());
+			return ok(UpdateLogResponse.newBuilder().setAckIndex(ackIndex).build().toByteArray());
+		}
+		catch (RunnerAuthenticationException e)
+		{
+			return connectError(Response.Status.UNAUTHORIZED, "unauthenticated", e.getMessage());
+		}
+		catch (TaskNotFoundException e)
+		{
+			return connectError(Response.Status.NOT_FOUND, "not_found", e.getMessage());
 		}
 	}
 
