@@ -3,7 +3,9 @@ package de.workaround.ci;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -11,9 +13,13 @@ import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import de.workaround.mirror.SecretCrypto;
 import de.workaround.model.ActionRun;
+import de.workaround.model.ActionSecret;
 import de.workaround.model.ActionTask;
+import de.workaround.model.ActionVariable;
 import de.workaround.model.CiRunner;
+import de.workaround.model.Repository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -47,14 +53,25 @@ public class TaskDispatchService
 	ActionTask.Repo tasks;
 
 	@Inject
+	ActionSecret.Repo secrets;
+
+	@Inject
+	ActionVariable.Repo variables;
+
+	@Inject
+	SecretCrypto crypto;
+
+	@Inject
 	EntityManager em;
 
-	public record Fetched(Optional<ActionTask> task, long tasksVersion)
+	public record Fetched(Optional<ActionTask> task, long tasksVersion, Map<String, String> secrets,
+		Map<String, String> vars)
 	{
 	}
 
 	/**
-	 * Authenticate the runner and claim the oldest PENDING task, if any.
+	 * Authenticate the runner and claim the oldest label-compatible PENDING task, if any, delivering
+	 * the owning repository's variables and (decrypted) secrets alongside it.
 	 *
 	 * @throws RunnerAuthenticationException if the uuid/token pair is unknown
 	 */
@@ -70,7 +87,41 @@ public class TaskDispatchService
 			claim(task, runner);
 			return task;
 		});
-		return new Fetched(next, tasks.maxSeq());
+		Map<String, String> secretMap = next.map(task -> secretsFor(task.run.repository)).orElse(Map.of());
+		Map<String, String> varMap = next.map(task -> variablesFor(task.run.repository)).orElse(Map.of());
+		return new Fetched(next, tasks.maxSeq(), secretMap, varMap);
+	}
+
+	/** Decrypted repository secrets by name; a secret that cannot be decrypted is dropped, never leaked as ciphertext. */
+	private Map<String, String> secretsFor(Repository repository)
+	{
+		Map<String, String> result = new HashMap<>();
+		if (!crypto.available())
+		{
+			return result;
+		}
+		for (ActionSecret secret : secrets.findByRepository(repository))
+		{
+			try
+			{
+				result.put(secret.name, crypto.decrypt(secret.valueEncrypted));
+			}
+			catch (RuntimeException undecryptable)
+			{
+				// key rotated or value corrupt: omit rather than hand the runner unusable/ciphertext data
+			}
+		}
+		return result;
+	}
+
+	private Map<String, String> variablesFor(Repository repository)
+	{
+		Map<String, String> result = new HashMap<>();
+		for (ActionVariable variable : variables.findByRepository(repository))
+		{
+			result.put(variable.name, variable.value);
+		}
+		return result;
 	}
 
 	private void claim(ActionTask task, CiRunner runner)

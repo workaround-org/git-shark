@@ -18,6 +18,7 @@ covers how the server side is built and what is / isn't done.
 | Actions UI | `web/ActionResource.java` + `templates/ActionResource/` | Read-only per-repo run list + run detail (jobs and their log rows); sidebar `Actions` tab. |
 | Entities | `model/CiRunner.java`, `model/CiRunnerRegistrationToken.java` | Runner state (migration `V19`). |
 | Run entities | `model/ActionRun.java`, `model/ActionTask.java`, `model/ActionLog.java` | Run/job/log-row persistence (migrations `V23`–`V25`). `ActionTask.seq` (`bigserial`) is the surrogate int64 `Task.id` for the wire; `ActionTask.runs_on` holds the job's labels for matching. |
+| Secret/variable entities | `model/ActionSecret.java`, `model/ActionVariable.java` | Per-repo CI secrets (encrypted) and variables (migration `V26`), delivered to runners in FetchTask. |
 | Workflow ingest | `ci/WorkflowIngestService.java`, `ci/WorkflowRunFactory.java` | Post-receive hook: parse `.forgejo`/`.gitea` workflows at the pushed head, evaluate `on: push`, persist a run + its PENDING tasks (drained by FetchTask). |
 | Admin UI | `ci/AdminRunnerResource.java` + `templates/AdminRunnerResource/` | Token generation, runner list, deletion. |
 | Admin gate | `account/AdminAccess.java` | Config-driven instance-admin check. |
@@ -76,6 +77,11 @@ covers how the server side is built and what is / isn't done.
   context (`job`, `ref`, `sha`, `repository`, `run_id`, …) built in `ConnectRunnerResource.toProto` —
   without it the runner cannot select the job from the workflow and nil-derefs. Auth failures return
   the Connect `unauthenticated` error. No long-poll; `tasks_version` is a coarse max-`seq`.
+- **Secret & variable delivery:** a claimed task is handed its repository's variables (plaintext) and
+  secrets (`action_secret`, stored with the `SecretCrypto` envelope, decrypted at delivery — a value
+  that fails to decrypt is dropped, never sent as ciphertext) in the FetchTask `Task.secrets`/`vars`
+  maps. Same trust model as GitHub self-hosted runners: secrets go to whatever runner claims the task
+  (over TLS). No repo/org scoping of secrets and no fork-PR guard yet (no PR triggers exist).
 - **Label matching:** a task carries its job's `runs-on` labels (`action_task.runs_on`, parsed at
   ingest). Dispatch scans PENDING tasks oldest-first and claims the first whose labels are all
   advertised by the fetching runner (empty `runs-on` = any runner); an incompatible task is left for a
@@ -98,7 +104,9 @@ covers how the server side is built and what is / isn't done.
   racing one task → claimed at most once), `TaskProgressTest` (UpdateTask success rolls up task+run
   and frees the runner, UpdateLog append + dedup/resume, cross-runner and bad-credential rejection),
   `LabelMatchingTest` (runner claims a compatible task and skips an incompatible older one, gets
-  nothing when none match, unconstrained task runs anywhere).
+  nothing when none match, unconstrained task runs anywhere),
+  `SecretDeliveryTest` (claimed task receives repo secrets decrypted + variables; empty fetch carries
+  none).
 - **Zombie reclaim (`ZombieReclaimService`):** a scheduled sweep
   (`gitshark.ci.zombie-reclaim-interval`, default 1m) fails any RUNNING task whose
   `action_task.deadline` has passed — the runner is presumed gone — rolls its run up, and flags the
@@ -125,8 +133,10 @@ covers how the server side is built and what is / isn't done.
   isolated/expanded into its own payload. No `needs`/`matrix` yet.
 - **Non-push events:** only `push` is evaluated; `pull_request`, scheduled and manual triggers are
   not. (`!`-negation within a single pattern list is also not supported.)
-- **Later phases:** secrets/variables delivery, concurrency/cancellation, artifacts
-  (`ACTIONS_RESULTS_URL`), repo/org-scoped and ephemeral runners, commit/MR status.
+- **Secrets/variables management UI:** delivery works, but there is no page yet to create/edit/delete
+  them (tests seed the rows directly).
+- **Later phases:** concurrency/cancellation, artifacts (`ACTIONS_RESULTS_URL`), repo/org-scoped and
+  ephemeral runners, commit/MR status.
 
 ## References
 

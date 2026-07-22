@@ -3,6 +3,7 @@ package de.workaround.ci;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -121,7 +122,7 @@ public class ConnectRunnerResource
 			TaskDispatchService.Fetched fetched = dispatchService.fetch(uuid, token);
 			FetchTaskResponse.Builder response = FetchTaskResponse.newBuilder()
 				.setTasksVersion(fetched.tasksVersion());
-			fetched.task().ifPresent(task -> response.setTask(toProto(task)));
+			fetched.task().ifPresent(task -> response.setTask(toProto(task, fetched.secrets(), fetched.vars())));
 			return ok(response.build().toByteArray());
 		}
 		catch (RunnerAuthenticationException e)
@@ -177,7 +178,7 @@ public class ConnectRunnerResource
 		}
 	}
 
-	private static Task toProto(ActionTask task)
+	private static Task toProto(ActionTask task, Map<String, String> secrets, Map<String, String> vars)
 	{
 		Task.Builder builder = Task.newBuilder().setId(task.seq);
 		if (task.payload != null)
@@ -185,6 +186,8 @@ public class ConnectRunnerResource
 			builder.setWorkflowPayload(ByteString.copyFromUtf8(task.payload));
 		}
 		builder.setContext(githubContext(task));
+		builder.putAllSecrets(secrets);
+		builder.putAllVars(vars);
 		return builder.build();
 	}
 

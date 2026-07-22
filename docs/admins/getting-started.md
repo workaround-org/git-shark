@@ -357,7 +357,7 @@ Every value below is an environment variable on the `app` service. Defaults come
 | `GITSHARK_SSH_HOST_KEY` | — | `data/ssh/host-key` | Persistent SSH host key path |
 | `GITSHARK_SSH_PORT` | — | `2222` | Port the embedded SSH server **binds inside the container**; keep >1024 so it needs no root |
 | `GITSHARK_SSH_EXTERNAL_PORT` | — | `22` | Port advertised in clone/push URLs (display only, no runtime effect). Must match the published host port; `22` is omitted from the printed URL |
-| `GITSHARK_SECRET_KEY` | — | — | Encrypts push-mirror secrets at rest; required to create mirrors (see [Push mirrors](mirrors.md)) |
+| `GITSHARK_SECRET_KEY` | — | — | Encrypts push-mirror secrets and CI secrets at rest; required to create mirrors and to deliver CI secrets to runners (see [Push mirrors](mirrors.md), [CI runners](ci-runners.md)) |
 | `GITSHARK_MIRROR_MAX_ATTEMPTS` | — | `8` | Mirror-sync retry cap before dead-letter |
 | `GITSHARK_MIRROR_ALLOW_INSECURE` | — | `false` | Dev only: allow http/loopback mirror targets |
 | `GITSHARK_MIRROR_DRAIN_INTERVAL` | — | `10s` | How often the async mirror-sync drain worker runs |
