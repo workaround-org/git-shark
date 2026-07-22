@@ -15,9 +15,10 @@ covers how the server side is built and what is / isn't done.
 | Task dispatch | `ci/TaskDispatchService.java` | FetchTask: authenticate, claim the oldest PENDING task, flip task+run to RUNNING, set the runner ACTIVE and the task deadline — atomically. |
 | Task progress | `ci/TaskProgressService.java` | UpdateTask (result → task status + run roll-up, runner back to IDLE) and UpdateLog (resume-safe log-row append, `ack_index`). |
 | Zombie reclaim | `ci/ZombieReclaimService.java` | Scheduled sweep failing RUNNING tasks past their deadline (vanished runner) and rolling up their runs. |
+| Actions UI | `web/ActionResource.java` + `templates/ActionResource/` | Read-only per-repo run list + run detail (jobs and their log rows); sidebar `Actions` tab. |
 | Entities | `model/CiRunner.java`, `model/CiRunnerRegistrationToken.java` | Runner state (migration `V19`). |
 | Run entities | `model/ActionRun.java`, `model/ActionTask.java`, `model/ActionLog.java` | Run/job/log-row persistence (migrations `V23`, `V24`). `ActionTask.seq` (`bigserial`) is the surrogate int64 `Task.id` for the wire. |
-| Workflow ingest | `ci/WorkflowIngestService.java`, `ci/WorkflowRunFactory.java` | Post-receive hook: parse `.forgejo`/`.gitea` workflows at the pushed head, evaluate `on: push`, persist a run + its tasks. Rows are created but not yet dispatched. |
+| Workflow ingest | `ci/WorkflowIngestService.java`, `ci/WorkflowRunFactory.java` | Post-receive hook: parse `.forgejo`/`.gitea` workflows at the pushed head, evaluate `on: push`, persist a run + its PENDING tasks (drained by FetchTask). |
 | Admin UI | `ci/AdminRunnerResource.java` + `templates/AdminRunnerResource/` | Token generation, runner list, deletion. |
 | Admin gate | `account/AdminAccess.java` | Config-driven instance-admin check. |
 
@@ -85,6 +86,10 @@ covers how the server side is built and what is / isn't done.
   runner OFFLINE. The deadline is set at claim time from `gitshark.ci.task-timeout` (default 1h). A
   late update from a runner cannot resurrect an already-terminal task. `ZombieReclaimTest` covers both
   the reclaim (overdue → FAILURE, in-deadline left RUNNING) and the anti-resurrection guard.
+- **Actions UI:** a read-only `Actions` tab on each repository — `ActionResource` renders a run list
+  (workflow, run number, status, event, short commit) and a run detail page with each job and its
+  streamed log rows. Read-gated like the rest of the repo UI (404 for a hidden repo). Tested by
+  `ActionUiTest` (list shows runs + tab, detail shows jobs and logs, unknown run number → 404).
 
 ## What still needs to be implemented
 
@@ -95,7 +100,6 @@ covers how the server side is built and what is / isn't done.
   it needs the single job isolated/expanded. No `needs`/`matrix` yet.
 - **Trigger refinement:** only bare `on: push` is honored; branch/tag/path filters and other events
   (tag push, `pull_request`) are not evaluated.
-- **Run UI:** per-repository run list + run detail with live per-step status and logs.
 - **Real-runner integration test:** protocol round-trip against an actual `forgejo-runner` container
   (the current endpoint test uses a hand-built protobuf client, not the binary).
 - **Later phases:** secrets/variables delivery, label-based matching, concurrency/cancellation,

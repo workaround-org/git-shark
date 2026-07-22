@@ -1,0 +1,27 @@
+{#include layout}
+{#title}Actions – {repo.name}{/title}
+<div class="repo-layout">
+    {#include RepositoryResource/sidebar nav=nav active='actions' /}
+    <section class="repo-main">
+        <div class="issues-head">
+            <h2>Actions</h2>
+        </div>
+        {#if runs.isEmpty()}
+        <p class="muted">No workflow runs yet. Push a workflow to <code>.forgejo/workflows/</code> to start one.</p>
+        {#else}
+        <div class="panel">
+            {#for run in runs}
+            <a class="frow" href="/repos/{repo.ownerHandle}/{repo.name}/actions/{run.number}">
+                <span class="fname">
+                    <span class="badge status-{run.status}">{run.status.label}</span>
+                    <span class="n">{run.workflowName}</span>
+                    <span class="issue-no">#{run.number}</span>
+                </span>
+                <span class="run-meta muted">{run.event} · {run.commitSha.substring(0, 7)}</span>
+            </a>
+            {/for}
+        </div>
+        {/if}
+    </section>
+</div>
+{/include}

@@ -1,0 +1,30 @@
+{#include layout}
+{#title}{run.workflowName} #{run.number} – {repo.name}{/title}
+<div class="repo-layout">
+    {#include RepositoryResource/sidebar nav=nav active='actions' /}
+    <section class="repo-main">
+        <p class="issue-back"><a href="/repos/{repo.ownerHandle}/{repo.name}/actions">← Actions</a></p>
+        <header class="issue-header">
+            <h2 class="issue-heading">{run.workflowName} <span class="issue-no">#{run.number}</span></h2>
+        </header>
+        <div class="issue-byline">
+            <span class="badge status-{run.status}">{run.status.label}</span>
+            <span class="run-meta muted">{run.event} · {run.ref} · {run.commitSha.substring(0, 7)}</span>
+        </div>
+        {#for entry in tasks}
+        <div class="panel run-job">
+            <div class="run-job-head">
+                <span class="badge status-{entry.task.status}">{entry.task.status.label}</span>
+                <span class="n">{entry.task.name}</span>
+            </div>
+            {#if entry.logs.isEmpty()}
+            <p class="muted run-job-empty">No logs.</p>
+            {#else}
+            <pre class="run-log">{#for row in entry.logs}{row.content}
+{/for}</pre>
+            {/if}
+        </div>
+        {/for}
+    </section>
+</div>
+{/include}
