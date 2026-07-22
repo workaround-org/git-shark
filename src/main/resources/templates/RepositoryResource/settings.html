@@ -54,6 +54,12 @@
         </section>
 
         <section class="panel settings-card">
+            <h2>CI secrets &amp; variables</h2>
+            <p class="muted">Secrets and variables delivered to CI runners that execute this repository's workflows.</p>
+            <p><a class="btn btn-secondary" href="/repos/{repo.ownerHandle}/{repo.name}/settings/actions">Manage secrets &amp; variables</a></p>
+        </section>
+
+        <section class="panel settings-card">
             <h2>Push mirrors</h2>
             {#if mirrors}
             <ul class="mirror-list">

@@ -16,6 +16,7 @@ covers how the server side is built and what is / isn't done.
 | Task progress | `ci/TaskProgressService.java` | UpdateTask (result → task status + run roll-up, runner back to IDLE) and UpdateLog (resume-safe log-row append, `ack_index`). |
 | Zombie reclaim | `ci/ZombieReclaimService.java` | Scheduled sweep failing RUNNING tasks past their deadline (vanished runner) and rolling up their runs. |
 | Actions UI | `web/ActionResource.java` + `templates/ActionResource/` | Read-only per-repo run list + run detail (jobs and their log rows); sidebar `Actions` tab. |
+| Secrets/variables UI | `web/ActionSettingsResource.java` + `ci/ActionSecretService.java` + `templates/ActionSettingsResource/` | Owner-only CRUD for CI secrets (write-only, encrypted) and variables at `settings/actions`. |
 | Entities | `model/CiRunner.java`, `model/CiRunnerRegistrationToken.java` | Runner state (migration `V19`). |
 | Run entities | `model/ActionRun.java`, `model/ActionTask.java`, `model/ActionLog.java` | Run/job/log-row persistence (migrations `V23`–`V25`). `ActionTask.seq` (`bigserial`) is the surrogate int64 `Task.id` for the wire; `ActionTask.runs_on` holds the job's labels for matching. |
 | Secret/variable entities | `model/ActionSecret.java`, `model/ActionVariable.java` | Per-repo CI secrets (encrypted) and variables (migration `V26`), delivered to runners in FetchTask. |
@@ -106,7 +107,8 @@ covers how the server side is built and what is / isn't done.
   `LabelMatchingTest` (runner claims a compatible task and skips an incompatible older one, gets
   nothing when none match, unconstrained task runs anywhere),
   `SecretDeliveryTest` (claimed task receives repo secrets decrypted + variables; empty fetch carries
-  none).
+  none), `SecretsSettingsTest` (owner adds a secret stored encrypted and never shown, adds/deletes a
+  variable, duplicate-name rejected, stranger/anonymous get 404).
 - **Zombie reclaim (`ZombieReclaimService`):** a scheduled sweep
   (`gitshark.ci.zombie-reclaim-interval`, default 1m) fails any RUNNING task whose
   `action_task.deadline` has passed — the runner is presumed gone — rolls its run up, and flags the
@@ -133,10 +135,8 @@ covers how the server side is built and what is / isn't done.
   isolated/expanded into its own payload. No `needs`/`matrix` yet.
 - **Non-push events:** only `push` is evaluated; `pull_request`, scheduled and manual triggers are
   not. (`!`-negation within a single pattern list is also not supported.)
-- **Secrets/variables management UI:** delivery works, but there is no page yet to create/edit/delete
-  them (tests seed the rows directly).
-- **Later phases:** concurrency/cancellation, artifacts (`ACTIONS_RESULTS_URL`), repo/org-scoped and
-  ephemeral runners, commit/MR status.
+- **Later phases:** `needs`/`matrix`, concurrency/cancellation, artifacts (`ACTIONS_RESULTS_URL`),
+  repo/org-scoped and ephemeral runners, commit/MR status, non-push events.
 
 ## References
 

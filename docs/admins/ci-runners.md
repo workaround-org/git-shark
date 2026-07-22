@@ -77,9 +77,9 @@ No new listener or TLS config beyond what [Getting Started](getting-started.md) 
 
 - **Registration tokens and per-runner secrets** are stored only as SHA-256 hashes; each plaintext
   is shown exactly once at creation and never again (same model as personal access tokens).
-- **Runner hosts are trusted infrastructure.** When the run loop and secrets delivery arrive, job
-  secrets will be sent to whichever runner picks up a task; do not register runners you do not
-  control. Fork-PR workflows with secrets are out of scope for now.
+- **Runner hosts are trusted infrastructure.** A repository's CI secrets are sent (decrypted, over
+  TLS) to whichever runner picks up one of its tasks; do not register runners you do not control.
+  Fork-PR workflows with secrets are out of scope for now (there are no PR triggers yet).
 - Only handles in `GITSHARK_ADMIN_HANDLES` can generate tokens or see/delete runners.
 
 ## Tables

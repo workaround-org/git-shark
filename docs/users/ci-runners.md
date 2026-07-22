@@ -7,8 +7,8 @@ workflows use the familiar GitHub-Actions-compatible YAML format in `.forgejo/wo
 > **Available today:** an **instance administrator** registers runners against this instance, and a
 > push that adds a workflow to `.forgejo/workflows/` (or `.gitea/workflows/`) starts a run that a
 > connected runner picks up and executes, with logs and results shown on the repository's **Actions**
-> tab. Triggers are limited to a plain `on: push` for now; richer triggers, secrets, and `needs`/
-> `matrix` arrive in later phases.
+> tab. Runs are triggered by `push` (with branch/tag/path filters); other events and `needs`/`matrix`
+> arrive in later phases.
 
 ## Running a workflow
 
@@ -55,8 +55,19 @@ unless every changed file is ignored. Non-push events are not evaluated yet.
 A job runs only on a runner that advertises every label in its `runs-on` (e.g. `runs-on: ubuntu-latest`
 needs a runner registered with the `ubuntu-latest` label); a job with no `runs-on` runs on any runner.
 
+## Secrets and variables
+
+Repository owners manage CI secrets and variables under **Settings → CI secrets & variables**. Both
+are delivered to the runner executing the repo's workflows and are available in the usual contexts —
+`${{ secrets.NAME }}` and `${{ vars.NAME }}`.
+
+- **Secrets** are encrypted at rest and **write-only**: once saved, the value is never shown again
+  (you can only replace it by deleting and re-adding). Storing secrets requires the instance to have
+  an encryption key configured.
+- **Variables** are plain configuration and their values are visible on the settings page.
+
 ## What's coming
 
-- Non-push events (`pull_request`, scheduled, manual).
-- Repository-level secrets and variables, `needs`/`matrix`, and run cancellation/re-run.
+- Non-push events (`pull_request`, scheduled, manual), `needs`/`matrix`.
+- Run cancellation / re-run.
 - Artifacts and commit/merge-request status integration.

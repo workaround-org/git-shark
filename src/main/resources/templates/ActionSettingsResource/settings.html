@@ -1,0 +1,59 @@
+{#include layout}
+{#title}CI secrets & variables – {repo.name}{/title}
+<div class="repo-layout">
+    {#include RepositoryResource/sidebar nav=nav active='settings' /}
+    <section class="repo-main">
+        <p class="issue-back"><a href="/repos/{repo.ownerHandle}/{repo.name}/settings">← Settings</a></p>
+        <h2>CI secrets &amp; variables</h2>
+        {#if error}<p class="error">{error}</p>{/if}
+
+        <section class="panel settings-card">
+            <h2>Secrets</h2>
+            <p class="muted">Encrypted at rest and delivered to runners as <code>secrets.*</code>. Values are never shown again.</p>
+            {#if secrets}
+            <ul class="secret-list">
+                {#for s in secrets}
+                <li class="secret-row">
+                    <code class="secret-name">{s.name}</code>
+                    <form class="inline" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/settings/actions/secrets/{s.id}/delete">
+                        <button class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                </li>
+                {/for}
+            </ul>
+            {#else}
+            <p class="muted">No secrets yet.</p>
+            {/if}
+            <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/settings/actions/secrets" class="secret-add">
+                <p><label>Name <input name="name" placeholder="API_TOKEN" required></label></p>
+                <p><label>Value <input name="value" type="password" required></label></p>
+                <button class="btn btn-primary">Add secret</button>
+            </form>
+        </section>
+
+        <section class="panel settings-card">
+            <h2>Variables</h2>
+            <p class="muted">Plain configuration delivered to runners as <code>vars.*</code>.</p>
+            {#if variables}
+            <ul class="secret-list">
+                {#for v in variables}
+                <li class="secret-row">
+                    <code class="secret-name">{v.name}</code> <span class="muted">{v.value}</span>
+                    <form class="inline" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/settings/actions/variables/{v.id}/delete">
+                        <button class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                </li>
+                {/for}
+            </ul>
+            {#else}
+            <p class="muted">No variables yet.</p>
+            {/if}
+            <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/settings/actions/variables" class="secret-add">
+                <p><label>Name <input name="name" placeholder="DEPLOY_ENV" required></label></p>
+                <p><label>Value <input name="value" required></label></p>
+                <button class="btn btn-primary">Add variable</button>
+            </form>
+        </section>
+    </section>
+</div>
+{/include}
