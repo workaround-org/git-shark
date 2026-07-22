@@ -1,5 +1,7 @@
 # git-shark 🦈
 
+[![Quality Gate Status](https://sonar.ha1nz.de/api/project_badges/measure?project=git-shark&metric=alert_status&token=sqb_73341b788de82af9ff24ce6e3005e78c34eca9eb)](https://sonar.ha1nz.de/dashboard?id=git-shark)
+
 Self-hosted Git platform (GitHub-like) as a single, natively-compiled Quarkus service.
 
 Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) and **SSH**
