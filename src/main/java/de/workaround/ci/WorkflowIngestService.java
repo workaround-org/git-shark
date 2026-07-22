@@ -12,8 +12,10 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.ReceiveCommand;
+import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -31,8 +33,8 @@ import jakarta.inject.Inject;
  * at the new commit are parsed; those whose {@code push} trigger matches the ref produce one {@link
  * de.workaround.model.ActionRun} with one {@link de.workaround.model.ActionTask} per job.
  *
- * <p>Supported today: {@code on: push} with {@code branches}/{@code tags} (and {@code -ignore})
- * glob filters. Not yet: {@code paths} filters, non-push events, {@code needs} and {@code matrix}.
+ * <p>Supported today: {@code on: push} with {@code branches}/{@code tags}/{@code paths} (and their
+ * {@code -ignore} variants) filters. Not yet: non-push events, {@code needs} and {@code matrix}.
  * Invoked from the transports' post-receive hooks on a Git worker thread with no CDI request context,
  * so it activates one and never throws into the Git path.
  */
@@ -44,6 +46,8 @@ public class WorkflowIngestService
 	private static final List<String> WORKFLOW_DIRS = List.of(".forgejo/workflows", ".gitea/workflows");
 
 	private static final int MAX_WORKFLOW_BYTES = 512 * 1024;
+
+	private static final int MAX_CHANGED_PATHS = 5000;
 
 	private static final YAMLMapper YAML = new YAMLMapper();
 
@@ -97,10 +101,16 @@ public class WorkflowIngestService
 			{
 				continue;
 			}
-			for (WorkflowFile workflow : readWorkflows(db, command.getNewId()))
+			List<WorkflowFile> workflows = readWorkflows(db, command.getNewId());
+			if (workflows.isEmpty())
+			{
+				continue;
+			}
+			List<String> changedPaths = changedPaths(db, command.getOldId(), command.getNewId());
+			for (WorkflowFile workflow : workflows)
 			{
 				JsonNode root = parse(workflow.content());
-				if (root == null || !pushMatches(root, target))
+				if (root == null || !pushMatches(root, target, changedPaths))
 				{
 					continue;
 				}
@@ -162,6 +172,40 @@ public class WorkflowIngestService
 		}
 	}
 
+	/**
+	 * The repository-relative paths changed between the old and new commit of a push (added, modified
+	 * or deleted). A brand-new ref (old = zero) is diffed against the empty tree. Capped at {@link
+	 * #MAX_CHANGED_PATHS} so a huge push cannot exhaust memory; best-effort (empty on error).
+	 */
+	private static List<String> changedPaths(org.eclipse.jgit.lib.Repository db, ObjectId oldId, ObjectId newId)
+	{
+		List<String> paths = new ArrayList<>();
+		try (RevWalk walk = new RevWalk(db); TreeWalk treeWalk = new TreeWalk(db))
+		{
+			if (oldId != null && !oldId.equals(ObjectId.zeroId()))
+			{
+				treeWalk.addTree(walk.parseCommit(oldId).getTree());
+			}
+			else
+			{
+				treeWalk.addTree(new EmptyTreeIterator());
+			}
+			treeWalk.addTree(walk.parseCommit(newId).getTree());
+			treeWalk.setRecursive(true);
+			treeWalk.setFilter(TreeFilter.ANY_DIFF);
+			while (treeWalk.next() && paths.size() < MAX_CHANGED_PATHS)
+			{
+				paths.add(treeWalk.getPathString());
+			}
+		}
+		catch (Exception e)
+		{
+			// best-effort: without a diff, path filters simply won't match (no run)
+			LOG.debugf(e, "Could not diff %s..%s for path filters", oldId, newId);
+		}
+		return paths;
+	}
+
 	private static JsonNode parse(String yaml)
 	{
 		try
@@ -203,9 +247,10 @@ public class WorkflowIngestService
 	 * {@code on} to boolean true, so SnakeYAML/Jackson may surface it under {@code "true"} — both are
 	 * checked. A bare/list {@code on: push} triggers on any branch push (never tags); an
 	 * {@code on: { push: {...} }} object honors {@code branches}/{@code branches-ignore} and
-	 * {@code tags}/{@code tags-ignore} with GitHub-style globs. Path filters are not evaluated yet.
+	 * {@code tags}/{@code tags-ignore} with GitHub-style globs, plus {@code paths}/{@code paths-ignore}
+	 * against the changed files.
 	 */
-	static boolean pushMatches(JsonNode root, RefTarget target)
+	static boolean pushMatches(JsonNode root, RefTarget target, List<String> changedPaths)
 	{
 		JsonNode on = root.has("on") ? root.get("on") : root.get("true");
 		if (on == null)
@@ -241,7 +286,7 @@ public class WorkflowIngestService
 			// `push:` with no filter block triggers on any branch push (never tags)
 			return target.kind() == RefKind.BRANCH;
 		}
-		return refMatchesFilters(push, target);
+		return refMatchesFilters(push, target) && pathMatches(push, changedPaths);
 	}
 
 	private static boolean refMatchesFilters(JsonNode push, RefTarget target)
@@ -269,6 +314,26 @@ public class WorkflowIngestService
 		}
 		// tags must be opted into explicitly
 		return false;
+	}
+
+	/**
+	 * Evaluates {@code paths}/{@code paths-ignore} against the files changed by the push. {@code paths}
+	 * runs when any changed file matches; {@code paths-ignore} runs unless every changed file is
+	 * ignored. Neither key means no path constraint.
+	 */
+	private static boolean pathMatches(JsonNode push, List<String> changedPaths)
+	{
+		if (push.has("paths"))
+		{
+			JsonNode paths = push.get("paths");
+			return changedPaths.stream().anyMatch(file -> matchesAnyGlob(paths, file));
+		}
+		if (push.has("paths-ignore"))
+		{
+			JsonNode ignore = push.get("paths-ignore");
+			return !changedPaths.stream().allMatch(file -> matchesAnyGlob(ignore, file));
+		}
+		return true;
 	}
 
 	private static boolean matchesAnyGlob(JsonNode patterns, String name)

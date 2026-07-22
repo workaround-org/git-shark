@@ -45,13 +45,15 @@ on:
   push:
     branches: [main, 'release/*']   # only these branches (globs: * within a segment, ** across)
     tags: ['v*']                    # and pushes of matching tags
+    paths: ['src/**']               # only when a changed file matches
 ```
 
-Use `branches-ignore` / `tags-ignore` to invert. A block with only `tags:` runs on tag pushes and
-not on branch pushes. `paths:` filters and non-push events are not evaluated yet.
+Use `branches-ignore` / `tags-ignore` / `paths-ignore` to invert. A block with only `tags:` runs on
+tag pushes and not on branch pushes. `paths` runs when any changed file matches; `paths-ignore` runs
+unless every changed file is ignored. Non-push events are not evaluated yet.
 
 ## What's coming
 
-- `paths`/`paths-ignore` filters and non-push events (`pull_request`, scheduled, manual).
+- Non-push events (`pull_request`, scheduled, manual).
 - Repository-level secrets and variables, `needs`/`matrix`, and run cancellation/re-run.
 - Artifacts and commit/merge-request status integration.

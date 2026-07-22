@@ -64,7 +64,10 @@ covers how the server side is built and what is / isn't done.
 - **Ref-based trigger filters:** a bare/list `on: push` triggers on any branch push (never tags); an
   `on: { push: {...} }` object honors `branches`/`branches-ignore` (branch pushes) and
   `tags`/`tags-ignore` (tag pushes) with GitHub-style globs (`globToRegex`: `**` spans `/`, `*`/`?`
-  do not). A tag-only filter block excludes branch pushes. Path filters are not evaluated yet.
+  do not). A tag-only filter block excludes branch pushes.
+- **Path filters:** `paths`/`paths-ignore` are matched against the files changed by the push
+  (`changedPaths` diffs old→new, or the empty tree for a new ref, capped at 5000 paths). `paths` runs
+  when any changed file matches; `paths-ignore` runs unless every changed file is ignored.
 - **`FetchTask` dispatch:** a registered runner claims the oldest PENDING task (`TaskDispatchService`,
   one transaction) — task+run flip to RUNNING, the runner goes ACTIVE, `action_task.deadline` is set,
   and the task is delivered with its surrogate int64 `seq` id and `workflow_payload`. The candidate
@@ -84,6 +87,8 @@ covers how the server side is built and what is / isn't done.
   `ActionRunPersistenceTest` (run/task/log persistence, per-repo run numbering, pending-task lookup),
   `WorkflowIngestServiceTest` (push → run/task creation, non-push trigger and no-workflow are no-ops),
   `WorkflowTriggerFilterTest` (branch/tag include+ignore globs, bare push branches-only, tag pushes),
+  `WorkflowPathFilterTest` (paths runs on a matching changed file, paths-ignore skips only when all
+  changed files are ignored),
   `FetchTaskTest` (claim oldest pending over the wire, empty queue, bad credentials, and two runners
   racing one task → claimed at most once), `TaskProgressTest` (UpdateTask success rolls up task+run
   and frees the runner, UpdateLog append + dedup/resume, cross-runner and bad-credential rejection).
@@ -111,9 +116,8 @@ covers how the server side is built and what is / isn't done.
 - **Per-job payload expansion:** `workflow_payload` is the raw workflow YAML (fine while a workflow
   has a single job, which the `github.job` context selects); a multi-job workflow needs each job
   isolated/expanded into its own payload. No `needs`/`matrix` yet.
-- **Trigger refinement (remaining):** `branches`/`tags` (+ `-ignore`) filters and tag pushes work;
-  still missing are `paths`/`paths-ignore` filters (needs an old→new diff) and non-push events
-  (`pull_request`, scheduled, manual).
+- **Non-push events:** only `push` is evaluated; `pull_request`, scheduled and manual triggers are
+  not. (`!`-negation within a single pattern list is also not supported.)
 - **Later phases:** secrets/variables delivery, label-based matching, concurrency/cancellation,
   artifacts (`ACTIONS_RESULTS_URL`), repo/org-scoped and ephemeral runners, commit/MR status.
 
