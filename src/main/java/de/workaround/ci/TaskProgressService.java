@@ -45,6 +45,11 @@ public class TaskProgressService
 		CiRunner runner = authenticate(uuid, token);
 		ActionTask task = ownedTask(taskSeq, runner);
 
+		if (task.status.isTerminal())
+		{
+			// Already settled (e.g. reclaimed as a zombie); a late runner update must not resurrect it.
+			return task;
+		}
 		ActionRun.Status status = map(result);
 		task.status = status;
 		if (status.isTerminal())
@@ -111,7 +116,7 @@ public class TaskProgressService
 	}
 
 	/** A single-job run mirrors its task; a multi-job run is RUNNING until all tasks finish, then the worst outcome. */
-	private void rollUpRun(ActionRun run)
+	public void rollUpRun(ActionRun run)
 	{
 		List<ActionTask> all = tasks.findByRun(run);
 		boolean anyRunning = all.stream().anyMatch(t -> !t.status.isTerminal());

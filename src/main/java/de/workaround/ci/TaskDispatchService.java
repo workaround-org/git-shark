@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
 import de.workaround.model.ActionRun;
 import de.workaround.model.ActionTask;
 import de.workaround.model.CiRunner;
@@ -16,7 +18,7 @@ import jakarta.transaction.Transactional;
 
 /**
  * Hands PENDING tasks to runners over FetchTask (issue #2, phase 1). Claiming a task flips it (and its
- * run) to RUNNING, records the claiming runner and a {@link #TASK_TIMEOUT}-based {@link
+ * run) to RUNNING, records the claiming runner and a {@link #taskTimeout}-based {@link
  * ActionTask#deadline} for later zombie reclaim, and marks the runner ACTIVE — all in one transaction
  * so a task is never handed to two runners: the candidate row is selected {@code FOR UPDATE SKIP
  * LOCKED}, so concurrent fetchers pick distinct rows (or none) rather than racing on the same one.
@@ -27,8 +29,9 @@ import jakarta.transaction.Transactional;
 @ApplicationScoped
 public class TaskDispatchService
 {
-	/** How long a claimed task may run before it is eligible for zombie reclaim (reclaim itself is a later slice). */
-	static final Duration TASK_TIMEOUT = Duration.ofHours(1);
+	/** How long a claimed task may run before {@link ZombieReclaimService} may reclaim it. */
+	@ConfigProperty(name = "gitshark.ci.task-timeout", defaultValue = "1h")
+	Duration taskTimeout;
 
 	@Inject
 	RunnerRegistrationService runnerService;
@@ -63,6 +66,24 @@ public class TaskDispatchService
 		return new Fetched(next, tasks.maxSeq());
 	}
 
+	private void claim(ActionTask task, CiRunner runner)
+	{
+		Instant now = Instant.now();
+		task.runner = runner;
+		task.status = ActionRun.Status.RUNNING;
+		task.startedAt = now;
+		task.deadline = now.plus(taskTimeout);
+
+		runner.status = CiRunner.Status.ACTIVE;
+
+		ActionRun run = task.run;
+		if (run.status == ActionRun.Status.PENDING)
+		{
+			run.status = ActionRun.Status.RUNNING;
+			run.startedAt = now;
+		}
+	}
+
 	/**
 	 * Lock the oldest PENDING task's id with {@code FOR UPDATE SKIP LOCKED} so a concurrent fetcher in
 	 * another transaction cannot claim the same row. Selecting only the id keeps the {@code FOR UPDATE}
@@ -75,24 +96,6 @@ public class TaskDispatchService
 			"select id from action_task where status = 'PENDING' order by created_at asc limit 1 for update skip locked")
 			.getResultList();
 		return ids.isEmpty() ? Optional.empty() : Optional.of(ids.get(0));
-	}
-
-	private static void claim(ActionTask task, CiRunner runner)
-	{
-		Instant now = Instant.now();
-		task.runner = runner;
-		task.status = ActionRun.Status.RUNNING;
-		task.startedAt = now;
-		task.deadline = now.plus(TASK_TIMEOUT);
-
-		runner.status = CiRunner.Status.ACTIVE;
-
-		ActionRun run = task.run;
-		if (run.status == ActionRun.Status.PENDING)
-		{
-			run.status = ActionRun.Status.RUNNING;
-			run.startedAt = now;
-		}
 	}
 
 }

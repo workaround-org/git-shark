@@ -97,11 +97,18 @@ No new listener or TLS config beyond what [Getting Started](getting-started.md) 
 The `ci_runner*` tables hold no repository data (losing them only forces re-registration); the
 `action_*` tables hold run history and logs, tied to their repository by cascade.
 
+## Task timeout and reclaim
+
+A task a runner claims must finish within `GITSHARK_CI_TASK_TIMEOUT` (default `1h`). A background sweep
+running every `GITSHARK_CI_ZOMBIE_RECLAIM_INTERVAL` (default `1m`) fails any task still running past its
+deadline — the assumption being the runner crashed or lost connectivity — and marks that runner
+`OFFLINE`. Raise the timeout if you legitimately run long jobs.
+
 ## Troubleshooting
 
 | Symptom | Likely cause |
 |---|---|
 | `register` fails with `401`/`unauthenticated` | Registration token wrong, or deleted in the admin UI. Generate a fresh one. |
-| Runner registers but never runs anything | Expected in phase 1 — job execution is not implemented yet. |
+| Jobs are picked up but always end in failure after the timeout | The runner cannot report back (UpdateTask/UpdateLog blocked by the proxy), so the task is reclaimed as a zombie; forward the `x-runner-*` headers and allow POSTs to `/api/actions`. |
 | `Declare` returns `401` after a working `Register` | Proxy is stripping `x-runner-uuid` / `x-runner-token`; forward them. |
 | Runner cannot reach the instance | `--instance` must be the public origin; the runner appends `/api/actions` itself. |

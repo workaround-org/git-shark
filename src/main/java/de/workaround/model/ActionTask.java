@@ -81,6 +81,9 @@ public class ActionTask implements PanacheEntity.Managed
 		@HQL("select t from ActionTask t where t.status = PENDING order by t.createdAt asc")
 		List<ActionTask> listPending();
 
+		@HQL("select t from ActionTask t where t.status = RUNNING and t.deadline is not null and t.deadline < :now")
+		List<ActionTask> listRunningPastDeadline(Instant now);
+
 		default Optional<ActionTask> findOldestPending()
 		{
 			return listPending().stream().findFirst();

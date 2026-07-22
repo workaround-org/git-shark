@@ -14,6 +14,7 @@ covers how the server side is built and what is / isn't done.
 | Registration/presence | `ci/RunnerRegistrationService.java` | Token issue, runner register/declare/authenticate, list/delete. |
 | Task dispatch | `ci/TaskDispatchService.java` | FetchTask: authenticate, claim the oldest PENDING task, flip task+run to RUNNING, set the runner ACTIVE and the task deadline — atomically. |
 | Task progress | `ci/TaskProgressService.java` | UpdateTask (result → task status + run roll-up, runner back to IDLE) and UpdateLog (resume-safe log-row append, `ack_index`). |
+| Zombie reclaim | `ci/ZombieReclaimService.java` | Scheduled sweep failing RUNNING tasks past their deadline (vanished runner) and rolling up their runs. |
 | Entities | `model/CiRunner.java`, `model/CiRunnerRegistrationToken.java` | Runner state (migration `V19`). |
 | Run entities | `model/ActionRun.java`, `model/ActionTask.java`, `model/ActionLog.java` | Run/job/log-row persistence (migrations `V23`, `V24`). `ActionTask.seq` (`bigserial`) is the surrogate int64 `Task.id` for the wire. |
 | Workflow ingest | `ci/WorkflowIngestService.java`, `ci/WorkflowRunFactory.java` | Post-receive hook: parse `.forgejo`/`.gitea` workflows at the pushed head, evaluate `on: push`, persist a run + its tasks. Rows are created but not yet dispatched. |
@@ -78,6 +79,12 @@ covers how the server side is built and what is / isn't done.
   `FetchTaskTest` (claim oldest pending over the wire, empty queue, bad credentials, and two runners
   racing one task → claimed at most once), `TaskProgressTest` (UpdateTask success rolls up task+run
   and frees the runner, UpdateLog append + dedup/resume, cross-runner and bad-credential rejection).
+- **Zombie reclaim (`ZombieReclaimService`):** a scheduled sweep
+  (`gitshark.ci.zombie-reclaim-interval`, default 1m) fails any RUNNING task whose
+  `action_task.deadline` has passed — the runner is presumed gone — rolls its run up, and flags the
+  runner OFFLINE. The deadline is set at claim time from `gitshark.ci.task-timeout` (default 1h). A
+  late update from a runner cannot resurrect an already-terminal task. `ZombieReclaimTest` covers both
+  the reclaim (overdue → FAILURE, in-deadline left RUNNING) and the anti-resurrection guard.
 
 ## What still needs to be implemented
 
@@ -89,7 +96,6 @@ covers how the server side is built and what is / isn't done.
 - **Trigger refinement:** only bare `on: push` is honored; branch/tag/path filters and other events
   (tag push, `pull_request`) are not evaluated.
 - **Run UI:** per-repository run list + run detail with live per-step status and logs.
-- **Task state machine:** timeout / zombie handling when a runner vanishes mid-task.
 - **Real-runner integration test:** protocol round-trip against an actual `forgejo-runner` container
   (the current endpoint test uses a hand-built protobuf client, not the binary).
 - **Later phases:** secrets/variables delivery, label-based matching, concurrency/cancellation,
