@@ -96,7 +96,7 @@ class ActionRunPersistenceTest
 
 	@Test
 	@TestTransaction
-	void findsOldestPendingTaskForDispatch()
+	void listPendingReturnsOnlyPendingTasks()
 	{
 		Repository repo = newRepo("delta");
 		ActionRun run = newRun(repo, 1);
@@ -112,9 +112,13 @@ class ActionRunPersistenceTest
 		pending.name = "new";
 		pending.persist();
 
-		ActionTask next = tasks.findOldestPending().orElseThrow();
-		assertEquals("new", next.name);
-		assertTrue(next.status == ActionRun.Status.PENDING);
+		// listPending() is global; assert on membership by id so other tests' committed rows don't matter
+		List<ActionTask> queued = tasks.listPending();
+		assertTrue(queued.stream().anyMatch(t -> t.id.equals(pending.id)), "the PENDING task is queued");
+		assertTrue(queued.stream().noneMatch(t -> t.id.equals(done.id)), "the finished task is not queued");
+
+		// within a run, tasks come back oldest-first
+		assertEquals(List.of("old", "new"), tasks.findByRun(run).stream().map(t -> t.name).toList());
 	}
 
 	private ActionRun newRun(Repository repo, int number)

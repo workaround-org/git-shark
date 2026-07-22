@@ -6,6 +6,8 @@ import java.util.List;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Struct;
+import com.google.protobuf.Value;
 
 import de.workaround.ci.proto.ping.v1.PingRequest;
 import de.workaround.ci.proto.ping.v1.PingResponse;
@@ -23,8 +25,10 @@ import de.workaround.ci.proto.runner.v1.UpdateLogRequest;
 import de.workaround.ci.proto.runner.v1.UpdateLogResponse;
 import de.workaround.ci.proto.runner.v1.UpdateTaskRequest;
 import de.workaround.ci.proto.runner.v1.UpdateTaskResponse;
+import de.workaround.model.ActionRun;
 import de.workaround.model.ActionTask;
 import de.workaround.model.CiRunner;
+import de.workaround.model.Repository;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.HeaderParam;
@@ -180,7 +184,44 @@ public class ConnectRunnerResource
 		{
 			builder.setWorkflowPayload(ByteString.copyFromUtf8(task.payload));
 		}
+		builder.setContext(githubContext(task));
 		return builder.build();
+	}
+
+	/**
+	 * The GitHub-Actions {@code github.*} context the runner needs to execute the task. Without it the
+	 * runner cannot pick the job from the workflow ({@code github.job}) and dereferences a nil context.
+	 * Phase 1 supplies the identity/ref fields a plain {@code run:} job needs; richer fields (tokens,
+	 * event payloads) arrive with secrets/variables support.
+	 */
+	private static Struct githubContext(ActionTask task)
+	{
+		ActionRun run = task.run;
+		Repository repo = run.repository;
+		String prefix = "refs/heads/";
+		String refName = run.ref.startsWith(prefix) ? run.ref.substring(prefix.length()) : run.ref;
+		String fullName = repo.ownerHandle() + "/" + repo.name;
+		Struct.Builder context = Struct.newBuilder();
+		putString(context, "token", "");
+		putString(context, "actor", run.triggeredBy != null ? run.triggeredBy.username : "ghost");
+		putString(context, "run_id", String.valueOf(task.seq));
+		putString(context, "run_number", String.valueOf(run.number));
+		putString(context, "run_attempt", "1");
+		putString(context, "job", task.name);
+		putString(context, "ref", run.ref);
+		putString(context, "ref_name", refName);
+		putString(context, "ref_type", "branch");
+		putString(context, "sha", run.commitSha);
+		putString(context, "repository", fullName);
+		putString(context, "repository_owner", repo.ownerHandle());
+		putString(context, "event_name", run.event);
+		context.putFields("event", Value.newBuilder().setStructValue(Struct.getDefaultInstance()).build());
+		return context.build();
+	}
+
+	private static void putString(Struct.Builder context, String key, String value)
+	{
+		context.putFields(key, Value.newBuilder().setStringValue(value == null ? "" : value).build());
 	}
 
 	private static Runner toProto(CiRunner runner, String plaintextSecret)

@@ -65,8 +65,10 @@ covers how the server side is built and what is / isn't done.
   one transaction) — task+run flip to RUNNING, the runner goes ACTIVE, `action_task.deadline` is set,
   and the task is delivered with its surrogate int64 `seq` id and `workflow_payload`. The candidate
   row is locked `FOR UPDATE SKIP LOCKED` (id-only select, to keep the lock off the nullable `runner`
-  join) so concurrent fetchers never claim the same task. Auth failures return the Connect
-  `unauthenticated` error. No long-poll; `tasks_version` is a coarse max-`seq`.
+  join) so concurrent fetchers never claim the same task. The delivered `Task` carries a `github.*`
+  context (`job`, `ref`, `sha`, `repository`, `run_id`, …) built in `ConnectRunnerResource.toProto` —
+  without it the runner cannot select the job from the workflow and nil-derefs. Auth failures return
+  the Connect `unauthenticated` error. No long-poll; `tasks_version` is a coarse max-`seq`.
 - **`UpdateTask` / `UpdateLog` progress (`TaskProgressService`):** UpdateTask records the reported
   result, sends a finished task's runner back to IDLE, and rolls the owning run's status up from all
   its tasks (RUNNING until every task is terminal, then the worst outcome). UpdateLog appends log rows
@@ -90,18 +92,22 @@ covers how the server side is built and what is / isn't done.
   (workflow, run number, status, event, short commit) and a run detail page with each job and its
   streamed log rows. Read-gated like the rest of the repo UI (404 for a hidden repo). Tested by
   `ActionUiTest` (list shows runs + tab, detail shows jobs and logs, unknown run number → 404).
+- **Real-runner round-trip:** `ForgejoRunnerRoundTripTest` starts an actual `gitea/act_runner`
+  container (Testcontainers, `:host` execution so no docker-in-docker), which registers, fetches a
+  queued task over the Connect protocol, runs its `run:` step, and reports SUCCESS with streamed
+  logs — exercising Register/Declare/FetchTask/UpdateTask/UpdateLog against the genuine client. Needs
+  a Docker daemon; self-skips otherwise.
 
 ## What still needs to be implemented
 
 - **Long-poll & real `tasks_version`:** `FetchTask` returns immediately and `tasks_version` is a
   coarse max-`seq` (bumps on creation, not state change), so with several simultaneous PENDING tasks a
   runner may under-poll. Add server-side long-poll and a state-driven version counter.
-- **Per-job payload expansion:** ingest/dispatch deliver the raw workflow YAML as `workflow_payload`;
-  it needs the single job isolated/expanded. No `needs`/`matrix` yet.
+- **Per-job payload expansion:** `workflow_payload` is the raw workflow YAML (fine while a workflow
+  has a single job, which the `github.job` context selects); a multi-job workflow needs each job
+  isolated/expanded into its own payload. No `needs`/`matrix` yet.
 - **Trigger refinement:** only bare `on: push` is honored; branch/tag/path filters and other events
   (tag push, `pull_request`) are not evaluated.
-- **Real-runner integration test:** protocol round-trip against an actual `forgejo-runner` container
-  (the current endpoint test uses a hand-built protobuf client, not the binary).
 - **Later phases:** secrets/variables delivery, label-based matching, concurrency/cancellation,
   artifacts (`ACTIONS_RESULTS_URL`), repo/org-scoped and ephemeral runners, commit/MR status.
 
