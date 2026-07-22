@@ -86,10 +86,10 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
   protocol under `/api/actions`, so a stock `forgejo-runner` / `act_runner` registers and runs jobs
   unchanged. Instance admins (handles in `GITSHARK_ADMIN_HANDLES`) generate reusable registration
   tokens and manage runners at `/admin/runners`; secrets are stored hashed. A push adding a workflow
-  to `.forgejo/workflows/` (plain `on: push`) creates a run, which a runner claims, executes, and
-  streams logs for — visible on the repository's **Actions** tab; a vanished runner's task is
-  reclaimed after a timeout. Richer triggers, secrets/variables, `needs`/`matrix`, and artifacts are
-  follow-up phases. Guides: [for users](docs/users/ci-runners.md), [for admins](docs/admins/ci-runners.md),
+  to `.forgejo/workflows/` (`on: push`, with `branches`/`tags` glob filters) creates a run, which a
+  runner claims, executes, and streams logs for — visible on the repository's **Actions** tab; a
+  vanished runner's task is reclaimed after a timeout. Path filters, other events, secrets/variables,
+  `needs`/`matrix`, and artifacts are follow-up phases. Guides: [for users](docs/users/ci-runners.md), [for admins](docs/admins/ci-runners.md),
   [architecture](docs/maintainers/ci-runners.md)
   activities from; local users can in turn follow a remote repository — or a whole remote user, whose
   public repositories are then followed and shown grouped — and read their pushes (see below)

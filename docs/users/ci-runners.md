@@ -36,8 +36,22 @@ the page was loaded — reload to see newer lines).
 A run whose runner disappears mid-job is marked **Failure** once its time limit passes (configurable
 by the admin), so a run never hangs as Running forever.
 
+## Trigger filters
+
+Beyond a bare `on: push` (which runs on every branch push), you can scope runs to specific refs:
+
+```yaml
+on:
+  push:
+    branches: [main, 'release/*']   # only these branches (globs: * within a segment, ** across)
+    tags: ['v*']                    # and pushes of matching tags
+```
+
+Use `branches-ignore` / `tags-ignore` to invert. A block with only `tags:` runs on tag pushes and
+not on branch pushes. `paths:` filters and non-push events are not evaluated yet.
+
 ## What's coming
 
-- Richer triggers (branch/tag/path filters, tag pushes, merge-request events).
+- `paths`/`paths-ignore` filters and non-push events (`pull_request`, scheduled, manual).
 - Repository-level secrets and variables, `needs`/`matrix`, and run cancellation/re-run.
 - Artifacts and commit/merge-request status integration.

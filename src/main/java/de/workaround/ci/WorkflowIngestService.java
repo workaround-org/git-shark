@@ -26,14 +26,15 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 /**
- * Detects workflow files pushed to a repository and materializes CI runs (issue #2, phase 1). For
- * every branch update, workflow files under {@code .forgejo/workflows/} and {@code .gitea/workflows/}
- * at the new commit are parsed; those triggered by {@code push} produce one {@link
+ * Detects workflow files pushed to a repository and materializes CI runs (issue #2). For every
+ * branch or tag update, workflow files under {@code .forgejo/workflows/} and {@code .gitea/workflows/}
+ * at the new commit are parsed; those whose {@code push} trigger matches the ref produce one {@link
  * de.workaround.model.ActionRun} with one {@link de.workaround.model.ActionTask} per job.
  *
- * <p>Phase-1 scope: {@code on: push} only (branch/tag/path filters, other events, {@code needs} and
- * {@code matrix} are phase 2). Invoked from the transports' post-receive hooks on a Git worker thread
- * with no CDI request context, so it activates one and never throws into the Git path.
+ * <p>Supported today: {@code on: push} with {@code branches}/{@code tags} (and {@code -ignore})
+ * glob filters. Not yet: {@code paths} filters, non-push events, {@code needs} and {@code matrix}.
+ * Invoked from the transports' post-receive hooks on a Git worker thread with no CDI request context,
+ * so it activates one and never throws into the Git path.
  */
 @ApplicationScoped
 public class WorkflowIngestService
@@ -89,16 +90,17 @@ public class WorkflowIngestService
 		}
 		for (ReceiveCommand command : commands)
 		{
+			RefTarget target = classify(command.getRefName());
 			if (command.getResult() != ReceiveCommand.Result.OK
-				|| !command.getRefName().startsWith("refs/heads/")
-				|| command.getType() == ReceiveCommand.Type.DELETE)
+				|| command.getType() == ReceiveCommand.Type.DELETE
+				|| target == null)
 			{
 				continue;
 			}
 			for (WorkflowFile workflow : readWorkflows(db, command.getNewId()))
 			{
 				JsonNode root = parse(workflow.content());
-				if (root == null || !triggeredByPush(root))
+				if (root == null || !pushMatches(root, target))
 				{
 					continue;
 				}
@@ -173,11 +175,37 @@ public class WorkflowIngestService
 		}
 	}
 
+	private enum RefKind
+	{
+		BRANCH,
+		TAG
+	}
+
+	private record RefTarget(RefKind kind, String name)
+	{
+	}
+
+	private static RefTarget classify(String ref)
+	{
+		if (ref.startsWith("refs/heads/"))
+		{
+			return new RefTarget(RefKind.BRANCH, ref.substring("refs/heads/".length()));
+		}
+		if (ref.startsWith("refs/tags/"))
+		{
+			return new RefTarget(RefKind.TAG, ref.substring("refs/tags/".length()));
+		}
+		return null;
+	}
+
 	/**
-	 * Reads the {@code on:} trigger. YAML 1.1 coerces the bare key {@code on} to boolean true, so
-	 * SnakeYAML/Jackson may surface it under the field name {@code "true"} — both keys are checked.
+	 * Whether the workflow's {@code on:} triggers a run for this ref. YAML 1.1 coerces the bare key
+	 * {@code on} to boolean true, so SnakeYAML/Jackson may surface it under {@code "true"} — both are
+	 * checked. A bare/list {@code on: push} triggers on any branch push (never tags); an
+	 * {@code on: { push: {...} }} object honors {@code branches}/{@code branches-ignore} and
+	 * {@code tags}/{@code tags-ignore} with GitHub-style globs. Path filters are not evaluated yet.
 	 */
-	static boolean triggeredByPush(JsonNode root)
+	static boolean pushMatches(JsonNode root, RefTarget target)
 	{
 		JsonNode on = root.has("on") ? root.get("on") : root.get("true");
 		if (on == null)
@@ -186,7 +214,7 @@ public class WorkflowIngestService
 		}
 		if (on.isTextual())
 		{
-			return "push".equals(on.asText());
+			return "push".equals(on.asText()) && target.kind() == RefKind.BRANCH;
 		}
 		if (on.isArray())
 		{
@@ -194,12 +222,109 @@ public class WorkflowIngestService
 			{
 				if (event.isTextual() && "push".equals(event.asText()))
 				{
-					return true;
+					return target.kind() == RefKind.BRANCH;
 				}
 			}
 			return false;
 		}
-		return on.isObject() && on.has("push");
+		if (!on.isObject())
+		{
+			return false;
+		}
+		JsonNode push = on.get("push");
+		if (push == null)
+		{
+			return false;
+		}
+		if (!push.isObject())
+		{
+			// `push:` with no filter block triggers on any branch push (never tags)
+			return target.kind() == RefKind.BRANCH;
+		}
+		return refMatchesFilters(push, target);
+	}
+
+	private static boolean refMatchesFilters(JsonNode push, RefTarget target)
+	{
+		if (target.kind() == RefKind.BRANCH)
+		{
+			if (push.has("branches"))
+			{
+				return matchesAnyGlob(push.get("branches"), target.name());
+			}
+			if (push.has("branches-ignore"))
+			{
+				return !matchesAnyGlob(push.get("branches-ignore"), target.name());
+			}
+			// a tag-only filter block excludes branch pushes; anything else (e.g. paths only) allows them
+			return !push.has("tags") && !push.has("tags-ignore");
+		}
+		if (push.has("tags"))
+		{
+			return matchesAnyGlob(push.get("tags"), target.name());
+		}
+		if (push.has("tags-ignore"))
+		{
+			return !matchesAnyGlob(push.get("tags-ignore"), target.name());
+		}
+		// tags must be opted into explicitly
+		return false;
+	}
+
+	private static boolean matchesAnyGlob(JsonNode patterns, String name)
+	{
+		if (patterns == null)
+		{
+			return false;
+		}
+		if (patterns.isTextual())
+		{
+			return name.matches(globToRegex(patterns.asText()));
+		}
+		if (patterns.isArray())
+		{
+			for (JsonNode pattern : patterns)
+			{
+				if (pattern.isTextual() && name.matches(globToRegex(pattern.asText())))
+				{
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/** GitHub ref-filter glob → regex: {@code **} spans {@code /}, {@code *} and {@code ?} do not. */
+	static String globToRegex(String glob)
+	{
+		StringBuilder regex = new StringBuilder();
+		for (int i = 0; i < glob.length(); i++)
+		{
+			char c = glob.charAt(i);
+			switch (c)
+			{
+				case '*':
+					if (i + 1 < glob.length() && glob.charAt(i + 1) == '*')
+					{
+						regex.append(".*");
+						i++;
+					}
+					else
+					{
+						regex.append("[^/]*");
+					}
+					break;
+				case '?':
+					regex.append("[^/]");
+					break;
+				case '.', '(', ')', '+', '|', '^', '$', '{', '}', '[', ']', '\\':
+					regex.append('\\').append(c);
+					break;
+				default:
+					regex.append(c);
+			}
+		}
+		return regex.toString();
 	}
 
 	private static List<String> jobNames(JsonNode root)
