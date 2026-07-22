@@ -64,7 +64,8 @@ class SecretsSettingsTest
 			.body(not(containsString("s3cr3t")));
 
 		String stored = (String) em.createNativeQuery(
-			"select value_encrypted from action_secret where name = 'API_TOKEN'").getSingleResult();
+			"select value_encrypted from action_secret where repository_id = :repo and name = 'API_TOKEN'")
+			.setParameter("repo", repo.id).getSingleResult();
 		assertTrue(stored.startsWith("enc1:"), "secret is encrypted at rest, got: " + stored);
 	}
 
