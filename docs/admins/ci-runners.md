@@ -89,10 +89,11 @@ No new listener or TLS config beyond what [Getting Started](getting-started.md) 
 | `ci_runner_registration_token` | Reusable registration tokens: `token_hash`, `created_by_id`, `created_at`, `last_used`. |
 | `ci_runner` | Registered runners: `uuid` (the `x-runner-uuid` value), `token_hash`, `name`, `labels` (comma-joined), `version`, `status` (`IDLE`/`ACTIVE`/`OFFLINE`/`UNSPECIFIED`), `ephemeral`, `last_seen`, `created_at`. |
 | `action_run` | One workflow run per repository: `number` (per-repo sequential), `workflow_name`, `workflow_file`, `event`, `ref`, `commit_sha`, `triggered_by_id`, `status` (`PENDING`/`RUNNING`/`SUCCESS`/`FAILURE`/`CANCELLED`), timestamps. Deleted with its repository. |
-| `action_task` | One job within a run: `run_id`, `name`, `payload`, `runner_id` (the claiming runner, null while pending), `status`, `log_length` (durable log-row count = UpdateLog resume offset), `deadline` (zombie timeout), timestamps. Deleted with its run. |
+| `action_task` | One job within a run: `seq` (surrogate int64 id handed to runners), `run_id`, `name`, `payload`, `runner_id` (the claiming runner, null while pending), `status`, `log_length` (durable log-row count = UpdateLog resume offset), `deadline` (zombie timeout), timestamps. Deleted with its run. |
 | `action_log` | One log row of a task: `task_id`, `line_index` (0-based), `content`, `timestamp`. Deleted with its task. |
 
-`ci_runner*` are introduced by migration `V19__ci_runners.sql`; `action_*` by `V23__action_runs.sql`.
+`ci_runner*` are introduced by migration `V19__ci_runners.sql`; `action_*` by `V23__action_runs.sql`
+(and `V24__action_task_seq.sql` adds the `action_task.seq` surrogate id).
 The `ci_runner*` tables hold no repository data (losing them only forces re-registration); the
 `action_*` tables hold run history and logs, tied to their repository by cascade.
 

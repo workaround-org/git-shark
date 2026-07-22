@@ -3,16 +3,21 @@ package de.workaround.ci;
 import java.util.Arrays;
 import java.util.List;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import de.workaround.ci.proto.ping.v1.PingRequest;
 import de.workaround.ci.proto.ping.v1.PingResponse;
 import de.workaround.ci.proto.runner.v1.DeclareRequest;
 import de.workaround.ci.proto.runner.v1.DeclareResponse;
+import de.workaround.ci.proto.runner.v1.FetchTaskRequest;
+import de.workaround.ci.proto.runner.v1.FetchTaskResponse;
 import de.workaround.ci.proto.runner.v1.RegisterRequest;
 import de.workaround.ci.proto.runner.v1.RegisterResponse;
 import de.workaround.ci.proto.runner.v1.Runner;
 import de.workaround.ci.proto.runner.v1.RunnerStatus;
+import de.workaround.ci.proto.runner.v1.Task;
+import de.workaround.model.ActionTask;
 import de.workaround.model.CiRunner;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -42,6 +47,9 @@ public class ConnectRunnerResource
 
 	@Inject
 	RunnerRegistrationService runnerService;
+
+	@Inject
+	TaskDispatchService dispatchService;
 
 	@POST
 	@Path("/ping.v1.PingService/Ping")
@@ -87,6 +95,36 @@ public class ConnectRunnerResource
 		{
 			return connectError(Response.Status.UNAUTHORIZED, "unauthenticated", e.getMessage());
 		}
+	}
+
+	@POST
+	@Path("/runner.v1.RunnerService/FetchTask")
+	public Response fetchTask(@HeaderParam("x-runner-uuid") String uuid, @HeaderParam("x-runner-token") String token,
+		byte[] body) throws InvalidProtocolBufferException
+	{
+		FetchTaskRequest.parseFrom(body); // tasks_version is advisory; phase 1 always checks the queue
+		try
+		{
+			TaskDispatchService.Fetched fetched = dispatchService.fetch(uuid, token);
+			FetchTaskResponse.Builder response = FetchTaskResponse.newBuilder()
+				.setTasksVersion(fetched.tasksVersion());
+			fetched.task().ifPresent(task -> response.setTask(toProto(task)));
+			return ok(response.build().toByteArray());
+		}
+		catch (RunnerAuthenticationException e)
+		{
+			return connectError(Response.Status.UNAUTHORIZED, "unauthenticated", e.getMessage());
+		}
+	}
+
+	private static Task toProto(ActionTask task)
+	{
+		Task.Builder builder = Task.newBuilder().setId(task.seq);
+		if (task.payload != null)
+		{
+			builder.setWorkflowPayload(ByteString.copyFromUtf8(task.payload));
+		}
+		return builder.build();
 	}
 
 	private static Runner toProto(CiRunner runner, String plaintextSecret)

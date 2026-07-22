@@ -5,11 +5,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.processing.Find;
 import org.hibernate.annotations.processing.HQL;
+import org.hibernate.generator.EventType;
 
 import io.quarkus.hibernate.panache.PanacheEntity;
 import io.quarkus.hibernate.panache.PanacheRepository;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -36,6 +39,14 @@ public class ActionTask implements PanacheEntity.Managed
 
 	@ManyToOne(optional = false)
 	public ActionRun run;
+
+	/**
+	 * Surrogate, globally-unique int64 exposed as the runner.v1 {@code Task.id}; the runner echoes it
+	 * in UpdateTask/UpdateLog. DB-generated ({@code bigserial}); read back after insert.
+	 */
+	@Column(insertable = false, updatable = false)
+	@Generated(event = EventType.INSERT)
+	public long seq;
 
 	/** Job identifier from the workflow file, e.g. {@code build}. */
 	public String name;
@@ -77,6 +88,10 @@ public class ActionTask implements PanacheEntity.Managed
 
 		@Find
 		Optional<ActionTask> findByIdAndRunner(UUID id, CiRunner runner);
+
+		/** The highest surrogate id issued so far; the coarse {@code tasks_version} handed to runners. */
+		@HQL("select coalesce(max(t.seq), 0) from ActionTask t")
+		long maxSeq();
 	}
 
 }
