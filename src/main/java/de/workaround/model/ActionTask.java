@@ -57,6 +57,9 @@ public class ActionTask implements PanacheEntity.Managed
 	/** Names of the jobs this task depends on (comma-joined); empty means none. */
 	public String needs = "";
 
+	/** Outputs this job reported (JSON object), accumulated across UpdateTask calls; delivered to dependents. */
+	public String outputs = "{}";
+
 	/** The expanded single-job workflow payload delivered to the runner in FetchTask; null until materialized. */
 	public String payload;
 

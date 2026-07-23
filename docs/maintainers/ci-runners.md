@@ -18,7 +18,7 @@ covers how the server side is built and what is / isn't done.
 | Actions UI | `web/ActionResource.java` + `templates/ActionResource/` | Read-only per-repo run list + run detail (jobs and their log rows); sidebar `Actions` tab. |
 | Secrets/variables UI | `web/ActionSettingsResource.java` + `ci/ActionSecretService.java` + `templates/ActionSettingsResource/` | Owner-only CRUD for CI secrets (write-only, encrypted) and variables at `settings/actions`. |
 | Entities | `model/CiRunner.java`, `model/CiRunnerRegistrationToken.java` | Runner state (migration `V19`). |
-| Run entities | `model/ActionRun.java`, `model/ActionTask.java`, `model/ActionLog.java` | Run/job/log-row persistence (migrations `V23`–`V27`). `ActionTask.seq` (`bigserial`) is the surrogate int64 `Task.id`; `runs_on` holds the job's labels for matching; `needs` holds its job dependencies. |
+| Run entities | `model/ActionRun.java`, `model/ActionTask.java`, `model/ActionLog.java` | Run/job/log-row persistence (migrations `V23`–`V28`). `ActionTask.seq` (`bigserial`) is the surrogate int64 `Task.id`; `runs_on` = matching labels; `needs` = job dependencies; `outputs` = reported job outputs (JSON). |
 | Secret/variable entities | `model/ActionSecret.java`, `model/ActionVariable.java` | Per-repo CI secrets (encrypted) and variables (migration `V26`), delivered to runners in FetchTask. |
 | Workflow ingest | `ci/WorkflowIngestService.java`, `ci/WorkflowRunFactory.java` | Post-receive hook: parse `.forgejo`/`.gitea` workflows at the pushed head, evaluate `on: push`, persist a run + its PENDING tasks (drained by FetchTask). |
 | Admin UI | `ci/AdminRunnerResource.java` + `templates/AdminRunnerResource/` | Token generation, runner list, deletion. |
@@ -87,7 +87,11 @@ covers how the server side is built and what is / isn't done.
   ingest). Dispatch will not hand out a task until every needed job in the run has succeeded; when a
   needed job ends FAILURE/CANCELLED, `rollUpRun` cancels the dependents (to a fixpoint, so the
   cancellation cascades) and the run reaches a terminal state instead of hanging. A dispatched task
-  carries its needs' results in `Task.needs` (result only — `needs.*.outputs` are not passed yet).
+  carries its needs' results **and outputs** in `Task.needs`.
+- **Job outputs:** a job's outputs (`UpdateTaskRequest.outputs`, sent incrementally by the runner) are
+  accumulated into `action_task.outputs` (JSON) and echoed back as `sent_outputs`; dispatch delivers a
+  needed job's outputs to its dependents as `needs.<job>.outputs`. `ActionOutputs` (de)serializes the
+  JSON, fail-safe to an empty map on a bad value.
 - **Label matching:** a task carries its job's `runs-on` labels (`action_task.runs_on`, parsed at
   ingest). Dispatch scans PENDING tasks oldest-first and claims the first whose labels are all
   advertised by the fetching runner (empty `runs-on` = any runner); an incompatible task is left for a
@@ -115,7 +119,8 @@ covers how the server side is built and what is / isn't done.
   none), `SecretsSettingsTest` (owner adds a secret stored encrypted and never shown, adds/deletes a
   variable, duplicate-name rejected, stranger/anonymous get 404),
   `NeedsOrderingTest` (dependent waits for its need then receives its result; a failed need cancels
-  the dependent and ends the run).
+  the dependent and ends the run), `NeedsOutputsTest` (dependent receives an upstream job's outputs;
+  outputs accumulate across incremental UpdateTask calls).
 - **Zombie reclaim (`ZombieReclaimService`):** a scheduled sweep
   (`gitshark.ci.zombie-reclaim-interval`, default 1m) fails any RUNNING task whose
   `action_task.deadline` has passed — the runner is presumed gone — rolls its run up, and flags the
@@ -142,9 +147,8 @@ covers how the server side is built and what is / isn't done.
   isolated/expanded into its own payload.
 - **Non-push events:** only `push` is evaluated; `pull_request`, scheduled and manual triggers are
   not. (`!`-negation within a single pattern list is also not supported.)
-- **`needs` outputs & `matrix`:** `needs` ordering works, but a job's `outputs` are not captured from
-  UpdateTask or passed to dependents (`Task.needs[*].outputs` is empty); `matrix` expansion is not
-  implemented.
+- **`matrix`:** expansion is not implemented — a job with `strategy.matrix` runs once, not once per
+  cell (needs a per-job/per-cell payload expander).
 - **Later phases:** concurrency/cancellation, artifacts (`ACTIONS_RESULTS_URL`), repo/org-scoped and
   ephemeral runners, commit/MR status, non-push events.
 

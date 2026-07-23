@@ -8,7 +8,7 @@ workflows use the familiar GitHub-Actions-compatible YAML format in `.forgejo/wo
 > push that adds a workflow to `.forgejo/workflows/` (or `.gitea/workflows/`) starts a run that a
 > connected runner picks up and executes, with logs and results shown on the repository's **Actions**
 > tab. Runs are triggered by `push` (with branch/tag/path filters) and jobs can be ordered with
-> `needs`; other events, `needs` outputs and `matrix` arrive in later phases.
+> `needs` (results and outputs included); other events and `matrix` arrive in later phases.
 
 ## Running a workflow
 
@@ -82,11 +82,12 @@ jobs:
     steps: [{ run: make deploy }]
 ```
 
-The result of each needed job is available to the runner. Passing a job's `outputs` to its dependents
-(`needs.build.outputs.*`) and `matrix` expansion are not implemented yet.
+The result **and outputs** of each needed job are available to dependents — set outputs in the
+upstream job and read them with `${{ needs.build.outputs.* }}`. `matrix` expansion is not implemented
+yet.
 
 ## What's coming
 
-- Non-push events (`pull_request`, scheduled, manual), `matrix`, `needs` outputs.
+- Non-push events (`pull_request`, scheduled, manual), `matrix`.
 - Run cancellation / re-run.
 - Artifacts and commit/merge-request status integration.

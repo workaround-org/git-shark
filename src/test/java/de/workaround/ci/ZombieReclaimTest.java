@@ -83,7 +83,7 @@ class ZombieReclaimTest
 		long seq = tasks.findById(id).seq;
 
 		// The presumed-dead runner reconnects and reports success — the task must stay FAILURE.
-		progress.updateTask(reg.runner().uuid, reg.plaintext(), seq, Result.RESULT_SUCCESS, null);
+		progress.updateTask(reg.runner().uuid, reg.plaintext(), seq, Result.RESULT_SUCCESS, null, java.util.Map.of());
 
 		ActionTask task = tasks.findById(id);
 		assertEquals(ActionRun.Status.FAILURE, task.status);

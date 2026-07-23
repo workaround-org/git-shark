@@ -60,11 +60,11 @@ class NeedsOrderingTest
 			"deploy stays blocked while build is running");
 
 		progress.updateTask(reg.runner().uuid, reg.plaintext(), buildSeq,
-			de.workaround.ci.proto.runner.v1.Result.RESULT_SUCCESS, null);
+			de.workaround.ci.proto.runner.v1.Result.RESULT_SUCCESS, null, java.util.Map.of());
 
 		TaskDispatchService.Fetched second = dispatch.fetch(reg.runner().uuid, reg.plaintext());
 		assertEquals("deploy", second.task().orElseThrow().name);
-		assertEquals(ActionRun.Status.SUCCESS, second.needs().get("build"), "needs result delivered");
+		assertEquals(ActionRun.Status.SUCCESS, second.needs().get("build").result(), "needs result delivered");
 
 		assertTrue(runIsRunning(runId));
 	}
@@ -77,7 +77,7 @@ class NeedsOrderingTest
 
 		ActionTask build = dispatch.fetch(reg.runner().uuid, reg.plaintext()).task().orElseThrow();
 		progress.updateTask(reg.runner().uuid, reg.plaintext(), build.seq,
-			de.workaround.ci.proto.runner.v1.Result.RESULT_FAILURE, null);
+			de.workaround.ci.proto.runner.v1.Result.RESULT_FAILURE, null, java.util.Map.of());
 
 		assertEquals(ActionRun.Status.CANCELLED, deployStatus(runId), "dependent of a failed job is cancelled");
 		assertEquals(ActionRun.Status.FAILURE, runStatus(runId), "run finishes rather than hanging");

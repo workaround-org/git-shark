@@ -145,8 +145,12 @@ public class ConnectRunnerResource
 			: null;
 		try
 		{
-			progressService.updateTask(uuid, token, state.getId(), state.getResult(), stoppedAt);
-			return ok(UpdateTaskResponse.newBuilder().setState(state).build().toByteArray());
+			ActionTask task = progressService.updateTask(uuid, token, state.getId(), state.getResult(), stoppedAt,
+				request.getOutputsMap());
+			return ok(UpdateTaskResponse.newBuilder()
+				.setState(state)
+				.addAllSentOutputs(ActionOutputs.parse(task.outputs).keySet())
+				.build().toByteArray());
 		}
 		catch (RunnerAuthenticationException e)
 		{
@@ -181,7 +185,7 @@ public class ConnectRunnerResource
 	}
 
 	private static Task toProto(ActionTask task, Map<String, String> secrets, Map<String, String> vars,
-		Map<String, ActionRun.Status> needs)
+		Map<String, TaskDispatchService.NeedInfo> needs)
 	{
 		Task.Builder builder = Task.newBuilder().setId(task.seq);
 		if (task.payload != null)
@@ -191,8 +195,10 @@ public class ConnectRunnerResource
 		builder.setContext(githubContext(task));
 		builder.putAllSecrets(secrets);
 		builder.putAllVars(vars);
-		needs.forEach((job, status) -> builder.putNeeds(job,
-			TaskNeed.newBuilder().setResult(toResult(status)).build()));
+		needs.forEach((job, info) -> builder.putNeeds(job, TaskNeed.newBuilder()
+			.setResult(toResult(info.result()))
+			.putAllOutputs(info.outputs())
+			.build()));
 		return builder.build();
 	}
 

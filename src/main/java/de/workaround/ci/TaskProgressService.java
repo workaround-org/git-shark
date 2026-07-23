@@ -43,7 +43,8 @@ public class TaskProgressService
 	 * @throws TaskNotFoundException if no task has the given surrogate id
 	 */
 	@Transactional
-	public ActionTask updateTask(String uuid, String token, long taskSeq, Result result, Instant stoppedAt)
+	public ActionTask updateTask(String uuid, String token, long taskSeq, Result result, Instant stoppedAt,
+		Map<String, String> outputs)
 	{
 		CiRunner runner = authenticate(uuid, token);
 		ActionTask task = ownedTask(taskSeq, runner);
@@ -52,6 +53,13 @@ public class TaskProgressService
 		{
 			// Already settled (e.g. reclaimed as a zombie); a late runner update must not resurrect it.
 			return task;
+		}
+		if (outputs != null && !outputs.isEmpty())
+		{
+			// runners send outputs incrementally (only the unsent ones); accumulate them
+			Map<String, String> merged = ActionOutputs.parse(task.outputs);
+			merged.putAll(outputs);
+			task.outputs = ActionOutputs.write(merged);
 		}
 		ActionRun.Status status = map(result);
 		task.status = status;

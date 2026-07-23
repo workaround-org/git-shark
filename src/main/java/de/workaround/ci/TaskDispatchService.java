@@ -65,7 +65,12 @@ public class TaskDispatchService
 	EntityManager em;
 
 	public record Fetched(Optional<ActionTask> task, long tasksVersion, Map<String, String> secrets,
-		Map<String, String> vars, Map<String, ActionRun.Status> needs)
+		Map<String, String> vars, Map<String, NeedInfo> needs)
+	{
+	}
+
+	/** A needed job's result and outputs, for the runner's {@code needs} context. */
+	public record NeedInfo(ActionRun.Status result, Map<String, String> outputs)
 	{
 	}
 
@@ -89,7 +94,7 @@ public class TaskDispatchService
 		});
 		Map<String, String> secretMap = next.map(task -> secretsFor(task.run.repository)).orElse(Map.of());
 		Map<String, String> varMap = next.map(task -> variablesFor(task.run.repository)).orElse(Map.of());
-		Map<String, ActionRun.Status> needsMap = next.map(this::needsResults).orElse(Map.of());
+		Map<String, NeedInfo> needsMap = next.map(this::needsResults).orElse(Map.of());
 		return new Fetched(next, tasks.maxSeq(), secretMap, varMap, needsMap);
 	}
 
@@ -189,35 +194,40 @@ public class TaskDispatchService
 		{
 			return true;
 		}
-		Map<String, ActionRun.Status> siblings = statusByJob(task.run);
-		return needed.stream().allMatch(name -> siblings.get(name) == ActionRun.Status.SUCCESS);
+		Map<String, ActionTask> siblings = taskByJob(task.run);
+		return needed.stream().allMatch(name ->
+		{
+			ActionTask dep = siblings.get(name);
+			return dep != null && dep.status == ActionRun.Status.SUCCESS;
+		});
 	}
 
-	private Map<String, ActionRun.Status> statusByJob(ActionRun run)
+	private Map<String, ActionTask> taskByJob(ActionRun run)
 	{
-		Map<String, ActionRun.Status> byJob = new HashMap<>();
+		Map<String, ActionTask> byJob = new HashMap<>();
 		for (ActionTask sibling : tasks.findByRun(run))
 		{
-			byJob.put(sibling.name, sibling.status);
+			byJob.put(sibling.name, sibling);
 		}
 		return byJob;
 	}
 
-	/** The results of the jobs a task needs, for the runner's {@code needs} context. */
-	private Map<String, ActionRun.Status> needsResults(ActionTask task)
+	/** The result and outputs of the jobs a task needs, for the runner's {@code needs} context. */
+	private Map<String, NeedInfo> needsResults(ActionTask task)
 	{
 		Set<String> needed = splitLabels(task.needs);
 		if (needed.isEmpty())
 		{
 			return Map.of();
 		}
-		Map<String, ActionRun.Status> siblings = statusByJob(task.run);
-		Map<String, ActionRun.Status> results = new HashMap<>();
+		Map<String, ActionTask> siblings = taskByJob(task.run);
+		Map<String, NeedInfo> results = new HashMap<>();
 		for (String name : needed)
 		{
-			if (siblings.containsKey(name))
+			ActionTask dep = siblings.get(name);
+			if (dep != null)
 			{
-				results.put(name, siblings.get(name));
+				results.put(name, new NeedInfo(dep.status, ActionOutputs.parse(dep.outputs)));
 			}
 		}
 		return results;
