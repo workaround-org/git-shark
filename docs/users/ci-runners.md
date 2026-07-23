@@ -90,10 +90,29 @@ jobs:
 ```
 
 The result **and outputs** of each needed job are available to dependents — set outputs in the
-upstream job and read them with `${{ needs.build.outputs.* }}`. `matrix` expansion is not implemented
-yet.
+upstream job and read them with `${{ needs.build.outputs.* }}`.
+
+## Matrix builds
+
+A job with `strategy.matrix` runs once per combination of its values, each a separate entry on the
+Actions page:
+
+```yaml
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [linux, windows]
+        jdk: [17, 21]
+    steps:
+      - run: echo "${{ matrix.os }} / ${{ matrix.jdk }}"
+```
+
+This produces four runs (`test (linux, 17)`, `test (linux, 21)`, …). A job that `needs` a matrix job
+waits for all of its cells. `matrix.include` / `matrix.exclude` are not supported yet.
 
 ## What's coming
 
-- Non-push events (`pull_request`, scheduled, manual), `matrix`.
+- Non-push events (`pull_request`, scheduled, manual).
 - Artifacts and commit/merge-request status integration.

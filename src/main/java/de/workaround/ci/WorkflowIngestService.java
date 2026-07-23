@@ -4,7 +4,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -21,6 +23,7 @@ import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 
 import de.workaround.git.GitRepositoryService;
@@ -127,7 +130,7 @@ public class WorkflowIngestService
 					continue;
 				}
 				ActionRun run = factory.create(repo, pusherUserId, command.getRefName(), command.getNewId().name(),
-					workflowName(root, workflow.path()), workflow.path(), jobs, workflow.content());
+					workflowName(root, workflow.path()), workflow.path(), jobs);
 				createdRuns.add(run.id);
 			}
 			if (!createdRuns.isEmpty())
@@ -413,12 +416,95 @@ public class WorkflowIngestService
 		{
 			for (Iterator<String> it = jobs.fieldNames(); it.hasNext();)
 			{
-				String name = it.next();
-				JsonNode job = jobs.get(name);
-				specs.add(new WorkflowRunFactory.JobSpec(name, runsOn(job), needs(job)));
+				String jobId = it.next();
+				JsonNode job = jobs.get(jobId);
+				for (Map<String, String> cell : matrixCells(job))
+				{
+					String name = cell.isEmpty() ? jobId : jobId + " (" + String.join(", ", cell.values()) + ")";
+					String payload = singleJobPayload(root, jobId, job, cell);
+					specs.add(new WorkflowRunFactory.JobSpec(name, jobId, runsOn(job), needs(job), payload));
+				}
 			}
 		}
 		return specs;
+	}
+
+	/**
+	 * The matrix combinations of a job: one empty map when the job has no {@code strategy.matrix},
+	 * otherwise the cartesian product of its dimensions (insertion order preserved, {@code include}/
+	 * {@code exclude} not yet supported). Each combination maps dimension name to its value.
+	 */
+	private static List<Map<String, String>> matrixCells(JsonNode job)
+	{
+		JsonNode matrix = job.path("strategy").path("matrix");
+		if (!matrix.isObject())
+		{
+			return List.of(new LinkedHashMap<>());
+		}
+		List<Map<String, String>> cells = new ArrayList<>();
+		cells.add(new LinkedHashMap<>());
+		for (Iterator<String> it = matrix.fieldNames(); it.hasNext();)
+		{
+			String dim = it.next();
+			if (dim.equals("include") || dim.equals("exclude"))
+			{
+				continue;
+			}
+			JsonNode values = matrix.get(dim);
+			if (!values.isArray() || values.isEmpty())
+			{
+				continue;
+			}
+			List<Map<String, String>> expanded = new ArrayList<>();
+			for (Map<String, String> base : cells)
+			{
+				for (JsonNode value : values)
+				{
+					Map<String, String> next = new LinkedHashMap<>(base);
+					next.put(dim, value.asText());
+					expanded.add(next);
+				}
+			}
+			cells = expanded;
+		}
+		return cells;
+	}
+
+	/**
+	 * A standalone single-job workflow for one task: the original {@code name}/{@code on} plus just
+	 * this job, with its matrix (if any) reduced to the given cell so the runner resolves {@code
+	 * matrix.*} to a single combination.
+	 */
+	private static String singleJobPayload(JsonNode root, String jobId, JsonNode job, Map<String, String> cell)
+	{
+		ObjectNode out = YAML.createObjectNode();
+		if (root.has("name"))
+		{
+			out.set("name", root.get("name"));
+		}
+		JsonNode on = root.has("on") ? root.get("on") : root.get("true");
+		if (on != null)
+		{
+			out.set("on", on);
+		}
+		ObjectNode jobCopy = job.deepCopy();
+		if (!cell.isEmpty())
+		{
+			ObjectNode strategy = jobCopy.has("strategy") && jobCopy.get("strategy").isObject()
+				? (ObjectNode) jobCopy.get("strategy")
+				: jobCopy.putObject("strategy");
+			ObjectNode matrix = strategy.putObject("matrix");
+			cell.forEach((dim, value) -> matrix.putArray(dim).add(value));
+		}
+		out.putObject("jobs").set(jobId, jobCopy);
+		try
+		{
+			return YAML.writeValueAsString(out);
+		}
+		catch (Exception e)
+		{
+			throw new IllegalStateException("Could not build single-job payload for " + jobId, e);
+		}
 	}
 
 	/** The job's {@code runs-on} as comma-joined labels; string or list, empty when absent. */

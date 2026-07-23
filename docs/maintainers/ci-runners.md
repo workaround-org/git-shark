@@ -19,7 +19,7 @@ covers how the server side is built and what is / isn't done.
 | Actions UI | `web/ActionResource.java` + `templates/ActionResource/` | Read-only per-repo run list + run detail (jobs and their log rows); sidebar `Actions` tab. |
 | Secrets/variables UI | `web/ActionSettingsResource.java` + `ci/ActionSecretService.java` + `templates/ActionSettingsResource/` | Owner-only CRUD for CI secrets (write-only, encrypted) and variables at `settings/actions`. |
 | Entities | `model/CiRunner.java`, `model/CiRunnerRegistrationToken.java` | Runner state (migration `V19`). |
-| Run entities | `model/ActionRun.java`, `model/ActionTask.java`, `model/ActionLog.java` | Run/job/log-row persistence (migrations `V23`–`V28`). `ActionTask.seq` (`bigserial`) is the surrogate int64 `Task.id`; `runs_on` = matching labels; `needs` = job dependencies; `outputs` = reported job outputs (JSON). |
+| Run entities | `model/ActionRun.java`, `model/ActionTask.java`, `model/ActionLog.java` | Run/job/log-row persistence (migrations `V23`–`V29`). `ActionTask.seq` (`bigserial`) = surrogate int64 `Task.id`; `runs_on` = matching labels; `needs` = job dependencies; `outputs` = reported job outputs (JSON); `job_id` = workflow job key (shared by a matrix job's cells). |
 | Secret/variable entities | `model/ActionSecret.java`, `model/ActionVariable.java` | Per-repo CI secrets (encrypted) and variables (migration `V26`), delivered to runners in FetchTask. |
 | Workflow ingest | `ci/WorkflowIngestService.java`, `ci/WorkflowRunFactory.java` | Post-receive hook: parse `.forgejo`/`.gitea` workflows at the pushed head, evaluate `on: push`, persist a run + its PENDING tasks (drained by FetchTask). |
 | Admin UI | `ci/AdminRunnerResource.java` + `templates/AdminRunnerResource/` | Token generation, runner list, deletion. |
@@ -84,6 +84,12 @@ covers how the server side is built and what is / isn't done.
   that fails to decrypt is dropped, never sent as ciphertext) in the FetchTask `Task.secrets`/`vars`
   maps. Same trust model as GitHub self-hosted runners: secrets go to whatever runner claims the task
   (over TLS). No repo/org scoping of secrets and no fork-PR guard yet (no PR triggers exist).
+- **Per-job payloads & `matrix`:** ingest builds each task a standalone single-job `workflow_payload`
+  (the original `name`/`on` plus just that job). A job with `strategy.matrix` expands into one task per
+  cross-product cell — display name `job (v1, v2)`, shared `action_task.job_id`, and a payload whose
+  `strategy.matrix` is reduced to that single cell so the runner resolves `matrix.*`. `github.job` is
+  the `job_id`; `needs` and cascade-cancel group a job's cells by `job_id` (a dependent waits for all
+  cells, and is cancelled if any cell fails). `include`/`exclude` not yet handled.
 - **`needs` ordering:** each task records the jobs it depends on (`action_task.needs`, parsed at
   ingest). Dispatch will not hand out a task until every needed job in the run has succeeded; when a
   needed job ends FAILURE/CANCELLED, `rollUpRun` cancels the dependents (to a fixpoint, so the
@@ -125,7 +131,10 @@ covers how the server side is built and what is / isn't done.
   `CancelRerunTest` (cancel settles run+unfinished tasks, re-run resets a finished run, a cancelled
   task tells the runner to stop via UpdateTask) and `ActionControlUiTest` (owner cancels/re-runs over
   HTTP, a non-writer is refused), `SupersededRunsTest` (a new push cancels the branch's earlier
-  running run but leaves other branches alone).
+  running run but leaves other branches alone), `MatrixExpansionTest` (single- and two-dimension
+  matrices expand to one task per cell with a reduced payload; a non-matrix job stays single),
+  `MatrixNeedsTest` (a dependent waits for every cell of a needed matrix job, and one failed cell
+  cancels the dependent).
 - **Zombie reclaim (`ZombieReclaimService`):** a scheduled sweep
   (`gitshark.ci.zombie-reclaim-interval`, default 1m) fails any RUNNING task whose
   `action_task.deadline` has passed — the runner is presumed gone — rolls its run up, and flags the
@@ -156,13 +165,10 @@ covers how the server side is built and what is / isn't done.
 - **Long-poll & real `tasks_version`:** `FetchTask` returns immediately and `tasks_version` is a
   coarse max-`seq` (bumps on creation, not state change), so with several simultaneous PENDING tasks a
   runner may under-poll. Add server-side long-poll and a state-driven version counter.
-- **Per-job payload expansion:** `workflow_payload` is the raw workflow YAML (fine while a workflow
-  has a single job, which the `github.job` context selects); a multi-job workflow needs each job
-  isolated/expanded into its own payload.
 - **Non-push events:** only `push` is evaluated; `pull_request`, scheduled and manual triggers are
   not. (`!`-negation within a single pattern list is also not supported.)
-- **`matrix`:** expansion is not implemented — a job with `strategy.matrix` runs once, not once per
-  cell (needs a per-job/per-cell payload expander).
+- **Matrix advanced options:** `include`/`exclude` and `fail-fast`/`max-parallel` are not honored
+  (plain dimension cross-product only).
 - **Later phases:** artifacts (`ACTIONS_RESULTS_URL`), repo/org-scoped and ephemeral runners,
   commit/MR status, non-push events.
 

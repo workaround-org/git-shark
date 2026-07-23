@@ -1,6 +1,7 @@
 package de.workaround.ci;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -152,10 +153,12 @@ public class TaskProgressService
 	 */
 	private static void cancelUnsatisfiableDependents(List<ActionTask> all)
 	{
-		Map<String, ActionRun.Status> byJob = new HashMap<>();
+		// group tasks by job id (a matrix job has several cells sharing an id); references are live,
+		// so a task cancelled below is seen on the next pass without re-indexing
+		Map<String, List<ActionTask>> byJob = new HashMap<>();
 		for (ActionTask task : all)
 		{
-			byJob.put(task.name, task.status);
+			byJob.computeIfAbsent(task.jobId, k -> new ArrayList<>()).add(task);
 		}
 		boolean changed = true;
 		while (changed)
@@ -167,16 +170,16 @@ public class TaskProgressService
 				{
 					continue;
 				}
-				boolean blocked = needsOf(task).stream().anyMatch(name ->
+				boolean blocked = needsOf(task).stream().anyMatch(jobId ->
 				{
-					ActionRun.Status dep = byJob.get(name);
-					return dep == ActionRun.Status.FAILURE || dep == ActionRun.Status.CANCELLED;
+					List<ActionTask> cells = byJob.get(jobId);
+					return cells != null && cells.stream().anyMatch(cell ->
+						cell.status == ActionRun.Status.FAILURE || cell.status == ActionRun.Status.CANCELLED);
 				});
 				if (blocked)
 				{
 					task.status = ActionRun.Status.CANCELLED;
 					task.finishedAt = Instant.now();
-					byJob.put(task.name, task.status);
 					changed = true;
 				}
 			}

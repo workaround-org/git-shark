@@ -89,7 +89,7 @@ No new listener or TLS config beyond what [Getting Started](getting-started.md) 
 | `ci_runner_registration_token` | Reusable registration tokens: `token_hash`, `created_by_id`, `created_at`, `last_used`. |
 | `ci_runner` | Registered runners: `uuid` (the `x-runner-uuid` value), `token_hash`, `name`, `labels` (comma-joined), `version`, `status` (`IDLE`/`ACTIVE`/`OFFLINE`/`UNSPECIFIED`), `ephemeral`, `last_seen`, `created_at`. |
 | `action_run` | One workflow run per repository: `number` (per-repo sequential), `workflow_name`, `workflow_file`, `event`, `ref`, `commit_sha`, `triggered_by_id`, `status` (`PENDING`/`RUNNING`/`SUCCESS`/`FAILURE`/`CANCELLED`), timestamps. Deleted with its repository. |
-| `action_task` | One job within a run: `seq` (surrogate int64 id handed to runners), `run_id`, `name`, `runs_on` (comma-joined labels for runner matching, empty = any), `needs` (comma-joined dependency job names), `outputs` (JSON of the job's reported outputs), `payload`, `runner_id` (the claiming runner, null while pending), `status`, `log_length` (durable log-row count = UpdateLog resume offset), `deadline` (zombie timeout), timestamps. Deleted with its run. |
+| `action_task` | One job within a run: `seq` (surrogate int64 id handed to runners), `run_id`, `name`, `runs_on` (comma-joined labels for runner matching, empty = any), `needs` (comma-joined dependency job names), `outputs` (JSON of the job's reported outputs), `job_id` (workflow job key; a matrix job's cells share it), `payload`, `runner_id` (the claiming runner, null while pending), `status`, `log_length` (durable log-row count = UpdateLog resume offset), `deadline` (zombie timeout), timestamps. Deleted with its run. |
 | `action_log` | One log row of a task: `task_id`, `line_index` (0-based), `content`, `timestamp`. Deleted with its task. |
 | `action_secret` | Per-repo CI secret: `repository_id`, `name`, `value_encrypted` (SecretCrypto envelope), decrypted only when delivered to a runner. Deleted with its repository. |
 | `action_variable` | Per-repo CI variable: `repository_id`, `name`, `value` (plaintext config). Deleted with its repository. |
@@ -98,7 +98,7 @@ No new listener or TLS config beyond what [Getting Started](getting-started.md) 
 (`V24__action_task_seq.sql` adds `action_task.seq`, `V25__action_task_runs_on.sql` adds
 `action_task.runs_on`, `V26__action_secrets_variables.sql` adds `action_secret`/`action_variable`,
 `V27__action_task_needs.sql` adds `action_task.needs`, `V28__action_task_outputs.sql` adds
-`action_task.outputs`).
+`action_task.outputs`, `V29__action_task_job_id.sql` adds `action_task.job_id`).
 Secrets are stored encrypted and require `GITSHARK_SECRET_KEY` to be set (same key as push mirrors);
 without it, secrets cannot be decrypted and are omitted from what a runner receives.
 The `ci_runner*` tables hold no repository data (losing them only forces re-registration); the

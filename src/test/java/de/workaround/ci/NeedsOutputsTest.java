@@ -114,6 +114,7 @@ class NeedsOutputsTest
 		ActionTask task = new ActionTask();
 		task.run = run;
 		task.name = name;
+		task.jobId = name;
 		task.needs = needs;
 		task.payload = "on: push";
 		task.createdAt = Instant.now().minusSeconds(secondsAgo);

@@ -48,8 +48,11 @@ public class ActionTask implements PanacheEntity.Managed
 	@Generated(event = EventType.INSERT)
 	public long seq;
 
-	/** Job identifier from the workflow file, e.g. {@code build}. */
+	/** Display name of this task, e.g. {@code build} or a matrix cell {@code build (linux)}. */
 	public String name;
+
+	/** The workflow job key (e.g. {@code build}); shared by a matrix job's cells. Used for github.job and needs. */
+	public String jobId = "";
 
 	/** The job's {@code runs-on} labels, comma-joined; empty means no constraint (any runner). */
 	public String runsOn = "";

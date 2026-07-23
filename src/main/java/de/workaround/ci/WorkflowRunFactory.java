@@ -35,7 +35,7 @@ public class WorkflowRunFactory
 
 	@Transactional
 	public ActionRun create(Repository repository, UUID pusherUserId, String ref, String commitSha,
-		String workflowName, String workflowFile, List<JobSpec> jobs, String payload)
+		String workflowName, String workflowFile, List<JobSpec> jobs)
 	{
 		Repository repo = repositories.findById(repository.id);
 
@@ -55,16 +55,21 @@ public class WorkflowRunFactory
 			ActionTask task = new ActionTask();
 			task.run = run;
 			task.name = job.name();
+			task.jobId = job.jobId();
 			task.runsOn = job.runsOn();
 			task.needs = job.needs();
-			task.payload = payload;
+			task.payload = job.payload();
 			task.persist();
 		}
 		return run;
 	}
 
-	/** A job discovered in a workflow: its id, comma-joined {@code runs-on} labels and {@code needs}. */
-	public record JobSpec(String name, String runsOn, String needs)
+	/**
+	 * A materialized task: its display {@code name} (a matrix cell like {@code build (linux)} or just
+	 * the job id), the base {@code jobId}, {@code runs-on} labels, {@code needs}, and the standalone
+	 * single-job {@code payload} handed to the runner.
+	 */
+	public record JobSpec(String name, String jobId, String runsOn, String needs, String payload)
 	{
 	}
 

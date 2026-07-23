@@ -161,6 +161,7 @@ class ForgejoRunnerRoundTripTest
 		ActionTask task = new ActionTask();
 		task.run = run;
 		task.name = "build";
+		task.jobId = "build";
 		task.payload = WORKFLOW;
 		task.persist();
 		return run.id;

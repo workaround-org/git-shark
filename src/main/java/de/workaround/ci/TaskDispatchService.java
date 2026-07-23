@@ -2,6 +2,7 @@ package de.workaround.ci;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -194,25 +195,27 @@ public class TaskDispatchService
 		{
 			return true;
 		}
-		Map<String, ActionTask> siblings = taskByJob(task.run);
-		return needed.stream().allMatch(name ->
+		Map<String, List<ActionTask>> byJob = cellsByJob(task.run);
+		return needed.stream().allMatch(jobId ->
 		{
-			ActionTask dep = siblings.get(name);
-			return dep != null && dep.status == ActionRun.Status.SUCCESS;
+			List<ActionTask> cells = byJob.get(jobId);
+			return cells != null && !cells.isEmpty()
+				&& cells.stream().allMatch(cell -> cell.status == ActionRun.Status.SUCCESS);
 		});
 	}
 
-	private Map<String, ActionTask> taskByJob(ActionRun run)
+	/** Tasks of a run grouped by job id; a matrix job has several cells under one id. */
+	private Map<String, List<ActionTask>> cellsByJob(ActionRun run)
 	{
-		Map<String, ActionTask> byJob = new HashMap<>();
+		Map<String, List<ActionTask>> byJob = new HashMap<>();
 		for (ActionTask sibling : tasks.findByRun(run))
 		{
-			byJob.put(sibling.name, sibling);
+			byJob.computeIfAbsent(sibling.jobId, k -> new ArrayList<>()).add(sibling);
 		}
 		return byJob;
 	}
 
-	/** The result and outputs of the jobs a task needs, for the runner's {@code needs} context. */
+	/** The aggregate result and merged outputs of the jobs a task needs, for its {@code needs} context. */
 	private Map<String, NeedInfo> needsResults(ActionTask task)
 	{
 		Set<String> needed = splitLabels(task.needs);
@@ -220,17 +223,37 @@ public class TaskDispatchService
 		{
 			return Map.of();
 		}
-		Map<String, ActionTask> siblings = taskByJob(task.run);
+		Map<String, List<ActionTask>> byJob = cellsByJob(task.run);
 		Map<String, NeedInfo> results = new HashMap<>();
-		for (String name : needed)
+		for (String jobId : needed)
 		{
-			ActionTask dep = siblings.get(name);
-			if (dep != null)
+			List<ActionTask> cells = byJob.get(jobId);
+			if (cells != null && !cells.isEmpty())
 			{
-				results.put(name, new NeedInfo(dep.status, ActionOutputs.parse(dep.outputs)));
+				Map<String, String> merged = new HashMap<>();
+				cells.forEach(cell -> merged.putAll(ActionOutputs.parse(cell.outputs)));
+				results.put(jobId, new NeedInfo(aggregate(cells), merged));
 			}
 		}
 		return results;
+	}
+
+	/** Worst-of over a job's cells: RUNNING if any unfinished, else FAILURE > CANCELLED > SUCCESS. */
+	private static ActionRun.Status aggregate(List<ActionTask> cells)
+	{
+		if (cells.stream().anyMatch(c -> !c.status.isTerminal()))
+		{
+			return ActionRun.Status.RUNNING;
+		}
+		if (cells.stream().anyMatch(c -> c.status == ActionRun.Status.FAILURE))
+		{
+			return ActionRun.Status.FAILURE;
+		}
+		if (cells.stream().anyMatch(c -> c.status == ActionRun.Status.CANCELLED))
+		{
+			return ActionRun.Status.CANCELLED;
+		}
+		return ActionRun.Status.SUCCESS;
 	}
 
 	/** Whether the runner advertises every label the task's {@code runs-on} requires (empty = any). */

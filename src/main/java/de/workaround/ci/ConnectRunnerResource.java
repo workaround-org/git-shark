@@ -237,7 +237,7 @@ public class ConnectRunnerResource
 		putString(context, "run_id", String.valueOf(task.seq));
 		putString(context, "run_number", String.valueOf(run.number));
 		putString(context, "run_attempt", "1");
-		putString(context, "job", task.name);
+		putString(context, "job", task.jobId);
 		putString(context, "ref", run.ref);
 		putString(context, "ref_name", refName);
 		putString(context, "ref_type", "branch");
