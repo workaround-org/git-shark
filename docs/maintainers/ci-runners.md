@@ -18,7 +18,7 @@ covers how the server side is built and what is / isn't done.
 | Run controls | `ci/ActionRunService.java` | Cancel a run (settle run + unfinished tasks) and re-run a finished run (reset tasks to PENDING, clear logs/outputs). |
 | Commit status | `ci/CommitStatusService.java` | Aggregate a commit's runs into one status; shown on commit/MR pages and via the Gitea commit-status API. |
 | Actions UI | `web/ActionResource.java` + `templates/ActionResource/` | Read-only per-repo run list + run detail (jobs and their log rows); sidebar `Actions` tab. |
-| Secrets/variables UI | `web/ActionSettingsResource.java` + `ci/ActionSecretService.java` + `templates/ActionSettingsResource/` | Owner-only CRUD for CI secrets (write-only, encrypted) and variables at `settings/actions`. |
+| CI settings UI | `web/ActionSettingsResource.java` + `ci/ActionSecretService.java` + `templates/ActionSettingsResource/` | Owner-only, at `settings/actions`: CRUD for secrets (write-only, encrypted) and variables, plus minting repo-scoped runner tokens and listing/deleting the repo's runners. |
 | Entities | `model/CiRunner.java`, `model/CiRunnerRegistrationToken.java` | Runner state (migration `V19`). |
 | Run entities | `model/ActionRun.java`, `model/ActionTask.java`, `model/ActionLog.java` | Run/job/log-row persistence (migrations `V23`–`V29`). `ActionTask.seq` (`bigserial`) = surrogate int64 `Task.id`; `runs_on` = matching labels; `needs` = job dependencies; `outputs` = reported job outputs (JSON); `job_id` = workflow job key (shared by a matrix job's cells). |
 | Secret/variable entities | `model/ActionSecret.java`, `model/ActionVariable.java` | Per-repo CI secrets (encrypted) and variables (migration `V26`), delivered to runners in FetchTask. |
@@ -103,8 +103,10 @@ covers how the server side is built and what is / isn't done.
 - **Repo-scoped runners:** a registration token (and the runners it creates) may carry a
   `repository_id` (`ci_runner_registration_token`/`ci_runner`, migration `V30`); null = instance-scope
   (any repository). Dispatch's `scopeAllows` check hands a scoped runner only its repository's tasks,
-  while an instance runner still serves any. Scoped rows cascade-delete with the repository.
-  (Generating a scoped token still needs a UI — the admin page only mints instance tokens today.)
+  while an instance runner still serves any. Scoped rows cascade-delete with the repository. Repo
+  owners mint a repo-scoped registration token and list/delete the repo's runners under **Settings →
+  CI** (`ActionSettingsResource`); the instance-wide admin page (`AdminRunnerResource`) still mints
+  unscoped tokens.
 - **Label matching:** a task carries its job's `runs-on` labels (`action_task.runs_on`, parsed at
   ingest). Dispatch scans PENDING tasks oldest-first and claims the first whose labels are all
   advertised by the fetching runner (empty `runs-on` = any runner); an incompatible task is left for a
@@ -144,7 +146,9 @@ covers how the server side is built and what is / isn't done.
   commit-status API reflects failure, and a commit with no runs stays all-clear),
   `EphemeralRunnerTest` (an ephemeral runner is removed after its task — on completion and on
   zombie-reclaim — and its credentials stop working), `ScopedRunnerTest` (a repo-scoped runner skips
-  other repos' tasks and idles when only they have work; an instance runner claims across repos).
+  other repos' tasks and idles when only they have work; an instance runner claims across repos),
+  `SecretsSettingsTest` also covers the repo Settings → CI runner UI (owner mints a scoped token,
+  lists/deletes the repo's runners; a stranger is refused).
 - **Ephemeral runners:** a runner registered with `ephemeral=true` is one-shot — once its single task
   reaches a terminal state it is deleted (`ci_runner` row removed; the task's `runner_id` is `ON
   DELETE SET NULL`), so its credentials stop working and it never gets a second task. This holds on
@@ -190,9 +194,7 @@ covers how the server side is built and what is / isn't done.
   not. (`!`-negation within a single pattern list is also not supported.)
 - **Matrix advanced options:** `include`/`exclude` and `fail-fast`/`max-parallel` are not honored
   (plain dimension cross-product only).
-- **Scoped-runner token UI & org scope:** dispatch enforces repo scope, but there's no page yet to
-  mint a repo-scoped registration token (admin UI mints instance tokens only), and org scope isn't
-  modelled.
+- **Org scope:** runners can be scoped to a repository but not to an organisation.
 - **Later phases:** artifacts (`ACTIONS_RESULTS_URL`), non-push events.
 
 ## References

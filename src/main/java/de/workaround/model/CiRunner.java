@@ -78,6 +78,9 @@ public class CiRunner implements PanacheEntity.Managed
 
 		@HQL("order by createdAt desc")
 		List<CiRunner> listNewestFirst();
+
+		@HQL("select r from CiRunner r where r.repository = :repository order by r.createdAt desc")
+		List<CiRunner> findByRepository(Repository repository);
 	}
 
 }

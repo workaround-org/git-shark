@@ -6,10 +6,12 @@ import java.util.UUID;
 
 import de.workaround.account.CurrentUser;
 import de.workaround.ci.ActionSecretService;
+import de.workaround.ci.RunnerRegistrationService;
 import de.workaround.git.AccessPolicy;
 import de.workaround.git.GitRepositoryService;
 import de.workaround.model.ActionSecret;
 import de.workaround.model.ActionVariable;
+import de.workaround.model.CiRunner;
 import de.workaround.model.Repository;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateInstance;
@@ -38,7 +40,7 @@ public class ActionSettingsResource
 	static class Templates
 	{
 		static native TemplateInstance settings(Repository repo, RepoNav nav, String error,
-			List<ActionSecret> secrets, List<ActionVariable> variables);
+			List<ActionSecret> secrets, List<ActionVariable> variables, List<CiRunner> runners, String newToken);
 	}
 
 	@Inject
@@ -55,6 +57,12 @@ public class ActionSettingsResource
 
 	@Inject
 	ActionSecretService actionSecrets;
+
+	@Inject
+	RunnerRegistrationService runnerService;
+
+	@Inject
+	CiRunner.Repo runners;
 
 	@Context
 	UriInfo uriInfo;
@@ -122,10 +130,40 @@ public class ActionSettingsResource
 		return backToSettings(repo);
 	}
 
+	@POST
+	@jakarta.ws.rs.Path("runners/token")
+	public Response createRunnerToken(@PathParam("owner") String owner, @PathParam("name") String name)
+	{
+		Repository repo = requireOwner(owner, name);
+		String token = runnerService.createRegistrationToken(currentUser.require(), repo).plaintext();
+		// show the plaintext once, inline on the settings page (never stored in the clear)
+		return Response.ok(render(repo, null, token)).build();
+	}
+
+	@POST
+	@jakarta.ws.rs.Path("runners/{id}/delete")
+	public Response deleteRunner(@PathParam("owner") String owner, @PathParam("name") String name,
+		@PathParam("id") UUID id)
+	{
+		Repository repo = requireOwner(owner, name);
+		CiRunner runner = runners.findById(id);
+		if (runner != null && runner.repository != null && runner.repository.id.equals(repo.id))
+		{
+			runnerService.delete(id);
+		}
+		return backToSettings(repo);
+	}
+
 	private TemplateInstance render(Repository repo, String error)
 	{
+		return render(repo, error, null);
+	}
+
+	private TemplateInstance render(Repository repo, String error, String newToken)
+	{
 		return Templates.settings(repo, repoNav.build(repo, uriInfo), error,
-			actionSecrets.listSecrets(repo), actionSecrets.listVariables(repo));
+			actionSecrets.listSecrets(repo), actionSecrets.listVariables(repo), runners.findByRepository(repo),
+			newToken);
 	}
 
 	private Response backToSettings(Repository repo)

@@ -76,6 +76,9 @@ are delivered to the runner executing the repo's workflows and are available in 
   an encryption key configured.
 - **Variables** are plain configuration and their values are visible on the settings page.
 
+The same page (**Settings → CI secrets & variables**) also lets a repository owner generate a
+registration token for a runner dedicated to this repository and remove the repo's runners.
+
 ## Job ordering with `needs`
 
 A job can depend on others with `needs`. A dependent job runs only after every job it needs has

@@ -54,6 +54,39 @@
                 <button class="btn btn-primary">Add variable</button>
             </form>
         </section>
+
+        <section class="panel settings-card">
+            <h2>Runners</h2>
+            <p class="muted">Runners registered with a token from here only run this repository's jobs.</p>
+            {#if newToken}
+            <div class="panel token-created">
+                <p>Registration token (shown once — copy it now):</p>
+                <div class="clone-url">
+                    <code>{newToken}</code>
+                    <button type="button" class="btn-icon copy-btn" data-copy="{newToken}" aria-label="Copy token" title="Copy">⧉</button>
+                </div>
+                <p class="muted">Register a runner with <code>forgejo-runner register --instance &lt;url&gt; --token &lt;token&gt;</code>.</p>
+            </div>
+            {/if}
+            {#if runners}
+            <ul class="secret-list">
+                {#for r in runners}
+                <li class="secret-row">
+                    <code class="secret-name">{r.name}</code>
+                    <span class="muted">{r.status} {#if r.labels}· {r.labels}{/if}</span>
+                    <form class="inline" method="post" action="/repos/{repo.ownerHandle}/{repo.name}/settings/actions/runners/{r.id}/delete">
+                        <button class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                </li>
+                {/for}
+            </ul>
+            {#else}
+            <p class="muted">No runners registered for this repository.</p>
+            {/if}
+            <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/settings/actions/runners/token" class="secret-add">
+                <button class="btn btn-primary">Generate registration token</button>
+            </form>
+        </section>
     </section>
 </div>
 {/include}

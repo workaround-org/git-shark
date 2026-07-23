@@ -46,9 +46,10 @@ token can register any number of runners. Delete a token to stop it registering 
 already registered keep working (they authenticate with their own per-runner secret, not the
 registration token). An **ephemeral** runner (registered with `--ephemeral`) runs a single task and
 is then removed automatically — its credentials stop working after that one job. A runner can also be
-**scoped to a single repository** (it then only runs that repo's jobs); the enforcement is in place,
-though minting a repo-scoped registration token from the UI is still to come (the admin page mints
-instance-wide tokens today). Org scope is a later phase.
+**scoped to a single repository** (it then only runs that repo's jobs): a repo owner mints a
+repo-scoped registration token and manages that repo's runners from the repository's **Settings → CI
+secrets & variables** page, while this admin page mints instance-wide tokens. Org scope is a later
+phase.
 
 ## Endpoints
 

@@ -1,12 +1,15 @@
 package de.workaround.web;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import de.workaround.ci.RunnerRegistrationService;
 import de.workaround.git.GitRepositoryService;
 import de.workaround.model.ActionSecret;
 import de.workaround.model.ActionVariable;
+import de.workaround.model.CiRunner;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
 import io.quarkus.test.junit.QuarkusTest;
@@ -46,6 +49,63 @@ class SecretsSettingsTest
 
 	@Inject
 	EntityManager em;
+
+	@Inject
+	RunnerRegistrationService runnerService;
+
+	@Inject
+	CiRunner.Repo runners;
+
+	@Test
+	@TestSecurity(user = OWNER)
+	void ownerGeneratesRepoScopedRunnerToken()
+	{
+		Repository repo = repoOwnedBy(OWNER, "sec-tok");
+
+		given().when().post(base(repo) + "/runners/token")
+			.then().statusCode(200)
+			.body(containsString("gsr_"));
+	}
+
+	@Test
+	@TestSecurity(user = OWNER)
+	void ownerListsAndDeletesRepoRunner()
+	{
+		Repository repo = repoOwnedBy(OWNER, "sec-run");
+		UUID runnerId = seedScopedRunner(repo);
+
+		given().when().get(base(repo)).then().statusCode(200).body(containsString("scoped-runner"));
+
+		given().redirects().follow(false)
+			.when().post(base(repo) + "/runners/" + runnerId + "/delete")
+			.then().statusCode(303);
+
+		assertEquals(0, repoRunnerCount(repo));
+	}
+
+	@Test
+	@TestSecurity(user = STRANGER)
+	void strangerCannotGenerateRunnerToken()
+	{
+		Repository repo = repoOwnedBy(OWNER, "sec-tok2");
+
+		given().when().post(base(repo) + "/runners/token").then().statusCode(404);
+	}
+
+	@Transactional
+	UUID seedScopedRunner(Repository repo)
+	{
+		User owner = users.findByOidcSubOptional(OWNER).orElseThrow();
+		Repository managed = repositories.find(repo.ownerHandle(), repo.name).orElseThrow();
+		String token = runnerService.createRegistrationToken(owner, managed).plaintext();
+		return runnerService.register(token, "scoped-runner", List.of(), "v4.0.0", false).runner().id;
+	}
+
+	@Transactional
+	long repoRunnerCount(Repository repo)
+	{
+		return runners.findByRepository(repositories.find(repo.ownerHandle(), repo.name).orElseThrow()).size();
+	}
 
 	@Test
 	@TestSecurity(user = OWNER)
