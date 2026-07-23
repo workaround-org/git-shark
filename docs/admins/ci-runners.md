@@ -48,8 +48,9 @@ registration token). An **ephemeral** runner (registered with `--ephemeral`) run
 is then removed automatically — its credentials stop working after that one job. A runner can also be
 **scoped to a single repository** (it then only runs that repo's jobs): a repo owner mints a
 repo-scoped registration token and manages that repo's runners from the repository's **Settings → CI
-secrets & variables** page, while this admin page mints instance-wide tokens. Org scope is a later
-phase.
+secrets & variables** page, while this admin page mints instance-wide tokens. Runners can also be
+scoped to an organisation (they then serve all of that org's repositories); org scope is enforced,
+though a UI to mint an org-scoped token is still to come.
 
 ## Endpoints
 
@@ -104,7 +105,8 @@ No new listener or TLS config beyond what [Getting Started](getting-started.md) 
 `action_task.runs_on`, `V26__action_secrets_variables.sql` adds `action_secret`/`action_variable`,
 `V27__action_task_needs.sql` adds `action_task.needs`, `V28__action_task_outputs.sql` adds
 `action_task.outputs`, `V29__action_task_job_id.sql` adds `action_task.job_id`,
-`V30__ci_runner_scope.sql` adds the `repository_id` scope to `ci_runner`/`ci_runner_registration_token`).
+`V30__ci_runner_scope.sql` adds the `repository_id` scope to `ci_runner`/`ci_runner_registration_token`,
+`V31__ci_runner_org_scope.sql` adds the `organisation_id` scope).
 Secrets are stored encrypted and require `GITSHARK_SECRET_KEY` to be set (same key as push mirrors);
 without it, secrets cannot be decrypted and are omitted from what a runner receives.
 The `ci_runner*` tables hold no repository data (losing them only forces re-registration); the

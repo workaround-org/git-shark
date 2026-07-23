@@ -12,6 +12,7 @@ import java.util.UUID;
 
 import de.workaround.model.CiRunner;
 import de.workaround.model.CiRunnerRegistrationToken;
+import de.workaround.model.Organisation;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -49,18 +50,31 @@ public class RunnerRegistrationService
 	@Transactional
 	public CreatedRegistrationToken createRegistrationToken(User admin)
 	{
-		return createRegistrationToken(admin, null);
+		return createScopedToken(admin, null, null);
 	}
 
 	/** Create a registration token scoped to {@code repository} (null = instance-scope, any repository). */
 	@Transactional
 	public CreatedRegistrationToken createRegistrationToken(User admin, Repository repository)
 	{
+		return createScopedToken(admin, repository, null);
+	}
+
+	/** Create a registration token scoped to {@code organisation} (serves that org's repositories). */
+	@Transactional
+	public CreatedRegistrationToken createRegistrationToken(User admin, Organisation organisation)
+	{
+		return createScopedToken(admin, null, organisation);
+	}
+
+	private CreatedRegistrationToken createScopedToken(User admin, Repository repository, Organisation organisation)
+	{
 		String plaintext = REGISTRATION_PREFIX + randomSecret();
 		CiRunnerRegistrationToken token = new CiRunnerRegistrationToken();
 		token.tokenHash = hash(plaintext);
 		token.createdBy = admin;
 		token.repository = repository;
+		token.organisation = organisation;
 		token.persist();
 		return new CreatedRegistrationToken(token, plaintext);
 	}
@@ -82,6 +96,7 @@ public class RunnerRegistrationService
 		runner.version = version;
 		runner.ephemeral = ephemeral;
 		runner.repository = registration.repository;
+		runner.organisation = registration.organisation;
 		runner.status = CiRunner.Status.IDLE;
 		runner.lastSeen = Instant.now();
 		runner.persist();

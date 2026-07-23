@@ -23,8 +23,8 @@ import jakarta.persistence.Table;
  * A CI/CD runner registered against this instance via the Forgejo/Gitea runner.v1 Connect protocol.
  * The runner authenticates every post-registration call with {@link #uuid} + a secret whose SHA-256
  * hash is kept in {@link #tokenHash}; the plaintext secret is returned to the runner only once, at
- * registration. A runner may be scoped to a single {@link #repository} (null means instance-scope,
- * serving any repository).
+ * registration. A runner may be scoped to a single {@link #repository} or an {@link #organisation};
+ * with neither set it is instance-scope, serving any repository.
  */
 @Entity
 @Table(name = "ci_runner")
@@ -52,9 +52,13 @@ public class CiRunner implements PanacheEntity.Managed
 
 	public boolean ephemeral;
 
-	/** Repository this runner is scoped to; null means instance-scope (any repository). */
+	/** Repository this runner is scoped to; null means not repo-scoped. */
 	@ManyToOne
 	public Repository repository;
+
+	/** Organisation this runner is scoped to (serves its repos); null means not org-scoped. */
+	@ManyToOne
+	public Organisation organisation;
 
 	public Instant lastSeen;
 

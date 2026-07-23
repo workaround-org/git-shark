@@ -100,13 +100,14 @@ covers how the server side is built and what is / isn't done.
   accumulated into `action_task.outputs` (JSON) and echoed back as `sent_outputs`; dispatch delivers a
   needed job's outputs to its dependents as `needs.<job>.outputs`. `ActionOutputs` (de)serializes the
   JSON, fail-safe to an empty map on a bad value.
-- **Repo-scoped runners:** a registration token (and the runners it creates) may carry a
-  `repository_id` (`ci_runner_registration_token`/`ci_runner`, migration `V30`); null = instance-scope
-  (any repository). Dispatch's `scopeAllows` check hands a scoped runner only its repository's tasks,
-  while an instance runner still serves any. Scoped rows cascade-delete with the repository. Repo
-  owners mint a repo-scoped registration token and list/delete the repo's runners under **Settings →
-  CI** (`ActionSettingsResource`); the instance-wide admin page (`AdminRunnerResource`) still mints
-  unscoped tokens.
+- **Scoped runners:** a registration token (and the runners it creates) may carry a `repository_id`
+  (`V30`) or an `organisation_id` (`V31`) on `ci_runner_registration_token`/`ci_runner`; neither set =
+  instance-scope. Dispatch's `scopeAllows` hands a repo-scoped runner only its repository's tasks, an
+  org-scoped runner any task in a repo owned by that org, and an instance runner any task. Scoped rows
+  cascade-delete with their repository/organisation. Repo owners mint a repo-scoped token and
+  list/delete the repo's runners under **Settings → CI** (`ActionSettingsResource`); the instance-wide
+  admin page (`AdminRunnerResource`) mints unscoped tokens. Org-scoped tokens exist in the model and
+  are honored by dispatch, but there's no UI to mint one yet (service-only).
 - **Label matching:** a task carries its job's `runs-on` labels (`action_task.runs_on`, parsed at
   ingest). Dispatch scans PENDING tasks oldest-first and claims the first whose labels are all
   advertised by the fetching runner (empty `runs-on` = any runner); an incompatible task is left for a
@@ -148,7 +149,8 @@ covers how the server side is built and what is / isn't done.
   zombie-reclaim — and its credentials stop working), `ScopedRunnerTest` (a repo-scoped runner skips
   other repos' tasks and idles when only they have work; an instance runner claims across repos),
   `SecretsSettingsTest` also covers the repo Settings → CI runner UI (owner mints a scoped token,
-  lists/deletes the repo's runners; a stranger is refused).
+  lists/deletes the repo's runners; a stranger is refused), `OrgScopedRunnerTest` (an org-scoped
+  runner serves its org's repos and idles otherwise).
 - **Ephemeral runners:** a runner registered with `ephemeral=true` is one-shot — once its single task
   reaches a terminal state it is deleted (`ci_runner` row removed; the task's `runner_id` is `ON
   DELETE SET NULL`), so its credentials stop working and it never gets a second task. This holds on
@@ -194,7 +196,8 @@ covers how the server side is built and what is / isn't done.
   not. (`!`-negation within a single pattern list is also not supported.)
 - **Matrix advanced options:** `include`/`exclude` and `fail-fast`/`max-parallel` are not honored
   (plain dimension cross-product only).
-- **Org scope:** runners can be scoped to a repository but not to an organisation.
+- **Org-scoped token UI:** dispatch enforces org scope, but there's no page yet to mint an
+  org-scoped registration token (repo-scoped tokens have one; org-scoped are service-only).
 - **Later phases:** artifacts (`ACTIONS_RESULTS_URL`), non-push events.
 
 ## References

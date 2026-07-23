@@ -188,10 +188,22 @@ public class TaskDispatchService
 		return Optional.empty();
 	}
 
-	/** An instance-scoped runner (no repository) serves any task; a repo-scoped runner only its repository's. */
+	/**
+	 * Whether the runner's scope permits this task: a repo-scoped runner only its repository's tasks; an
+	 * org-scoped runner any of that organisation's repositories'; an unscoped (instance) runner any task.
+	 */
 	private static boolean scopeAllows(CiRunner runner, ActionTask task)
 	{
-		return runner.repository == null || runner.repository.id.equals(task.run.repository.id);
+		Repository repo = task.run.repository;
+		if (runner.repository != null)
+		{
+			return runner.repository.id.equals(repo.id);
+		}
+		if (runner.organisation != null)
+		{
+			return repo.ownerOrg != null && runner.organisation.id.equals(repo.ownerOrg.id);
+		}
+		return true;
 	}
 
 	/** A task is dispatchable only once every job it needs (in the same run) has succeeded. */
