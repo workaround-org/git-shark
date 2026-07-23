@@ -18,6 +18,7 @@ import de.workaround.ci.proto.runner.v1.FetchTaskRequest;
 import de.workaround.ci.proto.runner.v1.FetchTaskResponse;
 import de.workaround.ci.proto.runner.v1.RegisterRequest;
 import de.workaround.ci.proto.runner.v1.RegisterResponse;
+import de.workaround.ci.proto.runner.v1.Result;
 import de.workaround.ci.proto.runner.v1.Runner;
 import de.workaround.ci.proto.runner.v1.RunnerStatus;
 import de.workaround.ci.proto.runner.v1.Task;
@@ -147,8 +148,12 @@ public class ConnectRunnerResource
 		{
 			ActionTask task = progressService.updateTask(uuid, token, state.getId(), state.getResult(), stoppedAt,
 				request.getOutputsMap());
+			// If the task was cancelled server-side (e.g. the run was cancelled), tell the runner to stop.
+			TaskState responseState = task.status == ActionRun.Status.CANCELLED
+				? state.toBuilder().setResult(Result.RESULT_CANCELLED).build()
+				: state;
 			return ok(UpdateTaskResponse.newBuilder()
-				.setState(state)
+				.setState(responseState)
 				.addAllSentOutputs(ActionOutputs.parse(task.outputs).keySet())
 				.build().toByteArray());
 		}

@@ -6,6 +6,20 @@
         <p class="issue-back"><a href="/repos/{repo.ownerHandle}/{repo.name}/actions">← Actions</a></p>
         <header class="issue-header">
             <h2 class="issue-heading">{run.workflowName} <span class="issue-no">#{run.number}</span></h2>
+            {#if canWrite}
+            <div class="issue-header-actions">
+                {#if run.status.terminal}
+                <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/actions/{run.number}/rerun"
+                      onsubmit="return confirm('Re-run this workflow? Its previous logs will be cleared.')">
+                    <button type="submit" class="btn btn-secondary btn-sm">Re-run</button>
+                </form>
+                {#else}
+                <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/actions/{run.number}/cancel">
+                    <button type="submit" class="btn btn-danger btn-sm">Cancel run</button>
+                </form>
+                {/if}
+            </div>
+            {/if}
         </header>
         <div class="issue-byline">
             <span class="badge status-{run.status}">{run.status.label}</span>

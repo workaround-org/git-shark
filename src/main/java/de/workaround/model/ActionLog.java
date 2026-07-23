@@ -45,6 +45,9 @@ public class ActionLog implements PanacheEntity.Managed
 
 		@HQL("select count(l) from ActionLog l where l.task = :task")
 		long countByTask(ActionTask task);
+
+		@HQL("delete from ActionLog l where l.task = :task")
+		void deleteByTask(ActionTask task);
 	}
 
 }

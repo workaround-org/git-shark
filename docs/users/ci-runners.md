@@ -36,6 +36,10 @@ the page was loaded — reload to see newer lines).
 A run whose runner disappears mid-job is marked **Failure** once its time limit passes (configurable
 by the admin), so a run never hangs as Running forever.
 
+Users with write access see controls on the run page: **Cancel run** (while it is still running —
+settles the run and tells the active runner to stop) and **Re-run** (on a finished run — resets its
+jobs and runs them again).
+
 ## Trigger filters
 
 Beyond a bare `on: push` (which runs on every branch push), you can scope runs to specific refs:
@@ -89,5 +93,5 @@ yet.
 ## What's coming
 
 - Non-push events (`pull_request`, scheduled, manual), `matrix`.
-- Run cancellation / re-run.
+- Auto-cancelling superseded runs on force-push.
 - Artifacts and commit/merge-request status integration.

@@ -15,6 +15,7 @@ covers how the server side is built and what is / isn't done.
 | Task dispatch | `ci/TaskDispatchService.java` | FetchTask: authenticate, claim the oldest PENDING task, flip task+run to RUNNING, set the runner ACTIVE and the task deadline — atomically. |
 | Task progress | `ci/TaskProgressService.java` | UpdateTask (result → task status + run roll-up, runner back to IDLE) and UpdateLog (resume-safe log-row append, `ack_index`). |
 | Zombie reclaim | `ci/ZombieReclaimService.java` | Scheduled sweep failing RUNNING tasks past their deadline (vanished runner) and rolling up their runs. |
+| Run controls | `ci/ActionRunService.java` | Cancel a run (settle run + unfinished tasks) and re-run a finished run (reset tasks to PENDING, clear logs/outputs). |
 | Actions UI | `web/ActionResource.java` + `templates/ActionResource/` | Read-only per-repo run list + run detail (jobs and their log rows); sidebar `Actions` tab. |
 | Secrets/variables UI | `web/ActionSettingsResource.java` + `ci/ActionSecretService.java` + `templates/ActionSettingsResource/` | Owner-only CRUD for CI secrets (write-only, encrypted) and variables at `settings/actions`. |
 | Entities | `model/CiRunner.java`, `model/CiRunnerRegistrationToken.java` | Runner state (migration `V19`). |
@@ -120,13 +121,22 @@ covers how the server side is built and what is / isn't done.
   variable, duplicate-name rejected, stranger/anonymous get 404),
   `NeedsOrderingTest` (dependent waits for its need then receives its result; a failed need cancels
   the dependent and ends the run), `NeedsOutputsTest` (dependent receives an upstream job's outputs;
-  outputs accumulate across incremental UpdateTask calls).
+  outputs accumulate across incremental UpdateTask calls),
+  `CancelRerunTest` (cancel settles run+unfinished tasks, re-run resets a finished run, a cancelled
+  task tells the runner to stop via UpdateTask) and `ActionControlUiTest` (owner cancels/re-runs over
+  HTTP, a non-writer is refused).
 - **Zombie reclaim (`ZombieReclaimService`):** a scheduled sweep
   (`gitshark.ci.zombie-reclaim-interval`, default 1m) fails any RUNNING task whose
   `action_task.deadline` has passed — the runner is presumed gone — rolls its run up, and flags the
   runner OFFLINE. The deadline is set at claim time from `gitshark.ci.task-timeout` (default 1h). A
   late update from a runner cannot resurrect an already-terminal task. `ZombieReclaimTest` covers both
   the reclaim (overdue → FAILURE, in-deadline left RUNNING) and the anti-resurrection guard.
+- **Cancel & re-run:** `ActionRunService.cancel` settles a run and its unfinished tasks; a task still
+  running on a runner keeps its assignment but is told to stop the next time it calls UpdateTask (the
+  response's `TaskState.result` is flipped to CANCELLED). `rerun` resets a finished run's tasks to
+  PENDING (clearing runner, timing, logs and outputs) so they are picked up fresh. Both re-fetch the
+  run inside the transaction (the entity arrives detached from the resource) and are gated on
+  repository write access at `POST .../actions/{n}/cancel` and `.../rerun` (buttons on the run page).
 - **Actions UI:** a read-only `Actions` tab on each repository — `ActionResource` renders a run list
   (workflow, run number, status, event, short commit) and a run detail page with each job and its
   streamed log rows. Read-gated like the rest of the repo UI (404 for a hidden repo). Tested by
@@ -149,8 +159,9 @@ covers how the server side is built and what is / isn't done.
   not. (`!`-negation within a single pattern list is also not supported.)
 - **`matrix`:** expansion is not implemented — a job with `strategy.matrix` runs once, not once per
   cell (needs a per-job/per-cell payload expander).
-- **Later phases:** concurrency/cancellation, artifacts (`ACTIONS_RESULTS_URL`), repo/org-scoped and
-  ephemeral runners, commit/MR status, non-push events.
+- **Concurrency:** no auto-cancel of superseded runs on force-push (manual cancel/re-run only).
+- **Later phases:** artifacts (`ACTIONS_RESULTS_URL`), repo/org-scoped and ephemeral runners,
+  commit/MR status, non-push events.
 
 ## References
 
