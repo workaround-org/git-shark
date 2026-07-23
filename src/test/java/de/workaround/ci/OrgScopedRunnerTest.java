@@ -12,6 +12,7 @@ import de.workaround.model.ActionTask;
 import de.workaround.model.Organisation;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
+import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -42,6 +43,7 @@ class OrgScopedRunnerTest
 	Organisation.Repo organisations;
 
 	@Test
+	@TestTransaction
 	void orgScopedRunnerRunsItsOrgReposButNotOthers()
 	{
 		User admin = persistUser("org-admin-" + shortId());
@@ -56,6 +58,7 @@ class OrgScopedRunnerTest
 	}
 
 	@Test
+	@TestTransaction
 	void orgScopedRunnerIdlesWhenOnlyOtherOwnersHaveWork()
 	{
 		User admin = persistUser("org-admin2-" + shortId());

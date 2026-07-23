@@ -11,6 +11,7 @@ import de.workaround.model.ActionRun;
 import de.workaround.model.ActionTask;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
+import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -41,6 +42,7 @@ class ScopedRunnerTest
 	ActionTask.Repo tasks;
 
 	@Test
+	@TestTransaction
 	void repoScopedRunnerSkipsOtherReposTasks()
 	{
 		User admin = persistUser("sr-admin-" + shortId());
@@ -57,6 +59,7 @@ class ScopedRunnerTest
 	}
 
 	@Test
+	@TestTransaction
 	void repoScopedRunnerGetsNothingWhenOnlyOtherReposHaveWork()
 	{
 		User admin = persistUser("sr-admin2-" + shortId());
@@ -69,6 +72,7 @@ class ScopedRunnerTest
 	}
 
 	@Test
+	@TestTransaction
 	void instanceRunnerClaimsAnyRepo()
 	{
 		User admin = persistUser("sr-admin3-" + shortId());

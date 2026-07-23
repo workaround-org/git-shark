@@ -55,8 +55,8 @@ class SecretDeliveryTest
 	@Test
 	void claimedTaskReceivesRepoSecretsAndVariables()
 	{
-		RunnerRegistrationService.RegisteredRunner reg = registerRunner();
-		seed("sd-a");
+		Repository repo = seed("sd-a");
+		RunnerRegistrationService.RegisteredRunner reg = registerRunner(repo);
 
 		TaskDispatchService.Fetched fetched = dispatch.fetch(reg.runner().uuid, reg.plaintext());
 
@@ -68,8 +68,8 @@ class SecretDeliveryTest
 	@Test
 	void undecryptableSecretIsDroppedNotLeaked()
 	{
-		RunnerRegistrationService.RegisteredRunner reg = registerRunner();
-		seedWithCorruptSecret("sd-c");
+		Repository repo = seedWithCorruptSecret("sd-c");
+		RunnerRegistrationService.RegisteredRunner reg = registerRunner(repo);
 
 		TaskDispatchService.Fetched fetched = dispatch.fetch(reg.runner().uuid, reg.plaintext());
 
@@ -82,7 +82,8 @@ class SecretDeliveryTest
 	@Test
 	void emptyFetchCarriesNoSecrets()
 	{
-		RunnerRegistrationService.RegisteredRunner reg = registerRunner();
+		Repository repo = emptyRepo("sd-b");
+		RunnerRegistrationService.RegisteredRunner reg = registerRunner(repo);
 
 		TaskDispatchService.Fetched fetched = dispatch.fetch(reg.runner().uuid, reg.plaintext());
 
@@ -91,14 +92,23 @@ class SecretDeliveryTest
 		assertTrue(fetched.vars().isEmpty());
 	}
 
-	private RunnerRegistrationService.RegisteredRunner registerRunner()
+	// scope the runner to the test's own repo so the global dispatch queue (other tests' committed
+	// pending tasks) can't be claimed instead
+	private RunnerRegistrationService.RegisteredRunner registerRunner(Repository repo)
 	{
-		String token = runnerService.createRegistrationToken(persistUser("sd-admin-" + shortId())).plaintext();
+		String token = runnerService.createRegistrationToken(persistUser("sd-admin-" + shortId()), repo).plaintext();
 		return runnerService.register(token, "sd-runner", List.of(), "v4.0.0", false);
 	}
 
 	@Transactional
-	void seed(String repoName)
+	Repository emptyRepo(String repoName)
+	{
+		return repositories.create(persistUser(repoName + "-" + shortId()), repoName, Repository.Visibility.PUBLIC,
+			null);
+	}
+
+	@Transactional
+	Repository seed(String repoName)
 	{
 		User owner = persistUser(repoName + "-" + shortId());
 		Repository repo = repositories.create(owner, repoName, Repository.Visibility.PUBLIC, null);
@@ -130,10 +140,11 @@ class SecretDeliveryTest
 		task.name = "build";
 		task.payload = "on: push";
 		task.persist();
+		return repo;
 	}
 
 	@Transactional
-	void seedWithCorruptSecret(String repoName)
+	Repository seedWithCorruptSecret(String repoName)
 	{
 		User owner = persistUser(repoName + "-" + shortId());
 		Repository repo = repositories.create(owner, repoName, Repository.Visibility.PUBLIC, null);
@@ -165,6 +176,7 @@ class SecretDeliveryTest
 		task.name = "build";
 		task.payload = "on: push";
 		task.persist();
+		return repo;
 	}
 
 	@Transactional
