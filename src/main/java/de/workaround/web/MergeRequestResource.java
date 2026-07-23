@@ -52,7 +52,7 @@ public class MergeRequestResource
 
 		static native TemplateInstance mergeRequest(Repository repo, RepoNav nav, boolean owner, boolean loggedIn,
 			UUID currentUserId, boolean canModerate, MergeRequest mr, List<FileDiffView> files, int additions,
-			int deletions, List<User> assignees, List<MergeRequestComment> discussion);
+			int deletions, List<User> assignees, List<MergeRequestComment> discussion, String ciStatus);
 	}
 
 	/**
@@ -77,6 +77,9 @@ public class MergeRequestResource
 
 	@Inject
 	GitBrowseService browse;
+
+	@Inject
+	de.workaround.ci.CommitStatusService commitStatusService;
 
 	@Inject
 	AccessPolicy accessPolicy;
@@ -186,8 +189,13 @@ public class MergeRequestResource
 				fileIndex++;
 			}
 		}
+		String headSha = browse.commits(service.repositoryPath(repo), mr.sourceBranch, 0, 1)
+			.flatMap(page -> page.commits().stream().findFirst())
+			.map(GitBrowseService.CommitInfo::id)
+			.orElse(null);
+		String ciStatus = headSha == null ? null : commitStatusService.aggregate(repo, headSha).map(Enum::name).orElse(null);
 		return Templates.mergeRequest(repo, repoNav.build(repo, uriInfo), isOwner(repo), loggedIn, currentUserId,
-			canModerate, mr, files, additions, deletions, assignableUsers(repo), discussion);
+			canModerate, mr, files, additions, deletions, assignableUsers(repo), discussion, ciStatus);
 	}
 
 	/** How many of a repository's top commit authors the pickers offer as suggestions. */

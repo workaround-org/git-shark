@@ -90,8 +90,9 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
   which a runner claims, executes, and streams logs for — visible on the repository's **Actions** tab;
   a vanished runner's task is reclaimed after a timeout. Jobs are matched to runners by `runs-on`
   labels, ordered by `needs` dependencies, and repository owners manage encrypted secrets and
-  variables that are delivered to runners, jobs support `needs` ordering and `strategy.matrix`, and
-  runs can be cancelled or re-run from the UI. Non-push events and artifacts are follow-up phases. Guides: [for users](docs/users/ci-runners.md), [for admins](docs/admins/ci-runners.md),
+  variables that are delivered to runners, jobs support `needs` ordering and `strategy.matrix`, runs
+  can be cancelled or re-run from the UI, and a commit's CI result shows on its commit and merge-request
+  pages. Non-push events, artifacts, and scoped/ephemeral runners are follow-up phases. Guides: [for users](docs/users/ci-runners.md), [for admins](docs/admins/ci-runners.md),
   [architecture](docs/maintainers/ci-runners.md)
   activities from; local users can in turn follow a remote repository — or a whole remote user, whose
   public repositories are then followed and shown grouped — and read their pushes (see below)

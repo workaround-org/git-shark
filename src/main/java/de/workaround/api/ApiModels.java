@@ -213,8 +213,9 @@ public final class ApiModels
 	}
 
 	/**
-	 * A Gitea commit status. git-shark has no status store yet, so {@code POST /statuses/{sha}} echoes the
-	 * posted status back (nothing is persisted) and the list/ combined endpoints report an empty, all-clear set.
+	 * A Gitea commit status. The list/combined endpoints report one status per CI run on the commit;
+	 * {@code POST /statuses/{sha}} still only echoes the posted status back (git-shark's statuses come
+	 * from its own runs, not external posts).
 	 */
 	public record CommitStatusView(long id, String state, String context, String description,
 		@JsonProperty("target_url") String targetUrl)
@@ -222,9 +223,9 @@ public final class ApiModels
 	}
 
 	/**
-	 * The Gitea combined commit status. With no status store, the combined {@code state} is reported as
-	 * {@code success} (both under the current field name and the legacy {@code worstStatus}) so a Gitea client
-	 * treats the ref as passing and proceeds; the merge endpoint still rejects a real conflict.
+	 * The Gitea combined commit status: the worst-of the commit's CI runs (mapped to {@code success}/
+	 * {@code failure}/{@code pending}). A commit with no runs reports {@code success} (via {@link
+	 * #allClear}) so a Gitea client like Renovate treats the ref as passing and proceeds.
 	 */
 	public record CombinedStatusView(String state, @JsonProperty("worstStatus") String worstStatus, String sha,
 		@JsonProperty("total_count") int totalCount, List<CommitStatusView> statuses)

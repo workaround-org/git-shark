@@ -16,6 +16,7 @@ covers how the server side is built and what is / isn't done.
 | Task progress | `ci/TaskProgressService.java` | UpdateTask (result → task status + run roll-up, runner back to IDLE) and UpdateLog (resume-safe log-row append, `ack_index`). |
 | Zombie reclaim | `ci/ZombieReclaimService.java` | Scheduled sweep failing RUNNING tasks past their deadline (vanished runner) and rolling up their runs. |
 | Run controls | `ci/ActionRunService.java` | Cancel a run (settle run + unfinished tasks) and re-run a finished run (reset tasks to PENDING, clear logs/outputs). |
+| Commit status | `ci/CommitStatusService.java` | Aggregate a commit's runs into one status; shown on commit/MR pages and via the Gitea commit-status API. |
 | Actions UI | `web/ActionResource.java` + `templates/ActionResource/` | Read-only per-repo run list + run detail (jobs and their log rows); sidebar `Actions` tab. |
 | Secrets/variables UI | `web/ActionSettingsResource.java` + `ci/ActionSecretService.java` + `templates/ActionSettingsResource/` | Owner-only CRUD for CI secrets (write-only, encrypted) and variables at `settings/actions`. |
 | Entities | `model/CiRunner.java`, `model/CiRunnerRegistrationToken.java` | Runner state (migration `V19`). |
@@ -134,7 +135,8 @@ covers how the server side is built and what is / isn't done.
   running run but leaves other branches alone), `MatrixExpansionTest` (single- and two-dimension
   matrices expand to one task per cell with a reduced payload; a non-matrix job stays single),
   `MatrixNeedsTest` (a dependent waits for every cell of a needed matrix job, and one failed cell
-  cancels the dependent).
+  cancels the dependent), `CommitCiStatusTest` (commit page + MR page show the aggregate badge, the
+  commit-status API reflects failure, and a commit with no runs stays all-clear).
 - **Zombie reclaim (`ZombieReclaimService`):** a scheduled sweep
   (`gitshark.ci.zombie-reclaim-interval`, default 1m) fails any RUNNING task whose
   `action_task.deadline` has passed — the runner is presumed gone — rolls its run up, and flags the
@@ -150,6 +152,12 @@ covers how the server side is built and what is / isn't done.
 - **Superseded runs:** after ingest creates the run(s) for a push, `ActionRunService.cancelSuperseded`
   cancels that branch's other still-active runs (keeping the just-created ones), so an in-flight run
   is abandoned when a newer commit lands on the same ref. Other branches are unaffected.
+- **Commit / MR status:** `CommitStatusService.aggregate` folds a commit's runs
+  (`ActionRun.Repo.findByRepositoryAndCommitSha`) into one status (worst-of: FAILURE > RUNNING >
+  CANCELLED > SUCCESS; no runs → none). Shown as a badge on the commit-detail page and on the MR page
+  (for the source branch's head commit, resolved live). The Gitea `commits/{ref}/status` API now
+  returns the real aggregate (mapped to `success`/`failure`/`pending`) with one entry per run — a
+  commit with no runs still reports `success` so Renovate proceeds.
 - **Actions UI:** a read-only `Actions` tab on each repository — `ActionResource` renders a run list
   (workflow, run number, status, event, short commit) and a run detail page with each job and its
   streamed log rows. Read-gated like the rest of the repo UI (404 for a hidden repo). Tested by
@@ -170,7 +178,7 @@ covers how the server side is built and what is / isn't done.
 - **Matrix advanced options:** `include`/`exclude` and `fail-fast`/`max-parallel` are not honored
   (plain dimension cross-product only).
 - **Later phases:** artifacts (`ACTIONS_RESULTS_URL`), repo/org-scoped and ephemeral runners,
-  commit/MR status, non-push events.
+  non-push events.
 
 ## References
 

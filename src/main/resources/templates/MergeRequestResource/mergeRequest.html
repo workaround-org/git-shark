@@ -7,6 +7,7 @@
 <h2>{mr.title} <span class="issue-no">!{mr.number}</span></h2>
 <p>
     <span class="badge status-{mr.status}">{mr.status.label}</span>
+    {#if ciStatus}<span class="badge status-{ciStatus}" title="CI status of the source branch head">{ciStatus}</span>{/if}
     <span class="mr-branches"><code>{mr.sourceBranch}</code> &rarr; <code>{mr.targetBranch}</code></span>
     <span class="muted">opened by {#avatar user=mr.author /} {mr.author.username}</span>
 </p>

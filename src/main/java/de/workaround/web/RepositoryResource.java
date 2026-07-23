@@ -68,7 +68,7 @@ public class RepositoryResource
 			boolean hasNext);
 
 		static native TemplateInstance commit(Repository repo, RepoNav nav, GitBrowseService.CommitInfo commit,
-			List<GitMergeService.FileDiff> files, int additions, int deletions);
+			List<GitMergeService.FileDiff> files, int additions, int deletions, String ciStatus);
 
 		static native TemplateInstance branches(Repository repo, RepoNav nav,
 			List<GitBrowseService.BranchInfo> branches);
@@ -90,6 +90,9 @@ public class RepositoryResource
 
 	@Inject
 	GitMergeService mergeService;
+
+	@Inject
+	de.workaround.ci.CommitStatusService commitStatusService;
 
 	@Inject
 	AccessPolicy accessPolicy;
@@ -256,7 +259,8 @@ public class RepositoryResource
 		Path path = service.repositoryPath(repo);
 		GitBrowseService.CommitInfo info = browse.commit(path, id).orElseThrow(NotFoundException::new);
 		GitMergeService.DiffView diff = mergeService.commitDiff(path, id).orElseThrow(NotFoundException::new);
-		return Templates.commit(repo, nav, info, diff.files(), diff.additions(), diff.deletions());
+		String ciStatus = commitStatusService.aggregate(repo, info.id()).map(Enum::name).orElse(null);
+		return Templates.commit(repo, nav, info, diff.files(), diff.additions(), diff.deletions(), ciStatus);
 	}
 
 	@GET

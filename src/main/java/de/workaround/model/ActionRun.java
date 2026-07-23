@@ -104,6 +104,10 @@ public class ActionRun implements PanacheEntity.Managed
 		@HQL("select r from ActionRun r where r.repository = :repository and r.ref = :ref "
 			+ "and r.status in (PENDING, RUNNING)")
 		List<ActionRun> findActiveByRepositoryAndRef(Repository repository, String ref);
+
+		@HQL("select r from ActionRun r where r.repository = :repository and r.commitSha = :commitSha "
+			+ "order by r.number desc")
+		List<ActionRun> findByRepositoryAndCommitSha(Repository repository, String commitSha);
 	}
 
 }

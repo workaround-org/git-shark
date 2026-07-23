@@ -43,6 +43,9 @@ jobs and runs them again).
 Pushing a new commit to a branch automatically cancels that branch's earlier still-running run, so
 only the latest push keeps running.
 
+A commit's overall CI result appears as a status badge on its commit page, and a merge request shows
+the CI status of its source branch's latest commit.
+
 ## Trigger filters
 
 Beyond a bare `on: push` (which runs on every branch push), you can scope runs to specific refs:

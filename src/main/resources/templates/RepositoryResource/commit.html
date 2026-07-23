@@ -5,7 +5,9 @@
     <section class="repo-main">
         <p><a href="/repos/{repo.ownerHandle}/{repo.name}/commits/{nav.defaultBranch}">&larr; Commits</a></p>
         <div class="commit-detail">
-            <h2 class="commit-subject">{commit.message}</h2>
+            <h2 class="commit-subject">{commit.message}
+                {#if ciStatus}<span class="badge status-{ciStatus}" title="CI status">{ciStatus}</span>{/if}
+            </h2>
             <p class="commit-meta muted">
                 <code>{commit.id}</code> · {commit.author} · {commit.date}
             </p>
