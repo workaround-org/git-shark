@@ -170,7 +170,8 @@ public class TaskDispatchService
 				continue;
 			}
 			UUID id = (UUID) candidate[0];
-			if (!needsSatisfied(tasks.findById(id)))
+			ActionTask candidateTask = tasks.findById(id);
+			if (!scopeAllows(runner, candidateTask) || !needsSatisfied(candidateTask))
 			{
 				continue;
 			}
@@ -185,6 +186,12 @@ public class TaskDispatchService
 			}
 		}
 		return Optional.empty();
+	}
+
+	/** An instance-scoped runner (no repository) serves any task; a repo-scoped runner only its repository's. */
+	private static boolean scopeAllows(CiRunner runner, ActionTask task)
+	{
+		return runner.repository == null || runner.repository.id.equals(task.run.repository.id);
 	}
 
 	/** A task is dispatchable only once every job it needs (in the same run) has succeeded. */

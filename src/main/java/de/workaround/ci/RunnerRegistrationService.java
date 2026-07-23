@@ -12,6 +12,7 @@ import java.util.UUID;
 
 import de.workaround.model.CiRunner;
 import de.workaround.model.CiRunnerRegistrationToken;
+import de.workaround.model.Repository;
 import de.workaround.model.User;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -48,10 +49,18 @@ public class RunnerRegistrationService
 	@Transactional
 	public CreatedRegistrationToken createRegistrationToken(User admin)
 	{
+		return createRegistrationToken(admin, null);
+	}
+
+	/** Create a registration token scoped to {@code repository} (null = instance-scope, any repository). */
+	@Transactional
+	public CreatedRegistrationToken createRegistrationToken(User admin, Repository repository)
+	{
 		String plaintext = REGISTRATION_PREFIX + randomSecret();
 		CiRunnerRegistrationToken token = new CiRunnerRegistrationToken();
 		token.tokenHash = hash(plaintext);
 		token.createdBy = admin;
+		token.repository = repository;
 		token.persist();
 		return new CreatedRegistrationToken(token, plaintext);
 	}
@@ -72,6 +81,7 @@ public class RunnerRegistrationService
 		runner.labels = joinLabels(labels);
 		runner.version = version;
 		runner.ephemeral = ephemeral;
+		runner.repository = registration.repository;
 		runner.status = CiRunner.Status.IDLE;
 		runner.lastSeen = Instant.now();
 		runner.persist();

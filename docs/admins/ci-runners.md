@@ -45,8 +45,10 @@ Registration tokens are **reusable** and **instance-scoped** (matching Gitea's g
 token can register any number of runners. Delete a token to stop it registering new runners; runners
 already registered keep working (they authenticate with their own per-runner secret, not the
 registration token). An **ephemeral** runner (registered with `--ephemeral`) runs a single task and
-is then removed automatically — its credentials stop working after that one job. Repo/org-scoped
-runners are a later phase.
+is then removed automatically — its credentials stop working after that one job. A runner can also be
+**scoped to a single repository** (it then only runs that repo's jobs); the enforcement is in place,
+though minting a repo-scoped registration token from the UI is still to come (the admin page mints
+instance-wide tokens today). Org scope is a later phase.
 
 ## Endpoints
 
@@ -89,7 +91,7 @@ No new listener or TLS config beyond what [Getting Started](getting-started.md) 
 | Table | Contents |
 |---|---|
 | `ci_runner_registration_token` | Reusable registration tokens: `token_hash`, `created_by_id`, `created_at`, `last_used`. |
-| `ci_runner` | Registered runners: `uuid` (the `x-runner-uuid` value), `token_hash`, `name`, `labels` (comma-joined), `version`, `status` (`IDLE`/`ACTIVE`/`OFFLINE`/`UNSPECIFIED`), `ephemeral`, `last_seen`, `created_at`. |
+| `ci_runner` | Registered runners: `uuid` (the `x-runner-uuid` value), `token_hash`, `name`, `labels` (comma-joined), `version`, `status` (`IDLE`/`ACTIVE`/`OFFLINE`/`UNSPECIFIED`), `ephemeral`, `repository_id` (scope; null = instance-wide), `last_seen`, `created_at`. |
 | `action_run` | One workflow run per repository: `number` (per-repo sequential), `workflow_name`, `workflow_file`, `event`, `ref`, `commit_sha`, `triggered_by_id`, `status` (`PENDING`/`RUNNING`/`SUCCESS`/`FAILURE`/`CANCELLED`), timestamps. Deleted with its repository. |
 | `action_task` | One job within a run: `seq` (surrogate int64 id handed to runners), `run_id`, `name`, `runs_on` (comma-joined labels for runner matching, empty = any), `needs` (comma-joined dependency job names), `outputs` (JSON of the job's reported outputs), `job_id` (workflow job key; a matrix job's cells share it), `payload`, `runner_id` (the claiming runner, null while pending), `status`, `log_length` (durable log-row count = UpdateLog resume offset), `deadline` (zombie timeout), timestamps. Deleted with its run. |
 | `action_log` | One log row of a task: `task_id`, `line_index` (0-based), `content`, `timestamp`. Deleted with its task. |
@@ -100,7 +102,8 @@ No new listener or TLS config beyond what [Getting Started](getting-started.md) 
 (`V24__action_task_seq.sql` adds `action_task.seq`, `V25__action_task_runs_on.sql` adds
 `action_task.runs_on`, `V26__action_secrets_variables.sql` adds `action_secret`/`action_variable`,
 `V27__action_task_needs.sql` adds `action_task.needs`, `V28__action_task_outputs.sql` adds
-`action_task.outputs`, `V29__action_task_job_id.sql` adds `action_task.job_id`).
+`action_task.outputs`, `V29__action_task_job_id.sql` adds `action_task.job_id`,
+`V30__ci_runner_scope.sql` adds the `repository_id` scope to `ci_runner`/`ci_runner_registration_token`).
 Secrets are stored encrypted and require `GITSHARK_SECRET_KEY` to be set (same key as push mirrors);
 without it, secrets cannot be decrypted and are omitted from what a runner receives.
 The `ci_runner*` tables hold no repository data (losing them only forces re-registration); the

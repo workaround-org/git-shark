@@ -16,13 +16,15 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 /**
  * A CI/CD runner registered against this instance via the Forgejo/Gitea runner.v1 Connect protocol.
  * The runner authenticates every post-registration call with {@link #uuid} + a secret whose SHA-256
  * hash is kept in {@link #tokenHash}; the plaintext secret is returned to the runner only once, at
- * registration. Instance-scope only in phase 1 (no repo/org scoping yet).
+ * registration. A runner may be scoped to a single {@link #repository} (null means instance-scope,
+ * serving any repository).
  */
 @Entity
 @Table(name = "ci_runner")
@@ -49,6 +51,10 @@ public class CiRunner implements PanacheEntity.Managed
 	public Status status = Status.IDLE;
 
 	public boolean ephemeral;
+
+	/** Repository this runner is scoped to; null means instance-scope (any repository). */
+	@ManyToOne
+	public Repository repository;
 
 	public Instant lastSeen;
 

@@ -37,6 +37,10 @@ public class CiRunnerRegistrationToken implements PanacheEntity.Managed
 	@ManyToOne
 	public User createdBy;
 
+	/** Repository this token (and the runners it creates) is scoped to; null means instance-scope. */
+	@ManyToOne
+	public Repository repository;
+
 	public Instant createdAt = Instant.now();
 
 	public Instant lastUsed;

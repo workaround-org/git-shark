@@ -100,6 +100,11 @@ covers how the server side is built and what is / isn't done.
   accumulated into `action_task.outputs` (JSON) and echoed back as `sent_outputs`; dispatch delivers a
   needed job's outputs to its dependents as `needs.<job>.outputs`. `ActionOutputs` (de)serializes the
   JSON, fail-safe to an empty map on a bad value.
+- **Repo-scoped runners:** a registration token (and the runners it creates) may carry a
+  `repository_id` (`ci_runner_registration_token`/`ci_runner`, migration `V30`); null = instance-scope
+  (any repository). Dispatch's `scopeAllows` check hands a scoped runner only its repository's tasks,
+  while an instance runner still serves any. Scoped rows cascade-delete with the repository.
+  (Generating a scoped token still needs a UI — the admin page only mints instance tokens today.)
 - **Label matching:** a task carries its job's `runs-on` labels (`action_task.runs_on`, parsed at
   ingest). Dispatch scans PENDING tasks oldest-first and claims the first whose labels are all
   advertised by the fetching runner (empty `runs-on` = any runner); an incompatible task is left for a
@@ -138,7 +143,8 @@ covers how the server side is built and what is / isn't done.
   cancels the dependent), `CommitCiStatusTest` (commit page + MR page show the aggregate badge, the
   commit-status API reflects failure, and a commit with no runs stays all-clear),
   `EphemeralRunnerTest` (an ephemeral runner is removed after its task — on completion and on
-  zombie-reclaim — and its credentials stop working).
+  zombie-reclaim — and its credentials stop working), `ScopedRunnerTest` (a repo-scoped runner skips
+  other repos' tasks and idles when only they have work; an instance runner claims across repos).
 - **Ephemeral runners:** a runner registered with `ephemeral=true` is one-shot — once its single task
   reaches a terminal state it is deleted (`ci_runner` row removed; the task's `runner_id` is `ON
   DELETE SET NULL`), so its credentials stop working and it never gets a second task. This holds on
@@ -184,7 +190,10 @@ covers how the server side is built and what is / isn't done.
   not. (`!`-negation within a single pattern list is also not supported.)
 - **Matrix advanced options:** `include`/`exclude` and `fail-fast`/`max-parallel` are not honored
   (plain dimension cross-product only).
-- **Later phases:** artifacts (`ACTIONS_RESULTS_URL`), repo/org-scoped runners, non-push events.
+- **Scoped-runner token UI & org scope:** dispatch enforces repo scope, but there's no page yet to
+  mint a repo-scoped registration token (admin UI mints instance tokens only), and org scope isn't
+  modelled.
+- **Later phases:** artifacts (`ACTIONS_RESULTS_URL`), non-push events.
 
 ## References
 
