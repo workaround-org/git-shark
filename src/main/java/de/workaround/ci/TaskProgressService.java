@@ -37,6 +37,9 @@ public class TaskProgressService
 	@Inject
 	ActionLog.Repo logs;
 
+	@Inject
+	CiRunner.Repo runners;
+
 	/**
 	 * Record the result the runner reports for a task and roll the owning run's status up.
 	 *
@@ -67,7 +70,16 @@ public class TaskProgressService
 		if (status.isTerminal())
 		{
 			task.finishedAt = stoppedAt != null ? stoppedAt : Instant.now();
-			runner.status = CiRunner.Status.IDLE;
+			if (runner.ephemeral)
+			{
+				// an ephemeral runner is one-shot: retire it after its single task (the client also exits)
+				task.runner = null;
+				runners.delete(runner);
+			}
+			else
+			{
+				runner.status = CiRunner.Status.IDLE;
+			}
 		}
 		rollUpRun(task.run);
 		return task;

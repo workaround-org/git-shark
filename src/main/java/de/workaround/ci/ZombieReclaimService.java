@@ -16,8 +16,9 @@ import jakarta.transaction.Transactional;
 /**
  * Fails tasks whose runner vanished mid-run (issue #2, phase 1). A claimed task carries a {@link
  * ActionTask#deadline}; once it passes with the task still RUNNING, the runner is presumed gone, so
- * the task is marked FAILURE, its run rolled up, and the runner flagged OFFLINE. Runs on a schedule
- * ({@code gitshark.ci.zombie-reclaim-interval}); {@link #reclaim(Instant)} is the testable core.
+ * the task is marked FAILURE, its run rolled up, and the runner flagged OFFLINE (or deleted, if it is
+ * ephemeral). Runs on a schedule ({@code gitshark.ci.zombie-reclaim-interval}); {@link
+ * #reclaim(Instant)} is the testable core.
  */
 @ApplicationScoped
 public class ZombieReclaimService
@@ -26,6 +27,9 @@ public class ZombieReclaimService
 
 	@Inject
 	ActionTask.Repo tasks;
+
+	@Inject
+	CiRunner.Repo runners;
 
 	@Inject
 	TaskProgressService progress;
@@ -49,9 +53,19 @@ public class ZombieReclaimService
 		{
 			task.status = ActionRun.Status.FAILURE;
 			task.finishedAt = now;
-			if (task.runner != null)
+			CiRunner runner = task.runner;
+			if (runner != null)
 			{
-				task.runner.status = CiRunner.Status.OFFLINE;
+				if (runner.ephemeral)
+				{
+					// an ephemeral runner is one-shot even when it dies mid-task — retire it, don't just flag it
+					task.runner = null;
+					runners.delete(runner);
+				}
+				else
+				{
+					runner.status = CiRunner.Status.OFFLINE;
+				}
 			}
 			progress.rollUpRun(task.run);
 		}

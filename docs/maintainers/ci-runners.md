@@ -136,7 +136,14 @@ covers how the server side is built and what is / isn't done.
   matrices expand to one task per cell with a reduced payload; a non-matrix job stays single),
   `MatrixNeedsTest` (a dependent waits for every cell of a needed matrix job, and one failed cell
   cancels the dependent), `CommitCiStatusTest` (commit page + MR page show the aggregate badge, the
-  commit-status API reflects failure, and a commit with no runs stays all-clear).
+  commit-status API reflects failure, and a commit with no runs stays all-clear),
+  `EphemeralRunnerTest` (an ephemeral runner is removed after its task — on completion and on
+  zombie-reclaim — and its credentials stop working).
+- **Ephemeral runners:** a runner registered with `ephemeral=true` is one-shot — once its single task
+  reaches a terminal state it is deleted (`ci_runner` row removed; the task's `runner_id` is `ON
+  DELETE SET NULL`), so its credentials stop working and it never gets a second task. This holds on
+  both completion (`TaskProgressService`) and timeout (`ZombieReclaimService` deletes rather than just
+  flagging OFFLINE). The stock `act_runner --ephemeral` client exits on its own after the job.
 - **Zombie reclaim (`ZombieReclaimService`):** a scheduled sweep
   (`gitshark.ci.zombie-reclaim-interval`, default 1m) fails any RUNNING task whose
   `action_task.deadline` has passed — the runner is presumed gone — rolls its run up, and flags the
@@ -177,8 +184,7 @@ covers how the server side is built and what is / isn't done.
   not. (`!`-negation within a single pattern list is also not supported.)
 - **Matrix advanced options:** `include`/`exclude` and `fail-fast`/`max-parallel` are not honored
   (plain dimension cross-product only).
-- **Later phases:** artifacts (`ACTIONS_RESULTS_URL`), repo/org-scoped and ephemeral runners,
-  non-push events.
+- **Later phases:** artifacts (`ACTIONS_RESULTS_URL`), repo/org-scoped runners, non-push events.
 
 ## References
 

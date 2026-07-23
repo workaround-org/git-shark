@@ -44,7 +44,9 @@ Admins get a **CI runners** entry in the Account menu, linking to `/admin/runner
 Registration tokens are **reusable** and **instance-scoped** (matching Gitea's global tokens): one
 token can register any number of runners. Delete a token to stop it registering new runners; runners
 already registered keep working (they authenticate with their own per-runner secret, not the
-registration token). Repo/org-scoped and ephemeral runners are later phases.
+registration token). An **ephemeral** runner (registered with `--ephemeral`) runs a single task and
+is then removed automatically — its credentials stop working after that one job. Repo/org-scoped
+runners are a later phase.
 
 ## Endpoints
 
