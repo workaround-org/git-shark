@@ -40,6 +40,9 @@ Users with write access see controls on the run page: **Cancel run** (while it i
 settles the run and tells the active runner to stop) and **Re-run** (on a finished run — resets its
 jobs and runs them again).
 
+Pushing a new commit to a branch automatically cancels that branch's earlier still-running run, so
+only the latest push keeps running.
+
 ## Trigger filters
 
 Beyond a bare `on: push` (which runs on every branch push), you can scope runs to specific refs:
@@ -93,5 +96,4 @@ yet.
 ## What's coming
 
 - Non-push events (`pull_request`, scheduled, manual), `matrix`.
-- Auto-cancelling superseded runs on force-push.
 - Artifacts and commit/merge-request status integration.

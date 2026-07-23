@@ -124,7 +124,8 @@ covers how the server side is built and what is / isn't done.
   outputs accumulate across incremental UpdateTask calls),
   `CancelRerunTest` (cancel settles run+unfinished tasks, re-run resets a finished run, a cancelled
   task tells the runner to stop via UpdateTask) and `ActionControlUiTest` (owner cancels/re-runs over
-  HTTP, a non-writer is refused).
+  HTTP, a non-writer is refused), `SupersededRunsTest` (a new push cancels the branch's earlier
+  running run but leaves other branches alone).
 - **Zombie reclaim (`ZombieReclaimService`):** a scheduled sweep
   (`gitshark.ci.zombie-reclaim-interval`, default 1m) fails any RUNNING task whose
   `action_task.deadline` has passed — the runner is presumed gone — rolls its run up, and flags the
@@ -137,6 +138,9 @@ covers how the server side is built and what is / isn't done.
   PENDING (clearing runner, timing, logs and outputs) so they are picked up fresh. Both re-fetch the
   run inside the transaction (the entity arrives detached from the resource) and are gated on
   repository write access at `POST .../actions/{n}/cancel` and `.../rerun` (buttons on the run page).
+- **Superseded runs:** after ingest creates the run(s) for a push, `ActionRunService.cancelSuperseded`
+  cancels that branch's other still-active runs (keeping the just-created ones), so an in-flight run
+  is abandoned when a newer commit lands on the same ref. Other branches are unaffected.
 - **Actions UI:** a read-only `Actions` tab on each repository — `ActionResource` renders a run list
   (workflow, run number, status, event, short commit) and a run detail page with each job and its
   streamed log rows. Read-gated like the rest of the repo UI (404 for a hidden repo). Tested by
@@ -159,7 +163,6 @@ covers how the server side is built and what is / isn't done.
   not. (`!`-negation within a single pattern list is also not supported.)
 - **`matrix`:** expansion is not implemented — a job with `strategy.matrix` runs once, not once per
   cell (needs a per-job/per-cell payload expander).
-- **Concurrency:** no auto-cancel of superseded runs on force-push (manual cancel/re-run only).
 - **Later phases:** artifacts (`ACTIONS_RESULTS_URL`), repo/org-scoped and ephemeral runners,
   commit/MR status, non-push events.
 

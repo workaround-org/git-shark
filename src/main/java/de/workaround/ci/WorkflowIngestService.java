@@ -2,8 +2,10 @@ package de.workaround.ci;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.eclipse.jgit.errors.LargeObjectException;
@@ -22,6 +24,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 
 import de.workaround.git.GitRepositoryService;
+import de.workaround.model.ActionRun;
 import de.workaround.model.Repository;
 import io.quarkus.arc.Arc;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -56,6 +59,9 @@ public class WorkflowIngestService
 
 	@Inject
 	WorkflowRunFactory factory;
+
+	@Inject
+	ActionRunService runControl;
 
 	/** Entry point from the transports' post-receive hooks. */
 	public void onPush(String ownerName, String repoName, UUID pusherUserId,
@@ -107,6 +113,7 @@ public class WorkflowIngestService
 				continue;
 			}
 			List<String> changedPaths = changedPaths(db, command.getOldId(), command.getNewId());
+			Set<UUID> createdRuns = new HashSet<>();
 			for (WorkflowFile workflow : workflows)
 			{
 				JsonNode root = parse(workflow.content());
@@ -119,8 +126,14 @@ public class WorkflowIngestService
 				{
 					continue;
 				}
-				factory.create(repo, pusherUserId, command.getRefName(), command.getNewId().name(),
+				ActionRun run = factory.create(repo, pusherUserId, command.getRefName(), command.getNewId().name(),
 					workflowName(root, workflow.path()), workflow.path(), jobs, workflow.content());
+				createdRuns.add(run.id);
+			}
+			if (!createdRuns.isEmpty())
+			{
+				// a new push to this branch supersedes its still-active earlier runs
+				runControl.cancelSuperseded(repo, command.getRefName(), createdRuns);
 			}
 		}
 	}

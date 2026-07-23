@@ -100,6 +100,10 @@ public class ActionRun implements PanacheEntity.Managed
 
 		@HQL("select coalesce(max(r.number), 0) from ActionRun r where r.repository = :repository")
 		int maxNumber(Repository repository);
+
+		@HQL("select r from ActionRun r where r.repository = :repository and r.ref = :ref "
+			+ "and r.status in (PENDING, RUNNING)")
+		List<ActionRun> findActiveByRepositoryAndRef(Repository repository, String ref);
 	}
 
 }

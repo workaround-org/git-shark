@@ -1,10 +1,13 @@
 package de.workaround.ci;
 
 import java.time.Instant;
+import java.util.Set;
+import java.util.UUID;
 
 import de.workaround.model.ActionLog;
 import de.workaround.model.ActionRun;
 import de.workaround.model.ActionTask;
+import de.workaround.model.Repository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -39,6 +42,27 @@ public class ActionRunService
 			// already finished (naturally or a double click on a stale page) — don't rewrite history
 			return;
 		}
+		settle(run);
+	}
+
+	/**
+	 * Cancel a branch's still-active runs that a newer push has superseded, keeping the runs just
+	 * created for that push. Called from workflow ingest.
+	 */
+	@Transactional
+	public void cancelSuperseded(Repository repository, String ref, Set<UUID> keep)
+	{
+		for (ActionRun run : runs.findActiveByRepositoryAndRef(repository, ref))
+		{
+			if (!keep.contains(run.id))
+			{
+				settle(run);
+			}
+		}
+	}
+
+	private void settle(ActionRun run)
+	{
 		Instant now = Instant.now();
 		for (ActionTask task : tasks.findByRun(run))
 		{
