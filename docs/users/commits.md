@@ -16,7 +16,10 @@ between the commit and its parent. For the very first commit in a repository (a
 *root* commit, which has no parent) every file shows as an addition, because there
 was nothing before it.
 
-The diff is always computed live from git; nothing is stored in the database.
+The diff is always computed live from git; nothing is stored in the database. Because
+that makes the page expensive to build, it is rate-limited per visitor — open a lot of
+them quickly and you may be asked to confirm you are a person, or told to slow down.
+See [The "Quick check" page](bot-check.md); logging in raises the allowance a lot.
 
 ## Getting there
 

@@ -1,0 +1,31 @@
+{#include layout}
+{#title}Quick check – git-shark{/title}
+<h1>Quick check</h1>
+<p>This page is expensive to build, so we ask unrecognised visitors to confirm they are a person.
+    Solve the check below and you will be sent straight on — the confirmation lasts for a while, so
+    you will not be asked again on every page.</p>
+{#if error}
+<p class="error">{error}</p>
+{/if}
+<form method="post" action="/challenge">
+    <input type="hidden" name="redirect" value="{redirect}">
+    <div class="{widgetClass}" data-sitekey="{siteKey}" data-callback="sharkChallengeSolved"></div>
+    <noscript>
+        <p class="error">This check needs JavaScript. Alternatively, <a href="/login">log in</a> — signed-in
+            users get a much larger budget and are not challenged.</p>
+    </noscript>
+    <p><button class="btn btn-primary" type="submit">Continue</button></p>
+</form>
+<p>Logging in avoids this check: signed-in requests are metered per account, with a far higher
+    allowance. <a href="/login">Log in</a></p>
+{#scripts}
+<script src="{scriptUrl}" async defer></script>
+<script>
+    // the widget calls this with the solved token; submit immediately so the visitor needs no second click
+    function sharkChallengeSolved()
+    {
+        document.querySelector('form[action="/challenge"]').submit();
+    }
+</script>
+{/scripts}
+{/include}
