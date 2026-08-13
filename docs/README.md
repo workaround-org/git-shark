@@ -15,6 +15,8 @@ OIDC login, and PostgreSQL metadata.
   Commits tab to see the diff it introduced, including root commits.
 - **[Forking](users/forking.md)** — make your own copy of any repository you can
   read, what a fork carries, and the one-fork-per-name rule.
+- **[Releases](users/releases.md)** — publish a tag with title, Markdown notes
+  and source archives, the Latest badge, pre-releases, and today's limits.
 - **[Search](users/search.md)** — the header search box: case-insensitive
   substring search over repositories and people, and how visibility is honored.
 - **[Profile settings](users/profile.md)** — change your username and display
@@ -46,6 +48,9 @@ OIDC login, and PostgreSQL metadata.
   access.
 - **[Forks](admins/forking.md)** — the fork endpoints, the `parent_repo_id`
   column and its `ON DELETE SET NULL` semantics, and storage implications.
+- **[Releases](admins/releases.md)** — the release and archive endpoints, tag
+  creation on publish, the `releases` table, and archive streaming behavior
+  (no configuration needed).
 - **[Search](admins/search.md)** — the `/search` and `/api/v1/search` endpoints,
   JSON shape, matching semantics, visibility enforcement (no configuration).
 - **[Persistent data](admins/persistent-data.md)** — every store that must survive
@@ -82,6 +87,9 @@ OIDC login, and PostgreSQL metadata.
 - **[Repository images](maintainers/repo-images.md)** — per-repository image
   storage, how it reuses the avatar machinery, owner-avatar fallback, and the
   visibility-guarded serving endpoint.
+- **[Releases architecture](maintainers/releases.md)** — releases as an
+  annotation over tags, in-core tag creation, the dependency-free archive
+  writer, and the works/gaps list.
 - **[ForgeFed architecture](maintainers/forgefed.md)** — how federation is
   implemented, the decisions behind it, what works and what is still missing.
 - **[Federated collaboration roadmap](maintainers/federation-roadmap.md)** — the

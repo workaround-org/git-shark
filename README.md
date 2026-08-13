@@ -24,10 +24,18 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
   - public-key authentication only; keys managed per user in the UI
   - the server binds an unprivileged port (default 2222); the port shown in URLs is set
     separately via `GITSHARK_SSH_EXTERNAL_PORT` (default 22) to match your host mapping
-- Web UI: an auth-aware header nav (a "Log in" button for visitors; for signed-in users a top-level Following link plus an Account dropdown holding Profile, SSH keys, Access tokens, and Logout — a JS-free `<details>` menu), landing page with login CTA for visitors (`/`), repository list for authenticated users (`/`), public repository browse at `/explore`, file/tree browser with self-hosted syntax highlighting (extension-based language detection, falls back to plain text for unknown extensions and binary files; Markdown files render to HTML by default with a Rendered/Code toggle), a rendered README (commonmark-java with GFM tables, XSS-safe) shown below the file list on the repository overview page, commit log (paginated), branches, tags (own dedicated page, separate from branches), one-time handle selection (`/onboarding`), profile settings (`/settings/profile`). Every repository sub-page shows a persistent left sidebar with repo identity, a Clone button opening the clone dialog, a pin toggle, and section navigation (Code, Commits, Branches, Tags, Issues, Merge requests, plus Settings for the owner) with per-section counts and active-section highlighting, and the clone panel has copy-to-clipboard buttons for the HTTP and SSH `git clone` commands. Keyboard shortcuts are an optional, progressive enhancement (`?` opens a help overlay, `Escape` closes it, `g h` goes home) — every page works fully without JavaScript
+- Web UI: an auth-aware header nav (a "Log in" button for visitors; for signed-in users a top-level Following link plus an Account dropdown holding Profile, SSH keys, Access tokens, and Logout — a JS-free `<details>` menu), landing page with login CTA for visitors (`/`), repository list for authenticated users (`/`), public repository browse at `/explore`, file/tree browser with self-hosted syntax highlighting (extension-based language detection, falls back to plain text for unknown extensions and binary files; Markdown files render to HTML by default with a Rendered/Code toggle), a rendered README (commonmark-java with GFM tables, XSS-safe) shown below the file list on the repository overview page, commit log (paginated), branches, tags (own dedicated page, separate from branches), one-time handle selection (`/onboarding`), profile settings (`/settings/profile`). Every repository sub-page shows a persistent left sidebar with repo identity, a Clone button opening the clone dialog, a pin toggle, and section navigation (Code, Commits, Branches, Tags, Releases, Issues, Merge requests, plus Settings for the owner) with per-section counts and active-section highlighting, and the clone panel has copy-to-clipboard buttons for the HTTP and SSH `git clone` commands. Keyboard shortcuts are an optional, progressive enhancement (`?` opens a help overlay, `Escape` closes it, `g h` goes home) — every page works fully without JavaScript
 - Per-repository issues: title, optional description (rendered as Markdown, XSS-safe), per-repo sequential number (`#1`, `#2`, …), an author, and an optional assignee (any local user, set by username; blank clears it); created and managed by the repo owner and collaborators, readable by anyone who can read the repo, via a dedicated "New issue" page; title and description can be edited afterwards via an "Edit issue" page. Issue pages are addressed by number (`…/issues/1`); old UUID URLs redirect permanently to the number form
 - Issues move through a fixed lifecycle (Planned → In development → Done); the repo navigation shows the open (Planned + In development) issue count, and Done issues collapse into an "Archive" section on the issues page
 - Issues auto-close from pushed commit messages, GitHub-style (`close(s|d)`/`fix(es|ed)`/`resolve(s|d)` + `#<number>`, e.g. `fixes #12`), over both HTTP and SSH pushes
+- **Releases** — publish a git tag as a release with a title, Markdown release notes (XSS-safe) and a
+  pre-release flag, from a dedicated "New release" page; the tag can be cut from a branch, tag or commit
+  while publishing (annotated tag written in-core, no working tree). Releases are listed newest-first with a
+  **Latest** badge on the newest non-prerelease, are addressed by tag (`…/releases/tag/v1.0.0`), and can be
+  edited or deleted by the owner and collaborators — deleting a release never deletes its git tag. Every
+  release links source archives, served for any ref at `…/archive/{ref}.zip` and `…/archive/{ref}.tar.gz`
+  (streamed from the object database, JDK-only zip/ustar writer, nested under a `<repo>-<ref>/` prefix).
+  Guide: [releases](docs/users/releases.md)
 - Per-repository merge requests: source → target branch within one repo, with a title, optional description, a per-repo sequential number displayed bang-prefixed (`!1`, `!2`, …, distinct from issues' `#`), an author, and an optional assignee and reviewer (any local user, set by username from a GitHub-style picker that suggests the repo owner, its collaborators, and the repository's top commit authors; blank clears); created and managed by the repo owner and collaborators, readable by anyone who can read the repo, via a dedicated "New merge request" page where the author picks source and target from the repo's branches. Merge-request pages are addressed by number (`…/merge-requests/1`, matching the issue URL scheme; the REST API exposes the same objects as Gitea pull requests under `…/pulls/1`); old UUID URLs redirect permanently to the number form
 - Merge requests move through the lifecycle Open → Merged / Closed; the repo navigation and left sidebar show the open merge-request count, and merged/closed ones collapse into an "Archive" section on the list page (same pattern as issues)
 - Dashboard notifications: the signed-in home page (`/`) surfaces the open issues and merge requests you are involved in — ones you authored, are assigned to, or (for merge requests) are asked to review — each linking straight to the item and labelled with its repository; items in a repository you can no longer read never appear. Built on a pluggable `NotificationSource` aggregation, so future item types can contribute without touching the dashboard
@@ -67,9 +75,9 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
   git-over-HTTP (`Authorization: Bearer <token>` or the Gitea-style `Authorization: token <token>`),
   auto-documented via OpenAPI/Swagger UI. The contract is **Gitea-compatible**, so Gitea tooling
   (Renovate, `tea`) can drive it (see below)
-- **MCP server** at `/mcp` (Streamable HTTP), exposing the same feature set as the REST API as
+- **MCP server** at `/mcp` (Streamable HTTP), exposing most of the REST API surface as
   MCP tools so an AI client can manage repositories, issues, merge requests, and MR line-comments
-  (see below)
+  (releases are REST-only so far; see below)
 - **Push mirrors** — the repository owner can replicate a repository to external remotes on
   every push (`git push --mirror` semantics, all refs including deletions), over HTTPS with
   stored credentials or over SSH with a server-generated Ed25519 deploy key. Syncs run
@@ -162,6 +170,9 @@ unchanged; `GET /api/v1/version` reports the emulated Gitea version (`GITSHARK_G
 | POST | `/api/v1/repos/{owner}/{name}/pulls/{number}/merge` | Merge |
 | GET, POST | `/api/v1/repos/{owner}/{name}/pulls/{number}/comments` | List / add line-level review comments (any reader may comment) |
 | DELETE | `/api/v1/repos/{owner}/{name}/pulls/{number}/comments/{commentId}` | Delete a comment (author, repo owner, or collaborator) |
+| GET, POST | `/api/v1/repos/{owner}/{name}/releases` | List / publish releases (`{tag_name, target_commitish, name, body, prerelease}`) |
+| GET | `/api/v1/repos/{owner}/{name}/releases/latest` | Newest non-prerelease release (`404` when there is none) |
+| GET, PATCH, DELETE | `/api/v1/repos/{owner}/{name}/releases/tags/{tag}` | Get / edit / delete a release by tag (the git tag is kept) |
 | GET | `/api/v1/repos/{owner}/{name}/labels` | Labels (empty — no label model yet) |
 | GET | `/api/v1/repos/{owner}/{name}/commits/{ref}/status` | Combined commit status (all-clear stub — no status store yet) |
 | GET, POST | `/api/v1/repos/{owner}/{name}/commits/{ref}/statuses` · `/statuses/{sha}` | List statuses (empty) / post a status (echoed, not persisted; needs write) |
@@ -268,7 +279,7 @@ onboarding page.
 
 | Store | What |
 |---|---|
-| PostgreSQL | `users`, `repositories` (metadata), `repository_pins` (per-user pinned repositories), `ssh_keys` (public keys + fingerprints), `access_tokens` (SHA-256 hashes, labels, last-used), push-mirror tables (`push_mirror` with AES-GCM-encrypted secrets, `mirror_sync` queue), federation tables (`federation_keys`, `remote_actors`, `repository_followers`, `remote_follows`, `remote_user_follows`, `received_pushes`, `federation_outbox`, `federation_inbox`, `federation_delivery`) |
+| PostgreSQL | `users`, `repositories` (metadata), `repository_pins` (per-user pinned repositories), `ssh_keys` (public keys + fingerprints), `access_tokens` (SHA-256 hashes, labels, last-used), `releases` (title, notes, pre-release flag and published commit per tag), push-mirror tables (`push_mirror` with AES-GCM-encrypted secrets, `mirror_sync` queue), federation tables (`federation_keys`, `remote_actors`, `repository_followers`, `remote_follows`, `remote_user_follows`, `received_pushes`, `federation_outbox`, `federation_inbox`, `federation_delivery`) |
 | Filesystem (`GITSHARK_STORAGE_ROOT`) | Bare Git repositories |
 | Filesystem (`GITSHARK_AVATAR_ROOT`) | Uploaded profile pictures, one file per user (UUID-named) |
 | Filesystem (`GITSHARK_SSH_HOST_KEY`) | SSH host key |

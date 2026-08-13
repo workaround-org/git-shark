@@ -942,6 +942,27 @@ pre code {
     gap: var(--s2);
 }
 
+/* release form: the target select and the pre-release checkbox sit inline with their label text,
+   instead of stretching to the full field width like the text inputs above them */
+.release-target,
+.release-flag {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    font: 14px/1.4 var(--font);
+    color: var(--muted);
+}
+
+.release-target select,
+.release-flag input[type="checkbox"] {
+    width: auto;
+    margin-top: 0;
+}
+
+.release-flag input[type="checkbox"] {
+    accent-color: var(--accent);
+}
+
 /* the discussion comment box and its submit button would otherwise touch */
 .comment-form .form-actions {
     margin-top: var(--s3);

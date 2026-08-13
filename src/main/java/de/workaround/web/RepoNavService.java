@@ -8,6 +8,7 @@ import de.workaround.git.GitBrowseService;
 import de.workaround.git.GitRepositoryService;
 import de.workaround.git.IssueService;
 import de.workaround.git.MergeRequestService;
+import de.workaround.git.ReleaseService;
 import de.workaround.git.RepositoryPinService;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
@@ -45,6 +46,9 @@ public class RepoNavService
 	@Inject
 	MergeRequestService mergeRequestService;
 
+	@Inject
+	ReleaseService releaseService;
+
 	// The port shown in clone URLs. This is the port users actually connect to (e.g. 22), which may differ from
 	// gitshark.ssh.port — the port the embedded server binds inside the container (e.g. 2222, so it needs no root).
 	@ConfigProperty(name = "gitshark.ssh.external-port")
@@ -65,12 +69,14 @@ public class RepoNavService
 		int commitCount = empty ? 0 : browse.commitCount(path, defaultBranch);
 		int branchCount = browse.branches(path).size();
 		int tagCount = browse.tags(path).size();
+		long releaseCount = releaseService.count(repo);
 		long openIssueCount = issueService.countOpen(repo);
 		long openMrCount = mergeRequestService.countOpen(repo);
 		String httpUrl = uriInfo.getBaseUri().resolve("/git/" + repo.ownerHandle() + "/" + repo.name + ".git")
 			.toString();
 		String sshUrl = CloneUrls.ssh(uriInfo.getBaseUri().getHost(), sshExternalPort, repo.ownerHandle(), repo.name);
 		return new RepoNav(repo, loggedIn, isOwner, pinned, empty, defaultBranch, commitCount, branchCount, tagCount,
-			openIssueCount, openMrCount, httpUrl, sshUrl, uriInfo.getRequestUri().getRawPath(), parentVisible);
+			releaseCount, openIssueCount, openMrCount, httpUrl, sshUrl, uriInfo.getRequestUri().getRawPath(),
+			parentVisible);
 	}
 }

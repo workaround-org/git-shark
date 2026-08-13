@@ -1,0 +1,31 @@
+{#include layout}
+{#title}Releases – {repo.name}{/title}
+<div class="repo-layout">
+    {#include RepositoryResource/sidebar nav=nav active='releases' /}
+    <section class="repo-main">
+        <div class="issues-head">
+            <h2>Releases</h2>
+            {#if canWrite}
+            <a class="btn btn-primary" href="/repos/{repo.ownerHandle}/{repo.name}/releases/new">New release</a>
+            {/if}
+        </div>
+        {#if releases.isEmpty()}
+        <p class="muted">No releases published yet.</p>
+        {#else}
+        <div class="panel">
+            {#for release in releases}
+            <a class="frow" href="/repos/{repo.ownerHandle}/{repo.name}/releases/tag/{release.tagName}">
+                <span class="fname">
+                    <span class="n">{release.title}</span>
+                    <span class="issue-no">{release.tagName}</span>
+                    {#if release.tagName == latestTag}<span class="badge badge-default">Latest</span>{/if}
+                    {#if release.prerelease}<span class="badge status-PLANNED">Pre-release</span>{/if}
+                </span>
+                <span class="muted" title="{release.createdAt}">{release.createdAt.since}</span>
+            </a>
+            {/for}
+        </div>
+        {/if}
+    </section>
+</div>
+{/include}

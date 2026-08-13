@@ -1,0 +1,50 @@
+{#include layout}
+{#title}{release.title} – {repo.name}{/title}
+<div class="repo-layout">
+    {#include RepositoryResource/sidebar nav=nav active='releases' /}
+    <section class="repo-main">
+        <p class="issue-back"><a href="/repos/{repo.ownerHandle}/{repo.name}/releases">← Releases</a></p>
+        <div class="issue-detail">
+            <div class="issue-content">
+                <header class="issue-header">
+                    <h2 class="issue-heading">{release.title} <span class="issue-no">{release.tagName}</span></h2>
+                    {#if canWrite}
+                    <div class="issue-header-actions">
+                        <a class="btn btn-secondary btn-sm" href="/repos/{repo.ownerHandle}/{repo.name}/releases/tag/{release.tagName}/edit">Edit</a>
+                        <form method="post" action="/repos/{repo.ownerHandle}/{repo.name}/releases/tag/{release.tagName}/delete"
+                              onsubmit="return confirm('Delete this release? The git tag itself is kept.')">
+                            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                        </form>
+                    </div>
+                    {/if}
+                </header>
+                <div class="issue-byline">
+                    {#if latest}<span class="badge badge-default">Latest</span>{/if}
+                    {#if release.prerelease}<span class="badge status-PLANNED">Pre-release</span>{/if}
+                    <span class="issue-person">{#avatar user=release.author /} <span><strong>{release.author.username}</strong> published this release</span></span>
+                    <span class="muted" title="{release.createdAt}">{release.createdAt.since}</span>
+                </div>
+                {#if bodyHtml}
+                <div class="panel issue-desc">
+                    <div class="readme-body">{bodyHtml.raw}</div>
+                </div>
+                {#else}
+                <p class="issue-nodesc muted">No release notes provided.</p>
+                {/if}
+                <h3 class="comments-title">Assets</h3>
+                <div class="panel">
+                    <a class="frow" href="/repos/{repo.ownerHandle}/{repo.name}/archive/{release.tagName}.zip">
+                        <span class="fname"><span class="g">⤓</span> <span class="n">Source code (zip)</span></span>
+                    </a>
+                    <a class="frow" href="/repos/{repo.ownerHandle}/{repo.name}/archive/{release.tagName}.tar.gz">
+                        <span class="fname"><span class="g">⤓</span> <span class="n">Source code (tar.gz)</span></span>
+                    </a>
+                    <a class="frow" href="/repos/{repo.ownerHandle}/{repo.name}/commit/{release.commitId}">
+                        <span class="fname"><span class="g">◴</span> <span class="n">Commit {release.shortCommitId}</span></span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{/include}

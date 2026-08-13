@@ -9,6 +9,7 @@ import de.workaround.model.Issue;
 import de.workaround.model.IssueComment;
 import de.workaround.model.MergeRequest;
 import de.workaround.model.MergeRequestComment;
+import de.workaround.model.Release;
 import de.workaround.model.Repository;
 import de.workaround.model.User;
 
@@ -188,6 +189,27 @@ public final class ApiModels
 	{
 	}
 
+	/**
+	 * A release in the Gitea contract. git-shark has no draft releases, so {@code draft} is always false, and
+	 * releases are never edited into existence later, so {@code published_at} mirrors {@code created_at}.
+	 * {@code target_commitish} reports the commit the tag resolved to when the release was published.
+	 * The archive URLs point at git-shark's own {@code /repos/{owner}/{name}/archive/{ref}.zip|.tar.gz}.
+	 */
+	public record ReleaseView(long id, @JsonProperty("tag_name") String tagName,
+		@JsonProperty("target_commitish") String targetCommitish, String name, String body, boolean draft,
+		boolean prerelease, @JsonProperty("created_at") Instant createdAt,
+		@JsonProperty("published_at") Instant publishedAt, PersonView author,
+		@JsonProperty("zipball_url") String zipballUrl, @JsonProperty("tarball_url") String tarballUrl)
+	{
+		public static ReleaseView of(Release release, String archiveBase)
+		{
+			return new ReleaseView(GiteaIds.of(release.id), release.tagName, release.commitId, release.title,
+				release.body, false, release.prerelease, release.createdAt, release.createdAt,
+				PersonView.of(release.author), archiveBase + release.tagName + ".zip",
+				archiveBase + release.tagName + ".tar.gz");
+		}
+	}
+
 	// -- requests --
 
 	public record NewRepository(String name, Repository.Visibility visibility, String description)
@@ -243,6 +265,20 @@ public final class ApiModels
 	}
 
 	public record NewComment(String filePath, int oldLine, int newLine, String body)
+	{
+	}
+
+	/**
+	 * Gitea release-creation payload. {@code target_commitish} names the branch, tag or commit a missing tag
+	 * is cut from; it is ignored when the tag already exists. git-shark accepts no {@code draft}.
+	 */
+	public record NewRelease(@JsonProperty("tag_name") String tagName,
+		@JsonProperty("target_commitish") String targetCommitish, String name, String body, boolean prerelease)
+	{
+	}
+
+	/** Gitea release edit: any null field is left unchanged. The tag itself can never be edited. */
+	public record ReleaseEdit(String name, String body, Boolean prerelease)
 	{
 	}
 }

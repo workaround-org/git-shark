@@ -62,6 +62,17 @@ public final class GitTestSeeder
 		}
 	}
 
+	/** Pushes a lightweight tag pointing at the current tip of the default branch. */
+	public static void seedTag(Path barePath, String tag) throws Exception
+	{
+		Path work = Files.createTempDirectory("seed");
+		try (Git git = Git.cloneRepository().setURI(barePath.toUri().toString()).setDirectory(work.toFile()).call())
+		{
+			git.tag().setName(tag).setAnnotated(false).call();
+			git.push().setRefSpecs(new RefSpec("refs/tags/" + tag + ":refs/tags/" + tag)).call();
+		}
+	}
+
 	/** Pushes a single commit with the given message to refs/heads/main and returns its object id. */
 	public static ObjectId seedCommit(Path barePath, String message) throws Exception
 	{

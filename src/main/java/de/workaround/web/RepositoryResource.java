@@ -21,9 +21,11 @@ import org.jboss.resteasy.reactive.multipart.FileUpload;
 import de.workaround.account.CurrentUser;
 import de.workaround.account.InvalidImageException;
 import de.workaround.git.AccessPolicy;
+import de.workaround.git.GitArchiveService;
 import de.workaround.git.GitBrowseService;
 import de.workaround.git.GitMergeService;
 import de.workaround.git.GitRepositoryService;
+import de.workaround.git.GitTagService;
 import de.workaround.git.RepositoryImageService;
 import de.workaround.git.RepositoryPinService;
 import de.workaround.model.Repository;
@@ -44,6 +46,7 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.StreamingOutput;
 import jakarta.ws.rs.core.UriInfo;
 
 @jakarta.ws.rs.Path("/repos/{owner}/{name}")
@@ -108,6 +111,12 @@ public class RepositoryResource
 
 	@Inject
 	RepositoryImageService images;
+
+	@Inject
+	GitArchiveService archives;
+
+	@Inject
+	GitTagService tagService;
 
 	@Context
 	UriInfo uriInfo;
@@ -230,6 +239,45 @@ public class RepositoryResource
 		GitBrowseService.BlobView blob = browse.blob(repoPath, refPath.ref(), refPath.path())
 			.orElseThrow(NotFoundException::new);
 		return Response.ok(blob.content()).build();
+	}
+
+	/**
+	 * Serves the source tree of a ref as a downloadable archive, e.g. {@code archive/v1.0.0.zip} or
+	 * {@code archive/v1.0.0.tar.gz} — the "source code" downloads a release links to. Any ref works, not just
+	 * tags, and the same read-visibility rule as every other repository page applies.
+	 */
+	@GET
+	@jakarta.ws.rs.Path("archive/{rest:.+}")
+	@Produces(MediaType.APPLICATION_OCTET_STREAM)
+	public Response archive(@PathParam("owner") String owner, @PathParam("name") String name,
+		@PathParam("rest") String rest)
+	{
+		Repository repo = requireReadable(owner, name);
+		GitArchiveService.Format format = archiveFormat(rest);
+		String ref = rest.substring(0, rest.length() - format.suffix.length());
+		Path repoPath = service.repositoryPath(repo);
+		if (tagService.resolveCommit(repoPath, ref).isEmpty())
+		{
+			throw new NotFoundException();
+		}
+		// slashes in a ref would create nested directories inside the archive, so they collapse to dashes
+		String prefix = repo.name + "-" + ref.replace('/', '-');
+		StreamingOutput body = out -> archives.write(repoPath, ref, prefix, format, out);
+		return Response.ok(body, format.mediaType)
+			.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + prefix + format.suffix + "\"")
+			.build();
+	}
+
+	private static GitArchiveService.Format archiveFormat(String rest)
+	{
+		for (GitArchiveService.Format format : GitArchiveService.Format.values())
+		{
+			if (rest.length() > format.suffix.length() && rest.endsWith(format.suffix))
+			{
+				return format;
+			}
+		}
+		throw new NotFoundException();
 	}
 
 	@GET

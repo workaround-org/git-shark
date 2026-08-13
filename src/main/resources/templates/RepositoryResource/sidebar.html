@@ -34,6 +34,7 @@
         {/if}
         <a class="{#if active == 'branches'}active{/if}" href="/repos/{nav.repo.ownerHandle}/{nav.repo.name}/branches"><span class="g">⑂</span> Branches <span class="ct">{nav.branchCount}</span></a>
         <a class="{#if active == 'tags'}active{/if}" href="/repos/{nav.repo.ownerHandle}/{nav.repo.name}/tags"><span class="g">⬡</span> Tags <span class="ct">{nav.tagCount}</span></a>
+        <a class="{#if active == 'releases'}active{/if}" href="/repos/{nav.repo.ownerHandle}/{nav.repo.name}/releases"><span class="g">⎋</span> Releases <span class="ct">{nav.releaseCount}</span></a>
         <a class="{#if active == 'issues'}active{/if}" href="/repos/{nav.repo.ownerHandle}/{nav.repo.name}/issues"><span class="g">◇</span> Issues <span class="ct">{nav.openIssueCount}</span></a>
         <a class="{#if active == 'merge-requests'}active{/if}" href="/repos/{nav.repo.ownerHandle}/{nav.repo.name}/merge-requests"><span class="g">⇄</span> Merge requests <span class="ct">{nav.openMrCount}</span></a>
         <a class="{#if active == 'actions'}active{/if}" href="/repos/{nav.repo.ownerHandle}/{nav.repo.name}/actions"><span class="g">▷</span> Actions</a>

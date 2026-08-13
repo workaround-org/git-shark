@@ -30,6 +30,7 @@ confined to the DTO/resource layer in `de.workaround.api`.
 | Version probe | `VersionApiResource` | `GET /api/v1/version`; string from `gitshark.gitea-api.version` |
 | Repositories | `RepositoryApiResource` | Gitea repository object incl. `owner`, `full_name`, `default_branch`, `clone_url`, `html_url`, `permissions`, merge flags |
 | Pulls | `PullApiResource` | Merge requests as Gitea pull requests (list/create/get/PATCH/merge + line-review comments); domain stays `MergeRequest*` |
+| Releases | `ReleaseApiResource` | Gitea release object addressed by tag; `draft` constant false, `zipball_url`/`tarball_url` point at git-shark's own `…/archive/{ref}.zip|.tar.gz` |
 | Labels | `LabelApiResource` | Always `[]` — no label model yet |
 | Statuses | `CommitStatusApiResource` | All-clear combined status + echoing `POST /statuses/{sha}`; no status store yet |
 | User | `UserApiResource` | Self identity in Gitea user shape |
@@ -88,6 +89,13 @@ confined to the DTO/resource layer in `de.workaround.api`.
   merge commits). List supports `?state=open|closed|all` and pagination (page
   size capped at 50 so Renovate's paging terminates). The line-review comments
   are git-shark's own feature, kept under `pulls/{number}/comments`.
+- `releases` resource (`/api/v1/repos/{owner}/{name}/releases`) — list, create
+  (`{tag_name, target_commitish, name, body, prerelease}`; a missing tag is cut
+  from `target_commitish`), `GET latest` (newest non-prerelease, else `404`), and
+  `GET`/`PATCH`/`DELETE tags/{tag}` with the tag matched greedily for slashes.
+  `draft` is always false and `published_at` mirrors `created_at`; release assets
+  are not implemented, so only the source-archive URLs are exposed. See
+  [Releases architecture](releases.md).
 - `GET labels` → `[]` (no label model yet; Renovate skips labels when empty).
 - Commit-status stubs: `GET commits/{ref}/status` reports an all-clear combined
   status, `GET commits/{ref}/statuses` is empty, and `POST statuses/{sha}` echoes
@@ -104,6 +112,8 @@ confined to the DTO/resource layer in `de.workaround.api`.
   priority).
 - Issue open/closed mapping + issue-comment REST endpoints (dependency dashboard);
   deferred — run Renovate with `dependencyDashboard: false`.
+- Release **assets** (`/releases/{id}/assets`) and draft releases; see the gap
+  list in [Releases architecture](releases.md).
 
 ## Validation
 

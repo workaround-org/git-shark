@@ -1,0 +1,22 @@
+{#include layout}
+{#title}Edit release – {repo.name}{/title}
+<div class="repo-layout">
+    {#include RepositoryResource/sidebar nav=nav active='releases' /}
+    <section class="repo-main">
+        <p><a href="/repos/{repo.ownerHandle}/{repo.name}/releases/tag/{release.tagName}">← {release.tagName}</a></p>
+        <h2>Edit release</h2>
+        <form class="issue-form" method="post"
+              action="/repos/{repo.ownerHandle}/{repo.name}/releases/tag/{release.tagName}/edit">
+            <input type="text" name="title" value="{release.title}" placeholder="Release title" autocomplete="off">
+            <textarea name="body" placeholder="Release notes (Markdown, optional)" rows="10">{release.body ?: ''}</textarea>
+            <label class="release-flag">
+                <input type="checkbox" name="prerelease" {#if release.prerelease}checked{/if}> This is a pre-release
+            </label>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save release</button>
+                <a class="btn btn-secondary" href="/repos/{repo.ownerHandle}/{repo.name}/releases/tag/{release.tagName}">Cancel</a>
+            </div>
+        </form>
+    </section>
+</div>
+{/include}
