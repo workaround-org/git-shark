@@ -90,6 +90,12 @@ stateless it survives restarts and works across pods. Comparison uses
 `MessageDigest.isEqual`. Reusing the captcha secret rather than `GITSHARK_SECRET_KEY`
 keeps the feature independent of the mirror/CI secret setup.
 
+**Nothing about the check is cacheable.** The `429`, the `303` towards `/challenge`
+and the check page all carry `Cache-Control: no-store`. Only the `200` page would have
+been at risk — `303` and `429` are not cacheable by default — but a response with no
+cache directive at all is heuristically cacheable, and a proxy holding the page across
+a provider switch or key rotation serves a widget that can no longer be solved.
+
 **Fail closed on verification, fail open on configuration.** An unreachable or
 unparseable `siteverify` reply is "not verified" — a broken provider must not become a
 bypass. Conversely a missing/incomplete captcha config does not disable metering: it
@@ -111,6 +117,7 @@ a default that stops nobody, and an admin who needs more can say so in one varia
 - Signed, self-expiring pass cookie that moves its holder to the user budget for its
   lifetime, metered under its own key.
 - Open-redirect-safe `?redirect=` handling (server-relative single-slash paths only).
+- `Cache-Control: no-store` on every refusal, redirect and check-page response.
 - Client IP taken from the proxy-aware remote address.
 
 ## What still needs to be implemented

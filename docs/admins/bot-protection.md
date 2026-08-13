@@ -61,6 +61,10 @@ one node; if you need a global limit, do it at the ingress.
   second challenge would only hand out a fresh budget, and challenging a caller who
   cannot improve their standing loops forever.
 
+Refusals, challenge redirects and the check page itself are sent with
+`Cache-Control: no-store`, so a caching reverse proxy or CDN in front of the instance
+cannot hand one visitor's refusal — or one visitor's check page — to the next.
+
 A solved check raises the budget; it does not remove it. A bypass would turn one
 captcha solve — a few tenths of a cent at a solving farm — into a window of entirely
 unmetered scraping, which is precisely the traffic the guard exists to stop.

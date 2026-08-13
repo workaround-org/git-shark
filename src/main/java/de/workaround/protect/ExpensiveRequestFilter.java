@@ -9,6 +9,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.Cookie;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
@@ -35,6 +36,12 @@ import jakarta.ws.rs.ext.Provider;
 @Provider
 public class ExpensiveRequestFilter implements ContainerRequestFilter
 {
+	/**
+	 * Refusals and challenge redirects are per-caller state, never shared content: without this a
+	 * proxy in front of the instance may hand one visitor's answer to the next.
+	 */
+	static final String NO_STORE = "no-store";
+
 	@Inject
 	ProtectionConfig config;
 
@@ -102,13 +109,16 @@ public class ExpensiveRequestFilter implements ContainerRequestFilter
 			target = target + "?" + query;
 		}
 		String location = "/challenge?redirect=" + URLEncoder.encode(target, StandardCharsets.UTF_8);
-		return Response.seeOther(URI.create(location)).build();
+		return Response.seeOther(URI.create(location))
+			.header(HttpHeaders.CACHE_CONTROL, NO_STORE)
+			.build();
 	}
 
 	private Response refusal()
 	{
 		return Response.status(Response.Status.TOO_MANY_REQUESTS)
 			.header("Retry-After", Math.max(1, config.window().toSeconds()))
+			.header(HttpHeaders.CACHE_CONTROL, NO_STORE)
 			.type(MediaType.TEXT_PLAIN)
 			.entity("Too many expensive requests. Please slow down and try again shortly.\n")
 			.build();

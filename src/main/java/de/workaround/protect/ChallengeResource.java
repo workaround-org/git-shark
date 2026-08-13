@@ -13,6 +13,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.NewCookie;
@@ -51,10 +52,10 @@ public class ChallengeResource
 
 	@GET
 	@Produces(MediaType.TEXT_HTML)
-	public TemplateInstance page(@QueryParam("redirect") String redirect)
+	public Response page(@QueryParam("redirect") String redirect)
 	{
 		requireCaptcha();
-		return render(safeRedirect(redirect), null);
+		return uncached(Response.ok(render(safeRedirect(redirect), null)));
 	}
 
 	@POST
@@ -67,9 +68,8 @@ public class ChallengeResource
 		String token = form.getFirst(config.provider().responseField());
 		if (!verifier.verify(token, clientAddress.ip()))
 		{
-			return Response.status(Response.Status.FORBIDDEN)
-				.entity(render(redirect, "That check did not go through. Please try again."))
-				.build();
+			return uncached(Response.status(Response.Status.FORBIDDEN)
+				.entity(render(redirect, "That check did not go through. Please try again.")));
 		}
 		NewCookie pass = new NewCookie.Builder(HumanPass.COOKIE_NAME)
 			.value(humanPass.issue())
@@ -79,7 +79,17 @@ public class ChallengeResource
 			.sameSite(NewCookie.SameSite.LAX)
 			.secure("https".equalsIgnoreCase(uriInfo.getRequestUri().getScheme()))
 			.build();
-		return Response.seeOther(URI.create(redirect)).cookie(pass).build();
+		return uncached(Response.seeOther(URI.create(redirect)).cookie(pass));
+	}
+
+	/**
+	 * The check is per-visitor and short-lived — the widget's own token certainly is — so no proxy or
+	 * browser may keep any of it. Without this the page carries no cache directive at all and is
+	 * heuristically cacheable.
+	 */
+	private static Response uncached(Response.ResponseBuilder builder)
+	{
+		return builder.header(HttpHeaders.CACHE_CONTROL, ExpensiveRequestFilter.NO_STORE).build();
 	}
 
 	private TemplateInstance render(String redirect, String error)

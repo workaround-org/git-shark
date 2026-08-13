@@ -104,6 +104,7 @@ class ChallengeFlowTest
 			.then().statusCode(303)
 			// JAX-RS absolutizes Location; only the target path is interesting here
 			.header("Location", endsWith(commit))
+			.header("Cache-Control", containsString("no-store"))
 			.extract().response();
 
 		String pass = solved.getCookie("gitshark_human");
@@ -142,6 +143,27 @@ class ChallengeFlowTest
 		given().cookie("gitshark_human", pass).redirects().follow(false).when().get(commit)
 			.then().statusCode(429)
 			.header("Retry-After", notNullValue());
+	}
+
+	@Test
+	void nothingAboutTheCheckIsCacheable()
+	{
+		String commit = seedCommitPath("ch-nocache");
+		given().when().get(commit).then().statusCode(200);
+
+		// the 303 towards the check, the check page itself, and a rejected attempt
+		given().redirects().follow(false).when().get(commit)
+			.then().statusCode(303)
+			.header("Cache-Control", containsString("no-store"));
+		given().when().get("/challenge?redirect=" + commit)
+			.then().statusCode(200)
+			.header("Cache-Control", containsString("no-store"));
+		given().redirects().follow(false)
+			.formParam("redirect", commit)
+			.formParam("cf-turnstile-response", "bad-token")
+			.when().post("/challenge")
+			.then().statusCode(403)
+			.header("Cache-Control", containsString("no-store"));
 	}
 
 	private String solve(String redirect)

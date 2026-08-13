@@ -20,6 +20,7 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.notNullValue;
 
 /**
@@ -72,7 +73,8 @@ class ExpensiveRequestLimitTest
 		given().when().get(commit).then().statusCode(200);
 		given().when().get(commit)
 			.then().statusCode(429)
-			.header("Retry-After", notNullValue());
+			.header("Retry-After", notNullValue())
+			.header("Cache-Control", containsString("no-store"));
 	}
 
 	@Test
