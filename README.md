@@ -105,6 +105,14 @@ Bare Git repositories on disk, served over **smart HTTP** (JGit `GitServlet`) an
   [architecture](docs/maintainers/ci-runners.md)
   activities from; local users can in turn follow a remote repository — or a whole remote user, whose
   public repositories are then followed and shown grouped — and read their pushes (see below)
+- **Bot protection** — the expensive renderings (per-commit diffs, history pages, merge-request
+  diffs, search) are metered per caller: anonymous visitors by client IP (60/min by default),
+  logged-in users by account (600/min). Over budget the request is refused with `429` +
+  `Retry-After`, or — when a **Cloudflare Turnstile / hCaptcha** site is configured — redirected to a
+  `/challenge` page whose solved token mints a signed, self-expiring pass cookie that lifts the
+  budget. Git transport, `/api/v1`, MCP, `runner.v1` and the ActivityPub endpoints are never metered.
+  Guides: [for users](docs/users/bot-check.md), [for admins](docs/admins/bot-protection.md),
+  [architecture](docs/maintainers/bot-protection.md)
 
 ## Federation (ForgeFed)
 

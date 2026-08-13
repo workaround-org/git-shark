@@ -35,6 +35,11 @@ in or not.
 An empty or blank query is not an error: the page simply prompts you to type
 something and shows no results.
 
+Each search runs live over the whole instance, so the results page is rate-limited
+per visitor: a burst of searches can land you on a
+[quick "are you a person?" check](bot-check.md) (logging in raises the allowance a
+lot). The JSON API is not affected.
+
 ## Searching from the API
 
 The same search is available as JSON for scripts and tools — see the

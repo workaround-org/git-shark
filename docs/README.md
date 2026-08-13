@@ -40,6 +40,9 @@ OIDC login, and PostgreSQL metadata.
   tools.
 - **[CI/CD runners](users/ci-runners.md)** — what runners are, what admins can do
   today (register runners), and what workflow execution is still coming.
+- **[The "Quick check" page](users/bot-check.md)** — why an expensive page
+  sometimes asks you to confirm you are a person, what counts against the budget,
+  and why logging in avoids it.
 
 ### For admins
 
@@ -68,6 +71,9 @@ OIDC login, and PostgreSQL metadata.
 - **[CI/CD runners](admins/ci-runners.md)** — register Forgejo/Gitea runners via
   the `runner.v1` Connect endpoints: admin handles, registration tokens, the
   `/api/actions` paths, reverse-proxy notes, and the runner tables.
+- **[Bot protection and rate limits](admins/bot-protection.md)** — meter the
+  expensive renderings per caller, optionally challenge with Turnstile/hCaptcha:
+  configuration, proxy requirements, outbound network, troubleshooting.
 - **[Renovate](admins/renovate.md)** — point Renovate's `gitea` platform driver
   at git-shark's Gitea-compatible `/api/v1` for automated dependency-update PRs:
   token, config, and current limitations.
@@ -100,6 +106,9 @@ OIDC login, and PostgreSQL metadata.
 - **[CI/CD runner protocol](maintainers/ci-runners.md)** — how the Forgejo/Gitea
   `runner.v1` server side is built (Connect-over-JAX-RS, protobuf codegen), the
   decisions behind it, and the works/gaps list toward full workflow execution.
+- **[Bot protection architecture](maintainers/bot-protection.md)** — the request
+  filter, fixed-window limiter, signed pass cookie and challenge page, the
+  decisions behind them, and the works/gaps list.
 - **[Gitea-compatible REST API](maintainers/gitea-api.md)** — the migration of
   `/api/v1` to the Gitea contract (so Renovate/`tea` can drive git-shark), the
   component map, key decisions, and the works/gaps list.
