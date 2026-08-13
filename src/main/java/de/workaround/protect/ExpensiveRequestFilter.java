@@ -18,11 +18,19 @@ import jakarta.ws.rs.ext.Provider;
  * against their own budget, anonymous visitors against a smaller one keyed by client IP — a crawler
  * without an account is exactly what this defends against.
  *
- * <p>Over budget, the response depends on configuration: with a captcha configured the visitor is
- * sent to {@code /challenge} and can prove they are human (which mints a pass cookie that lifts the
- * budget); without one the request is refused with {@code 429} and a {@code Retry-After}. Only GETs
- * are metered — form POSTs already require a session, and a challenge in the middle of one would
- * lose the submitted body.
+ * <p>Over budget, the response depends on configuration: with a captcha configured an anonymous
+ * visitor is sent to {@code /challenge} and can prove they are human, which mints a pass cookie
+ * that raises them to the user budget; without one the request is refused with {@code 429} and a
+ * {@code Retry-After}. A solved challenge deliberately <em>raises</em> the budget instead of
+ * removing it: a bypass would turn one solve — cheap to buy from a captcha farm — into a window of
+ * completely unmetered scraping.
+ *
+ * <p>Callers who already spent a raised budget (logged in, or carrying a pass) get the plain
+ * {@code 429} rather than another challenge. Re-solving would only hand them a fresh budget, and
+ * challenging a caller who cannot improve their standing is an endless loop.
+ *
+ * <p>Only GETs are metered — form POSTs already require a session, and a challenge in the middle of
+ * one would lose the submitted body.
  */
 @Provider
 public class ExpensiveRequestFilter implements ContainerRequestFilter
@@ -53,26 +61,36 @@ public class ExpensiveRequestFilter implements ContainerRequestFilter
 		{
 			return;
 		}
-		if (carriesValidPass(context))
-		{
-			return;
-		}
+		String pass = validPass(context);
 		boolean loggedIn = !identity.isAnonymous();
-		String key = loggedIn
-			? "user:" + identity.getPrincipal().getName()
-			: "ip:" + clientAddress.ip();
-		int limit = loggedIn ? config.userLimit() : config.anonymousLimit();
+		boolean raised = loggedIn || pass != null;
+		String key;
+		if (loggedIn)
+		{
+			key = "user:" + identity.getPrincipal().getName();
+		}
+		else if (pass != null)
+		{
+			// the pass value is stable for its lifetime, so it identifies this visitor across IPs
+			key = "pass:" + pass;
+		}
+		else
+		{
+			key = "ip:" + clientAddress.ip();
+		}
+		int limit = raised ? config.userLimit() : config.anonymousLimit();
 		if (limiter.tryAcquire(key, limit, config.window()))
 		{
 			return;
 		}
-		context.abortWith(config.captchaConfigured() ? challenge(context) : refusal());
+		context.abortWith(!raised && config.captchaConfigured() ? challenge(context) : refusal());
 	}
 
-	private boolean carriesValidPass(ContainerRequestContext context)
+	/** The pass carried by this request, or {@code null} when there is none or it does not verify. */
+	private String validPass(ContainerRequestContext context)
 	{
 		Cookie cookie = context.getCookies().get(HumanPass.COOKIE_NAME);
-		return cookie != null && humanPass.valid(cookie.getValue());
+		return cookie != null && humanPass.valid(cookie.getValue()) ? cookie.getValue() : null;
 	}
 
 	private Response challenge(ContainerRequestContext context)

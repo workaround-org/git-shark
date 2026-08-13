@@ -22,10 +22,10 @@ public class ProtectionConfig
 	@ConfigProperty(name = "gitshark.protect.enabled", defaultValue = "true")
 	boolean enabled;
 
-	@ConfigProperty(name = "gitshark.protect.anonymous-limit", defaultValue = "60")
+	@ConfigProperty(name = "gitshark.protect.anonymous-limit", defaultValue = "30")
 	int anonymousLimit;
 
-	@ConfigProperty(name = "gitshark.protect.user-limit", defaultValue = "600")
+	@ConfigProperty(name = "gitshark.protect.user-limit", defaultValue = "120")
 	int userLimit;
 
 	@ConfigProperty(name = "gitshark.protect.window", defaultValue = "1m")
@@ -43,7 +43,7 @@ public class ProtectionConfig
 	@ConfigProperty(name = "gitshark.protect.captcha.verify-url")
 	Optional<String> verifyUrl;
 
-	@ConfigProperty(name = "gitshark.protect.captcha.pass-duration", defaultValue = "30m")
+	@ConfigProperty(name = "gitshark.protect.captcha.pass-duration", defaultValue = "15m")
 	Duration passDuration;
 
 	public boolean enabled()
@@ -93,7 +93,7 @@ public class ProtectionConfig
 		return selected == CaptchaProvider.NONE ? Optional.empty() : Optional.of(selected.defaultVerifyUrl());
 	}
 
-	/** How long a solved challenge keeps lifting the budget for that visitor. */
+	/** How long a solved challenge keeps a visitor on the user budget instead of the anonymous one. */
 	public Duration passDuration()
 	{
 		return passDuration;

@@ -26,15 +26,17 @@ check.
 The check is a Cloudflare Turnstile or hCaptcha widget, depending on what the
 instance's admin configured. Most of the time it solves itself and you are sent
 straight back to the page you wanted. Once solved, the confirmation lasts for a
-while (30 minutes by default), so you are not asked again on every page.
+while (15 minutes by default), so you are not asked again on every page. It moves
+you onto the same, much larger budget signed-in users get — it is not an unlimited
+pass, but normal browsing never comes close to the ceiling.
 
 The check needs JavaScript. If you have it turned off, log in instead.
 
 ## Logging in gives you a much bigger budget
 
 Anonymous visitors share one budget per IP address; signed-in users are metered
-per account with a far higher allowance (by default 600 pages per minute instead
-of 60). If you keep hitting the check while browsing normally, **log in** — that
+per account with a far higher allowance (by default 120 pages per minute instead
+of 30). If you keep hitting the check while browsing normally, **log in** — that
 is the intended fix, not a workaround.
 
 ## If you keep seeing it

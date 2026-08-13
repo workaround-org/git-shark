@@ -371,14 +371,14 @@ Every value below is an environment variable on the `app` service. Defaults come
 | `GITSHARK_CI_TASK_TIMEOUT` | — | `1h` | How long a claimed CI task may run before it is reclaimed as a zombie (see [CI runners](ci-runners.md)) |
 | `GITSHARK_CI_ZOMBIE_RECLAIM_INTERVAL` | — | `1m` | How often the sweep that fails timed-out CI tasks runs |
 | `GITSHARK_PROTECT_ENABLED` | — | `true` | Meter expensive renderings (commit/history/merge-request diffs, search) per caller (see [Bot protection](bot-protection.md)) |
-| `GITSHARK_PROTECT_ANONYMOUS_LIMIT` | — | `60` | Expensive renderings per window, per client IP |
-| `GITSHARK_PROTECT_USER_LIMIT` | — | `600` | Expensive renderings per window, per logged-in account |
+| `GITSHARK_PROTECT_ANONYMOUS_LIMIT` | — | `30` | Expensive renderings per window, per client IP |
+| `GITSHARK_PROTECT_USER_LIMIT` | — | `120` | Expensive renderings per window, per logged-in account — and per solved bot check |
 | `GITSHARK_PROTECT_WINDOW` | — | `1m` | Length of the rate-limit window |
 | `GITSHARK_PROTECT_CAPTCHA_PROVIDER` | — | `none` | `none`, `turnstile` or `hcaptcha`; anything else is treated as `none` |
 | `GITSHARK_PROTECT_CAPTCHA_SITE_KEY` | — | — | Public widget key; without both keys there is no challenge page (refusals stay plain `429`s) |
 | `GITSHARK_PROTECT_CAPTCHA_SECRET_KEY` | — | — | Server-side `siteverify` key; also signs the `gitshark_human` pass cookie |
 | `GITSHARK_PROTECT_CAPTCHA_VERIFY_URL` | — | — | Override the provider's `siteverify` endpoint (testing) |
-| `GITSHARK_PROTECT_CAPTCHA_PASS_DURATION` | — | `30m` | How long a solved check keeps lifting the budget |
+| `GITSHARK_PROTECT_CAPTCHA_PASS_DURATION` | — | `15m` | How long a solved check keeps the visitor on the user budget |
 | `GITSHARK_GITEA_API_VERSION` | — | `1.13.0` | Version string reported by `GET /api/v1/version`. The `/api/v1` surface is Gitea-compatible; Gitea clients (Renovate, `tea`) gate features on this. Kept below `1.14.0` so they only call implemented endpoints — raise it as reviewer/label/status support lands |
 
 ### Optional: push mirrors

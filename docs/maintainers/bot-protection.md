@@ -24,12 +24,13 @@ is a request filter, an in-memory counter map, an HMAC-signed cookie and one pag
 GET /repos/a/b/commit/<id>
   ExpensiveRequestFilter
     enabled? GET? ExpensivePaths.isExpensive(path)?      → no: pass through
-    gitshark_human cookie valid?                         → yes: pass through (no counting)
-    key = "user:<principal>" | "ip:<client-ip>"
-    limiter.tryAcquire(key, userLimit | anonymousLimit, window)
-      → within budget: pass through
-      → over budget, captcha configured:     303 → /challenge?redirect=<original>
-      → over budget, no captcha:             429 + Retry-After
+    logged in            → key = "user:<principal>",      limit = userLimit
+    valid gitshark_human → key = "pass:<cookie value>",   limit = userLimit
+    otherwise            → key = "ip:<client-ip>",        limit = anonymousLimit
+    limiter.tryAcquire(key, limit, window)
+      → within budget:                            pass through
+      → over budget, anonymous, captcha configured: 303 → /challenge?redirect=<original>
+      → over budget, otherwise:                   429 + Retry-After
 ```
 
 ```
@@ -51,10 +52,24 @@ without bound.
 to the very requests it is meant to protect. Per-pod counters mean each replica
 enforces its own share of the budget; a global limit belongs at the ingress, not here.
 
-**Two budgets, two keys.** The threat is an unauthenticated crawler, so anonymous
+**Two budgets, three keys.** The threat is an unauthenticated crawler, so anonymous
 callers are keyed by IP with a small budget and logged-in users by account with a
-large one. Keying logged-in users by account (not IP) also keeps a shared office IP
-from punishing everyone once they sign in.
+larger one. Keying logged-in users by account (not IP) also keeps a shared office IP
+from punishing everyone once they sign in. A solved challenge is the third key: the
+pass value is stable for its lifetime and unforgeable, so it identifies that visitor
+on the larger budget even as their IP changes.
+
+**A solved challenge raises the budget, it does not lift the limiter.** The pass used
+to skip metering entirely, which made one captcha solve — a few tenths of a cent at a
+solving farm, or one headless browser run — worth a full `pass-duration` of unmetered
+scraping at whatever rate the server would answer. Metering the pass keeps the
+challenge useful to a person (who never approaches the user budget) while capping what
+a solve is worth to a crawler.
+
+**No second challenge for a caller already on the raised budget.** Logged-in users and
+pass holders get a plain `429` when they run out. Re-challenging them would either
+loop forever (a logged-in user's pass changes nothing about their key) or hand out a
+fresh budget per solve, which is the same bypass through a slower door.
 
 **Only four paths, only GET.** `ExpensivePaths` deliberately excludes the git
 transport, `/api/v1`, `runner.v1`, MCP and ActivityPub: those are machine callers with
@@ -80,9 +95,11 @@ unparseable `siteverify` reply is "not verified" — a broken provider must not 
 bypass. Conversely a missing/incomplete captcha config does not disable metering: it
 only removes the challenge, and refusals become plain `429`s.
 
-**Rate limiting on by default, captcha off.** Sensible defaults (60/600 per minute)
-protect a fresh instance immediately, while the captcha stays opt-in because it needs
-third-party keys and sends visitor IPs to that provider.
+**Rate limiting on by default, captcha off.** Defaults (30/120 per minute) protect a
+fresh instance immediately, while the captcha stays opt-in because it needs
+third-party keys and sends visitor IPs to that provider. The numbers sit just above
+fast human browsing rather than comfortably above it: a default nobody ever notices is
+a default that stops nobody, and an admin who needs more can say so in one variable.
 
 ## What works today
 
@@ -91,7 +108,8 @@ third-party keys and sends visitor IPs to that provider.
 - `429` + `Retry-After` when no captcha is configured.
 - Turnstile and hCaptcha challenges with server-side `siteverify`, both providers
   driven by the same code path.
-- Signed, self-expiring pass cookie that bypasses the limiter for its lifetime.
+- Signed, self-expiring pass cookie that moves its holder to the user budget for its
+  lifetime, metered under its own key.
 - Open-redirect-safe `?redirect=` handling (server-relative single-slash paths only).
 - Client IP taken from the proxy-aware remote address.
 
@@ -99,6 +117,10 @@ third-party keys and sends visitor IPs to that provider.
 
 - **Shared counters across replicas.** Each pod meters independently; a global budget
   would need a shared store (or ingress-level limiting).
+- **A cost per solve.** Each solved challenge mints a fresh pass with a fresh budget,
+  so a determined crawler can buy more throughput one solve at a time. Bounding it
+  would need the pass to carry an identity worth tracking (a mint counter per IP, or a
+  proof-of-work cost that rises with repetition).
 - **Per-repository or per-path budgets.** One budget covers all metered paths; a repo
   with a huge history cannot be metered more tightly than a small one.
 - **Configurable path set.** `ExpensivePaths` is compiled in; admins cannot add

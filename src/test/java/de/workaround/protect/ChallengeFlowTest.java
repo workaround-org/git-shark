@@ -23,6 +23,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.endsWith;
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -44,6 +45,7 @@ class ChallengeFlowTest
 			return Map.of(
 				"gitshark.protect.enabled", "true",
 				"gitshark.protect.anonymous-limit", "1",
+				"gitshark.protect.user-limit", "3",
 				"gitshark.protect.window", "1m",
 				"gitshark.protect.captcha.provider", "turnstile",
 				"gitshark.protect.captcha.site-key", "test-site-key",
@@ -109,6 +111,48 @@ class ChallengeFlowTest
 
 		given().cookie("gitshark_human", pass).when().get(commit).then().statusCode(200);
 		given().cookie("gitshark_human", pass).when().get(commit).then().statusCode(200);
+	}
+
+	@Test
+	void aPassLiftsTheBudgetToTheUserOneButDoesNotRemoveIt()
+	{
+		String commit = seedCommitPath("ch-metered");
+		String pass = solve(commit);
+
+		// the pass carries its own budget — the anonymous one is already spent, this is the user one
+		for (int i = 0; i < 3; i++)
+		{
+			given().cookie("gitshark_human", pass).when().get(commit).then().statusCode(200);
+		}
+		given().cookie("gitshark_human", pass).redirects().follow(false).when().get(commit)
+			.then().statusCode(429);
+	}
+
+	@Test
+	void anExhaustedPassIsRefusedRatherThanChallengedAgain()
+	{
+		String commit = seedCommitPath("ch-noloop");
+		String pass = solve(commit);
+
+		for (int i = 0; i < 3; i++)
+		{
+			given().cookie("gitshark_human", pass).when().get(commit).then().statusCode(200);
+		}
+		// re-solving would only reset the budget, so an exhausted pass holder is refused outright
+		given().cookie("gitshark_human", pass).redirects().follow(false).when().get(commit)
+			.then().statusCode(429)
+			.header("Retry-After", notNullValue());
+	}
+
+	private String solve(String redirect)
+	{
+		return given().redirects().follow(false)
+			.formParam("redirect", redirect)
+			.formParam("cf-turnstile-response", "good-token")
+			.when().post("/challenge")
+			.then().statusCode(303)
+			.extract().response()
+			.getCookie("gitshark_human");
 	}
 
 	@Test
